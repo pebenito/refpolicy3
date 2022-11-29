@@ -1,0 +1,231 @@
+// SPDX-License-Identifier: GPL-2.0
+
+resource dhcpc_port_t inherits reserved_network_port {
+    /// DHCP client port.
+    portcon(udp, 68);
+    portcon(tcp, 68);
+    portcon(udp, 546);
+    portcon(tcp, 546);
+    portcon(udp, 5546);
+    portcon(tcp, 5546);
+}
+
+domain dhcpc_t inherits daemon {
+    /// DHCP client daemon.
+
+    //
+    // Resources
+    //
+    @alias(dhcp_etc_t)
+    extend conf {
+        file_context("/etc/dhclient.*conf", file);
+        file_context("/etc/dhclient-script", file);
+        file_context("/etc/dhcpc.*", any);
+        file_context("/etc/dhcpd\.conf", file);
+        file_context("/etc/dhcp/dhcpd\.conf", file);
+        file_context("/etc/dhcp3(/.*)?", any);
+        file_context("/etc/dhcp3?/dhclient.*", any);
+    }
+
+    @alias(dhcpc_exec_t)
+    extend exec {
+        file_context("/usr/bin/dhclient.*", file);
+        file_context("/usr/bin/dhcdbd", file);
+        file_context("/usr/bin/dhcp6c", file);
+        file_context("/usr/bin/dhcpcd", file);
+        file_context("/usr/bin/pump", file);
+        file_context("/usr/sbin/dhclient.*", file);
+        file_context("/usr/sbin/dhcdbd", file);
+        file_context("/usr/sbin/dhcp6c", file);
+        file_context("/usr/sbin/dhcpcd", file);
+        file_context("/usr/sbin/pump", file);
+    }
+
+    @alias(dhcpc_runtime_t)
+    extend runtime {
+        file_context("/run/dhclient.*", file);
+        file_context("/run/dhcpcd(/.*)?", any);
+    }
+
+    @alias(dhcp_state_t, dhcpc_state_t)
+    resource state inherits common_file {
+        /// Contents of /var/lib/dhcpcd.
+        file_context("/var/lib/dhcp3?", dir);
+        file_context("/var/lib/dhcp3?/dhclient.*", any);
+        file_context("/var/lib/dhcpc(/.*)?", any);
+        file_context("/var/lib/dhcpcd(/.*)?", any);
+        file_context("/var/lib/dhcpv6(/.*)?", any);
+        file_context("/var/lib/dhclient(/.*)?", any);
+        file_context("/var/lib/wifiroamd(/.*)?", any);
+    }
+
+    @alias(dhcpc_tmp_t)
+    extend tmp {}
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ dac_override fsetid net_admin net_bind_service net_raw setpcap sys_nice sys_resource sys_tty_config ]);
+    dontaudit(this, self, capability, [ sys_ptrace sys_tty_config ]);
+    // for access("/etc/bashrc", X_OK) on Red Hat
+    dontaudit(this, self, capability, [ dac_read_search sys_module ]);
+    allow(this, self, process, [ setcap setfscreate ptrace ]);
+    allow(this, self, cap_userns, net_bind_service);
+    allow(this, self, tcp_socket, manage_stream_socket_perms);
+    allow(this, self, udp_socket, manage_socket_perms);
+    allow(this, self, packet_socket, manage_socket_perms);
+    allow(this, self, netlink_generic_socket, manage_socket_perms);
+    allow(this, self, netlink_route_socket, [ manage_socket_perms nlmsg_read nlmsg_write ]);
+    allow(this, self, rawip_socket, manage_socket_perms);
+
+    this.conf.exec();
+
+    this.state.mmap_manage();
+
+    autofs_t.list();
+
+    avahi_t.domtrans();
+
+    bin_t.exec();
+
+    cgroup_t.list();
+
+    consoletype_t.domtrans();
+
+    dhcpc_port_t.tcp_bind();
+    dhcpc_port_t.udp_bind();
+
+    domain.dontaudit_read_state();
+
+    etc_runtime_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    home_root_t.list();
+
+    hostname_t.domtrans();
+
+    ifconfig_t.domtrans();
+
+    kernel.request_module_load();
+
+    kernel_t.inherit_file_descriptors();
+
+    kmod_t.domtrans();
+
+    // Allow read/write to /etc/resolv.conf and /etc/ntp.conf. Note that any files
+    // in /etc created by dhcpcd will be labelled net_conf_t.
+    net_conf_t.manage();
+    etc_t.filetrans(dhcpc_t, net_conf_t, file);
+
+    netutils_t.domtrans();
+
+    network.tcp_client();
+    network.tcp_server();
+    network.udp_server();
+
+    network_port.tcp_connect();
+
+    NetworkManager_t.domtrans();
+    NetworkManager_t.runtime<common_file>.read();
+    NetworkManager_t.state<common_file>.mmap_manage();
+    NetworkManager_t.unix_stream_connect();
+
+    // for the dhcp client to run ping to check IP addresses
+    ping_t.domtrans();
+
+    proc_t.read();
+    proc_t.net.read(); proc_t.list();
+
+    shell_exec_t.exec();
+
+    sysctl_t.kernel.read();
+    sysctl_t.net.rw(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    unreserved_port_t.udp_bind();
+
+    usr_t.read();
+
+    var_lib_t.list();
+
+    var_lock_t.read(); var_t.list();
+
+    vmware_log_t<common_file>.append();
+
+    // utmp
+    wtmp_t.rw();
+
+    ypbind_t.runtime.read();
+
+    if (distro_redhat) {
+        etc_t.exec();
+    }
+
+    optional {
+        //dbus_system_domain(dhcpc_t, dhcpc_exec_t)
+
+        init_script_t.dbus_send();
+
+        NetworkManager_t.dbus_send();
+    }
+
+    optional {
+        //nscd_initrc_domtrans(dhcpc_t)
+        nscd_t.domtrans();
+        nscd_t.runtime<common_file>.read();
+    }
+
+    optional {
+        //ntp_initrc_domtrans(dhcpc_t)
+        ntp_drift_t.read();
+        ntp_conf_t.read();
+    }
+
+    optional {
+        tunable dhcpc_manage_samba {
+            /// Determine whether DHCP client can manage Samba.
+            default false;
+        }
+
+        if (dhcpc_manage_samba) {
+            allow(this, init_t, system, status);
+
+            init_script_t.exec.exec();
+
+            samba_etc_t.manage();
+
+            samba_var_t<common_file>.manage();
+
+            samba_unit_t.startstop();
+            samba_unit_t.reload();
+        }
+    }
+
+    optional {
+        // systemctl?
+        systemd_t.ps();
+        systemd_t.unix_stream_connect();
+        systemdunit.status();
+    }
+
+    optional {
+        proc_t.xen.rw();
+        xend_t.log.append();
+        xend_t.log.dontaudit_write();
+        xend_t.dontaudit_rw_inherited_stream_sockets();
+    }
+}
+
+module dhcpc {
+    domain dhcpc_t;
+}
+
+module dhcpc_port {
+    resource dhcpc_port_t;
+}

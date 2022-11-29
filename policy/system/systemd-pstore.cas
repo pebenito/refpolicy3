@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_pstore_t inherits systemd_app_domain {
+    /// Archive persistent storage filesystem.
+
+    //
+    // Resources
+    //
+    @alias(systemd_pstore_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-pstore", file);
+    }
+
+    @alias(systemd_pstore_var_lib_t)
+    resource state inherits common_file, systemd_tmpfiles_managed {
+        file_context("/var/lib/systemd/pstore(/.*)?", any);
+    }
+
+    //
+    // Policy
+    //
+    this.state.manage(); var_lib_t.list(); var_t.list();
+
+    etc_t.read();
+
+    init_t.runtime.list(); runtime_t.list(); var_t.list();
+    init_t.state.list();
+
+    proc_t.read();
+
+    pstore_t.read();
+    pstore_t.delete();
+}

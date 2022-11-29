@@ -1,0 +1,150 @@
+// SPDX-License-Identifier: GPL-2.0
+
+@alias(allow_ptrace)
+tunable sysadm_debug {
+    /// Allow sysadm to debug or ptrace all processes.
+    default false;
+}
+
+@associate([
+    session_dbus
+])
+domain sysadm_t inherits admin_userdomain, common_user {
+    /// The general system administration user.
+
+    allow(this, self, capability, [ chown dac_override dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice sys_resource sys_time sys_tty_config mknod lease setfcap ]);
+    allow(this, self, cap_userns, sys_ptrace);
+    allow(this, self, process, [ setexec setfscreate ]);
+    allow(this, self, netlink_audit_socket, nlmsg_readpriv);
+    allow(this, self, tun_socket, create);
+    // Set password information for other users.
+    allow(this, self, passwd, [ passwd chfn chsh ]);
+    // Skip authentication when pam_rootok is specified.
+    allow(this, self, passwd, rootok);
+
+    authentication_file.getattr();
+
+    device_t.manage();
+    device_t<common_block_device>.getattr();
+    device_t<common_character_device>.getattr();
+
+    // Allow MAKEDEV to work
+    device_node<common_block_device>.manage();
+    device_node<common_character_device>.manage();
+
+    domain.set_scheduler();
+    domain.ps();
+    domain.dontaudit_debug();
+    // signal all domains:
+    domain.send_kill_signals();
+    domain.send_general_signals();
+    domain.check_existence();
+    domain.send_stop_signals();
+    domain.send_stop_signals();
+    domain.send_child_terminated_signals();
+    // for lsof
+    allow(this, domain, socket_class_set, getattr);
+
+    file_type<filesystem>.getattr_superblock();
+    // Admin (manage+relabel) almost all files
+    file_type.mmap_admin(); delete(authentication_file.mmap_admin());
+    // this is only relabelfrom since there should be no
+    // device nodes with file types.
+    file_type<common_block_device>.relabelfrom(); delete(authentication_file<common_block_device>.relabelfrom());
+    file_type<common_character_device>.relabelfrom(); delete(authentication_file<common_character_device>.relabelfrom());
+
+    filesystem.getattr_superblock();
+    filesystem.set_quota();
+
+    init_t.admin();
+
+    kernel.get_sysv_ipc_info();
+
+    kmod_t.domtrans();
+
+    kmsg_device_t.read(sysadm_t);
+
+    logfile.watch(sysadm_t);
+
+    noxattr_filesystem.exec();
+
+    proc_t.mdstat.read(); proc_t.list();
+    proc_t.kcore.getattr(); proc_t.list();
+    proc_t.kmsg.getattr(); proc_t.list();
+
+    removable_device_t.rw();
+
+    src_t.exec();
+
+    sysctl_entry.rw(); sysctl_t.list(); proc_t.net.list(); proc_t.list();
+
+    syslog.change_console_log_level();
+    syslog.configure_kernel_ring_buffer();
+    syslog.read_kernel_ring_buffer();
+    syslog.send_messages();
+
+    // Allow sysadm to follow logs in the journal, i.e. with podman logs -f
+    systemd_t.journal.watch();
+    // Allow sysadm to resolve the username of dynamic users by calling
+    // LookupDynamicUserByUID on org.freedesktop.systemd1.
+    systemd_t.dbus_send();
+
+    // Allow sysadm to get the status of and set properties of other users,
+    // sessions, and seats on the system.
+    systemd_logind_t.dbus_send();
+
+    // Allow sysadm to query and set networking settings on the system.
+    systemd_networkd_t.dbus_send();
+    nsfs_t.read();
+
+    tape_device_t.rw();
+
+    terminal.rw();
+
+    // allow setting up tunnels
+    tun_tap_device_t.rw();
+
+    // signal unlabeled processes:
+    unlabeled_t<domain>.send_kill_signals();
+    unlabeled_t<domain>.send_general_signals();
+    unlabeled_t<domain>.send_stop_signals();
+    unlabeled_t<domain>.check_existence();
+    unlabeled_t<domain>.send_child_terminated_signals();
+
+    unreserved_port_t.tcp_bind();
+
+    usbguard_t.unix_stream_connect();
+
+    userhelper_t.exec.exec();
+
+    wireless_device_t.rw();
+
+    if (distro_gentoo) {
+        rc_exec_t.exec(sysadm_t);
+    }
+
+    if (!enable_mls) {
+        auditctl_t.domtrans();
+
+        auditd_t.conf.manage();
+        auditd_t.log.manage();
+
+        user_api.security_admin();
+    }
+
+    if (sysadm_debug) {
+        domain.debug();
+    }
+
+    // TODO: sysadm optional blocks
+
+//typeattribute sysadm_t can_change_object_identity;
+//typeattribute sysadm_t ubacproc;
+//typeattribute sysadm_t ubacfile;
+//typeattribute sysadm_t ubacfd;
+//typeattribute sysadm_t mlsprocread;
+//if (direct_sysadm_daemon) {
+//typeattribute sysadm_t can_system_change;
+//} // end direct_sysadm_daemon
+//typeattribute sysadm_t sepgsql_unconfined_type;
+}

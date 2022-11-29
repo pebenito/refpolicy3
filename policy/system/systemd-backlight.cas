@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_backlight_t inherits systemd_app_domain {
+    /// Set backlight brightness at boot.
+
+    //
+    // Resources
+    //
+    @alias(systemd_backlight_exec_t)
+    extend exec {
+        file_context("/usr/lib/systemd/systemd-backlight", file);
+    }
+
+    @alias(systemd_backlight_var_lib_t)
+    resource state inherits common_file {
+        file_context("/var/lib/systemd/backlight(/.*)?", any);
+    }
+
+    @alias(systemd_backlight_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/systemd-backlight.*", file);
+    }
+
+    //
+    // Policy
+    //
+
+    this.state.manage();
+    init_t.state.filetrans(this, this.state, dir); var_lib_t.list();
+
+    // for udev.conf
+    etc_t.read();
+
+    // Allow systemd-backlight to write to /sys/class/backlight/*/brightness
+    sysfs_t.rw();
+
+    sysctl_t.kernel.dontaudit_list(); sysctl_t.dontaudit_list(); proc_t.dontaudit_list();
+
+    // for /run/udev/data/+backlight*
+    udev_t.runtime.read(); runtime_t.list(); var_t.list();
+}

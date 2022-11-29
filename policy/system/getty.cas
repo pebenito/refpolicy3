@@ -1,0 +1,154 @@
+// SPDX-License-Identifier: GPL-2.0
+
+virtual domain getty_domain inherits system_app_domain {
+    /// Virtual for getty.
+    /// This consists of all of the common rules for getty, except for tty
+    /// access and transitons out to other domains.
+
+    //
+    // Resources
+    //
+
+// TBD. maybe handled by app_domain inherit.    typeattribute getty_t privfd;
+
+    resource conf inherits configfile {}
+
+    resource lock inherits lockfile {}
+
+    resource log inherits logfile {}
+
+    resource runtime inherits runtimefile {}
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ chown dac_override fowner fsetid setgid sys_admin sys_resource sys_tty_config ]);
+    allow(this, self, process, setpgid);
+
+    this.conf.read();
+
+    this.lock.manage();
+    var_lock_t.filetrans(this, this.lock, file); var_t.list();
+
+    // append-only logs
+    this.log.create();
+    this.log.setattr();
+    delete(allow(this, this.log, file, write));
+    var_log_t.filetrans(this, this.log, file); var_t.list();
+
+    this.runtime.manage();
+    this.runtime.watch();
+    var_run_t.filetrans(this, this.runtime, file); var_t.list();
+
+    autofs_t.list();
+
+    cgroup_t.getattr_superblock();
+    cgroup_t.list();
+
+    etc_t.read();
+
+    etc_runtime_t.read();
+
+    // for error condition handling
+    fs_t.getattr_superblock();
+
+    init_script_t.runtime.rw(); runtime_t.list(); var_t.list();
+
+    nss.get_passwd_entry();
+
+    proc_t.read();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    syslog.send_messages();
+
+    sysfs_t.read();
+
+    usr_t.list();
+
+    var_lib_t.dontaudit_list();
+
+    var_spool_t.list(); var_t.list();
+
+    wtmp_t.rw(); var_log_t.list(); var_t.list();
+
+// typeattribute getty_t mcssetcats;
+// typeattribute getty_t mlsfileread;
+// typeattribute getty_t mlsfilewrite;
+}
+
+domain getty_t inherits getty_domain{
+
+    //
+    // Resources
+    //
+
+    @alias(getty_conf_t)
+    extend conf {
+        file_context("/etc/mgetty(/.*)?", any);
+    }
+
+    @alias(getty_exec_t)
+    extend exec {
+        file_context("/usr/bin/.*getty", file);
+        file_context("/usr/sbin/.*getty", file);
+    }
+
+    @alias(getty_log_t)
+    extend log {
+        file_context("/var/log/mgetty\.log.*", file);
+        file_context("/var/log/vgetty\.log\..*", file);
+    }
+
+    @alias(getty_runtime_t)
+    extend runtime {
+        file_context("/run/mgetty\.pid.*", file);
+        file_context("/run/agetty\.reload", file);
+        file_context("/var/spool/fax(/.*)?", any);
+        file_context("/var/spool/voice(/.*)?", any);
+    }
+
+    @alias(getty_tmp_t)
+    extend tmp {}
+
+    //
+    // Policy
+    //
+
+    // needed for receiving faxes
+    bin_t.exec();
+
+    console_device_t.setattr();
+
+    local_login_t.domtrans(this, this.roles);
+
+    // needed for receiving faxes
+    shell_exec_t.exec();
+
+    tty.rw();
+    tty.setattr();
+
+    tty_device_t.rw();
+    tty_device_t.setattr();
+
+    if (console_login) {
+        // Support logging in from /dev/console
+        console_device_t.rw();
+    } else {
+        console_device_t.dontaudit_rw();
+    }
+
+    if (distro_gentoo) {
+        // Gentoo default /etc/issue makes agetty
+        // do a DNS lookup for the hostname
+        nss.get_hosts_entry();
+    }
+
+    // optional {
+        system_mail_t.domtrans(); usr_t.list(); bin_t.list();
+    // }
+
+    // optional {
+        pppd_t.domtrans(); usr_t.list(); bin_t.list();
+    // }
+}

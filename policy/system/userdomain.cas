@@ -1,0 +1,1245 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//
+// Tunables
+//
+tunable user_direct_mouse {
+    /// Allow regular users direct mouse access
+    default false;
+}
+
+tunable user_dmesg {
+    /// Allow users to read system messages.
+    default false;
+}
+
+@alias(allow_user_mysql_connect)
+tunable user_mysql_connect {
+    /// Allow users to connect to mysql
+    default false;
+}
+
+@alias(allow_user_postgresql_connect)
+tunable user_postgresql_connect {
+    /// Allow users to connect to PostgreSQL
+    default false;
+}
+
+tunable user_rw_noexattrfile {
+    /// Allow user to r/w files on filesystems that do not have extended attributes (e.g. FAT32)
+    default false;
+}
+
+tunable user_exec_noexattrfile {
+    /// Allow user to execute files on filesystems that do not have extended attributes (e.g. FAT32)
+    default false;
+}
+
+tunable user_write_removable {
+    /// Allow user to write files on removable devices (e.g. external USB memory devices)
+    default false;
+}
+
+tunable user_ttyfile_stat {
+    /// Allow w to display everyone
+    default false;
+}
+
+//
+// Virtuals
+//
+virtual resource user_pty inherits pty {
+    /// Virtual for user PTY devices.
+
+    //ubac_constrained()
+    @associated_call
+    fn associate_user_pty(domain source) {
+        type_change(source, server_ptynode, chr_file, this);
+    }
+}
+
+virtual resource user_tty inherits tty {
+    /// Virtual for user tty devices.
+
+    //ubac_constrained()
+    @associated_call
+    fn associate_user_tty(domain source) {
+        type_change(source, tty_device_t, chr_file, this);
+
+        if (console_login) {
+            // When user logs in from /dev/console, relabel it
+            // to user tty type as well.
+            type_change(source, console_device_t, chr_file, this);
+        }
+    }
+}
+
+virtual domain userdomain inherits common_domain {
+    /// Base virtual for user domains.
+    /// This is specifically interactive terminal users, for example,
+    /// console logins, remote SSH logins, and GUI users.  In most cases,
+    /// a subvirtual of this should be used unless starting from the
+    /// minimum amount of rules is required.
+
+    allow(this, self, process, [ setsched share setpgid setcap ]);
+    dontaudit(this, self, socket, create);
+    // Transition to myself, to make get_ordered_context_list happy.
+    allow(source, self, process, transition);
+
+    base_files.read_public_files();
+
+    bin_t.entrypoint();
+
+    block_device.dontaudit_getattr();
+    block_device<character_device>.dontaudit_getattr();
+
+    character_device.dontaudit_getattr();
+    character_device<block_device>.dontaudit_getattr();
+
+    // When the user domain runs ps, there will be a number of access
+    // denials when ps tries to search /proc. Do not audit these denials.
+    domain.dontaudit_read_state();
+    domain.dontaudit_get_session_id();
+
+    etc_t.read();
+    etc_t<dir>.watch();
+
+    etc_runtime_t.read();
+    etc_runtime_t<dir>.watch();
+
+    file_type<dir>.dontaudit_list();
+    file_type<file>.dontaudit_getattr();
+    file_type<symlink>.dontaudit_getattr();
+    file_type<pipe>.dontaudit_getattr();
+    file_type<named_socket>.dontaudit_getattr();
+    file_type<block_device>.dontaudit_getattr();
+    file_type<character_device>.dontaudit_getattr();
+    delete(security_file<dir>.dontaudit_list());
+    delete(security_file<file>.dontaudit_getattr());
+    delete(security_file<symlink>.dontaudit_getattr());
+    delete(security_file<pipe>.dontaudit_getattr());
+    delete(security_file<named_socket>.dontaudit_getattr());
+    delete(security_file<block_device>.dontaudit_getattr());
+    delete(security_file<character_device>.dontaudit_getattr());
+
+    null_device_t.dontaudit_setattr();
+
+    shell_exec_t.entrypoint();
+
+    sysctl_t.kernel.read();
+
+    term.open_pty(this, user_devpts_t)
+
+    unlabeled_t<dir>.dontaudit_list();
+    unlabeled_t<file>.dontaudit_getattr();
+    unlabeled_t<symlink>.dontaudit_getattr();
+    unlabeled_t<pipe>.dontaudit_getattr();
+    unlabeled_t<named_socket>.dontaudit_getattr();
+    unlabeled_t<block_device>.dontaudit_getattr();
+    unlabeled_t<character_device>.dontaudit_getattr();
+
+    user_devpts_t.rw();
+    user_devpts_t.setattr();
+    // avoid annoying messages on terminal hangup on role change
+    user_devpts_t.dontaudit_ioctl();
+
+    user_tty_device_t.rw();
+    user_tty_device_t.setattr();
+    // avoid annoying messages on terminal hangup on role change
+    user_tty_device_t.dontaudit_ioctl();
+
+    usr_t.read();
+    usr_t<dir>.watch();
+
+//    ubac_constrained($1_t)
+//    domain_user_exemption_target($1_t)
+//    attribute $1_file_type;
+//    attribute $1_application_exec_domain;
+//    typeattribute  $1_t $1_application_exec_domain, privfd;
+//    role $1_r types $1_t;
+//    allow system_r $1_r;
+
+    //
+    // Functions
+    //
+    fn bin_setexec_rolechg_domtrans(domain source, role src_role) {
+        allow(source, self, process, [setexec]);
+        bin_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        this.roles.rolechg(src_role);
+    }
+
+    fn bin_setexec_domtrans(domain source, role src_role) {
+        allow(source, self, process, [setexec]);
+        bin_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        role_associate(src_role, this.roles);
+    }
+
+    fn bin_domtrans(domain source, role src_role) {
+        bin_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        type_transition(source, bin_t, process, this);
+        role_associate(src_role, this.roles);
+    }
+
+    fn shell_setexec_rolechg_domtrans(domain source, role src_role) {
+        allow(source, self, process, [setexec]);
+        shell_exec_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        this.roles.rolechg(src_role);
+    }
+
+    fn shell_setexec_domtrans(domain source, role src_role) {
+        allow(source, self, process, [setexec]);
+        shell_exec_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        role_associate(src_role, this.roles);
+    }
+
+    fn shell_domtrans(domain source, role src_role) {
+        shell_exec_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        type_transition(source, shell_exec_t, process, this);
+        role_associate(src_role, this.roles);
+    }
+
+    fn unix_stream_connect(source domain) {
+        /// Connect to this daemon over a unix stream socket.
+        /// This is to handle daemons running in the user's domain.
+        /// Sockets are supported in both the user's tmp and
+        /// runtime directories.
+        this.runtime<common_named_socket>.rw(source); runtime_t.list(source);
+        this.tmp<common_named_socket>.rw(source); tmp_t.list(source);
+        allow(source, this, unix_stream_socket, [ getattr connectto ]);
+    }
+
+    fn unix_datagram_send(source domain) {
+        /// Send unix datagrams to this daemon.
+        /// This is to handle daemons running in the user's domain.
+        /// Sockets are supported in both the user's tmp and
+        /// runtime directories.
+        this.runtime<common_named_socket>.rw(source); runtime_t.list(source);
+        this.tmp<common_named_socket>.rw(source); tmp_t.list(source);
+        allow(source, this, unix_dgram_socket, [ getattr sendto ]);
+    }
+}
+
+virtual domain restricted_user inherits userdomain {
+    /// Virtual for restricted user domains.
+
+    allow(this, self, capability, [ chown fowner setgid ]);
+    dontaudit(this, self, capability, [ fsetid sys_nice ]};
+    allow(this, self, process, [ transition ptrace setsched setpgid setcap share setfscreate dyntransition setkeycreate setsockcreate ]);
+    dontaudit(this, self, process, setrlimit);
+    dontaudit(this, self, netlink_route_socket, [ manage_socket_perms nlmsg_read nlmsg_write ]);
+    allow(this, self, context, contains);
+
+    anon_inodefs_t.rw();
+
+    app_executable.exec();
+
+    autofs_t.list();
+
+    bin_t.exec();
+
+    chfn_t.domtrans();
+
+    chroot_exec_t.exec();
+
+    cgroup_t.list(); sysfs_t.list();
+    cgroup_t.dontaudit_rw();
+
+    default_t.dontaudit_list();
+    default_t.dontaudit_read();
+
+    // Command completion can fire hundreds of denials
+    executable.dontaudit_exec();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.get_quotas();
+    filesystem.getattr_superblock();
+    filesystem<common_dir>.getattr();
+
+    // Stop warnings about access to /dev/console
+    init_t.dontaudit_inherit_file_descriptors();
+
+    init_script_t.dontaudit_inherit_file_descriptors();
+
+    inotifyfs_t.list();
+
+    lib_t.exec(); usr_t.list();
+
+    logfile.dontaudit_getattr();
+
+    // Stat lost+found.
+    lost_found_t.getattr();
+
+    man_t.read();
+
+    // mmap is needed for man-dbs apropos program
+    man_cache_t.mmap_read(); usr_t.list();
+
+    passwd_t.domtrans();
+
+    proc_t.dontaudit_read();
+
+    public_content_t.read();
+
+    public_content_rw_t.read();
+
+    selinux_config_t.read(); etc_t.list();
+
+    shell_exec_t.exec();
+
+    sysfs_t.read();
+
+    tetex_data_t.read(); var_t.list();
+    tetex_data_t.exec();
+
+    urandom_device_t.read();
+
+    user_bin_t.admin();
+    user_bin_t.exec();
+    user_home_dir_t.filetrans(this, user_bin_t, dir, "bin");
+
+    user_cert_t.admin();
+    user_home_dir_t.filetrans(this, user_cert_t, dir, ".pki");
+
+    user_home_t.admin();
+    user_home_t.exec();
+    user_home_dir_t.rw(); home_root_t.list();
+    user_home_dir_t.filetrans(this, user_home_t, dir_notdevfile_class_set);
+
+    user_home_t.watch();
+    user_home_t.watch_mount();
+    user_home_t.watch_sb();
+    user_home_t.watch_with_perm();
+    user_home_t.watch_reads();
+
+    user_home_dir_t.watch();
+    user_home_dir_t.watch_mount();
+    user_home_dir_t.watch_sb();
+    user_home_dir_t.watch_with_perm();
+    user_home_dir_t.watch_reads();
+    type_member(this, user_home_dir_t, dir, user_home_dir_t);
+
+    user_runtime_t.admin();
+    user_runtime_root_t.filetrans(this, user_runtime_t, dir_notdevfile_class_set);
+
+    user_tmp_t.admin();
+    user_tmp_t.exec();
+    tmp_t.filetrans(this, user_tmp_t, dir_notdevfile_class_set);
+    type_member(this, tmp_t, user_tmp_t, dir);
+
+    user_tmpfs_t.admin();
+    user_tmpfs_t.mmap_manage();
+    tmpfs_t.filetrans(this, user_tmpfs_t, dir_notdevfile_class_set);
+
+    var_lib_t.list(); var_t.list();
+
+    // The library functions always try to open read-write first,
+    // then fall back to read-only if it fails.
+    wtmp_t.dontaudit_rw();
+
+//    allow user_t privfd:fd use;
+
+    optional {
+        mail_spool_t.dontaudit_getattr();
+    }
+
+    optional {
+        quota_db_t.dontaudit_getattr();
+    }
+
+    optional {
+        rpm_var_lib_t.mmap_read(); var_lib_t.list(); var_t.list();
+        rpm_var_lib_t.dontaudit_manage();
+    }
+
+    optional {
+        xdg_data_t.filetrans(this, user_bin_t, dir, "bin");
+    }
+}
+
+virtual domain common_user inherits restricted_user {
+    /// This virtual contains rules useful to most user domains.
+
+    // gnome-settings-daemon and some applications create a netlink socket
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+
+    bin_t.exec();
+
+    cgroup_t.watch(); sysfs_t.list();
+
+    etc_t.exec();
+    etc_t<common_dir>.watch();
+
+    // for eject
+    fixed_disk_device_t.getattr();
+
+    fonts_t<common_dir>.watch();
+
+    // Very permissive allowing every domain to see every type:
+    kernel.get_sysv_ipc_info();
+
+    // Stat lost+found.
+    lost_found_t.getattr();
+
+    mnt_t.list();
+
+    newrole_t.domtrans(); usr_t.list(); bin_t.list();
+    // for when the network connection is killed
+    // this is needed when a login role can change
+    // to this one.
+    newrole_t.dontaudit_send_general_signals();
+
+    network.tcp_client();
+    network.udp_client();
+
+    network_peer.all_recvfrom();
+
+    nss.get_hosts_entry();
+    nss.get_passwd_entry();
+
+    proc_t.read();
+    proc_t.net.read();
+
+    public_content_rw_t.manage();
+
+    random_device_t.read();
+
+    runtime_t.list(); var_t.list();
+
+    selinux.file_context_setfscreate();
+    selinux.get_access_decisions();
+    selinux.get_create_contexts();
+    selinux.get_relabel_contexts();
+    selinux.get_user_contexts();
+
+    sound_device_t.mmap_rw();
+
+    sysctl_t.net.read(); sysctl_t.list();
+    // Find CDROM devices:
+    sysctl_t.dev.read(); sysctl_t.list();
+
+    unreserved_port_t.tcp_bind();
+    unreserved_port_t.udp_bind();
+
+    usr_t<common_dir>.watch();
+
+    utempter_t.domtrans();
+
+    var_lib_t.list(); var_t.list();
+
+    var_lock_t.list(); var_t.list();
+
+    var_log_t.list(); var_t.list();
+
+    var_spool_t.list(); var_t.list();
+
+    wireless_device_t.read();
+
+    wtmp_t.read();
+
+    if (!enable_mls) {
+        if (user_write_removable) {
+            // Read/write floppies and other removable devices
+            removable_device_t.rw();
+
+            // Read/write USB devices (e.g. external removable USB mass storage devices)
+            usb_device_t.rw();
+        } else {
+            // Read floppies
+            removable_device_t.read();
+
+            // Read USB devices (e.g. external removable USB mass storage devices)
+            usb_device_t.read();
+        }
+    }
+
+    if (user_direct_mouse) {
+        mouse_device_t.rw();
+    }
+
+    if (user_rw_noexattrfile) {
+        noxattr_filesystem<common_dir>.manage();
+        noxattr_filesystem.manage();
+        noxattr_filesystem<symlink>.manage();
+    } else {
+        noxattr_filesystem.read();
+    }
+
+    if (user_ttyfile_stat) {
+        tty.getattr();
+    }
+
+//    # kdeinit wants systemd status
+//    init_get_system_status($1_t)
+
+    optional {
+        apt_var_cache_t.mmap_read();
+        apt_var_lib_t.read();
+    }
+
+//    optional {
+//        alsa_home_filetrans_alsa_home($1_t, file, ".asoundrc")
+//        alsa_manage_home_files($1_t)
+//        alsa_read_config($1_t)
+//        alsa_relabel_home_files($1_t)
+//    }
+
+    optional {
+        // Allow graphical boot to check battery lifespan
+        acpid_t.unix_stream_connect();
+    }
+
+    optional {
+        canna_t.unix_stream_connect();
+    }
+
+    optional {
+        cupsd_t.unix_stream_connect();
+
+        cupsd_etc_t.read();
+
+        cupsd_rw_etc_t.read();
+
+        ptal_t.unix_stream_connect();
+    }
+
+    optional {
+        system_dbusd_t.client();
+
+        optional {
+            accountsd_t.dbus_send();
+        }
+
+        optional {
+            bluetooth_t.dbus_send();
+        }
+
+        optional {
+            colord_t.dbus_send();
+        }
+
+        optional {
+            cupsd_config_t.dbus_send();
+        }
+
+        optional {
+            devicekit_disk_t.dbus_send();
+            devicekit_power_t.dbus_send();
+        }
+
+        optional {
+            kerneloops_t.dbus_send();
+        }
+
+        optional {
+            NetworkManager_t.dbus_send();
+        }
+
+        optional {
+            policykit_t.dbus_send();
+        }
+
+        optional {
+            rtkit_daemon_t.dbus_send();
+        }
+
+        optional {
+            xdm_t.dbus_send();
+        }
+    }
+
+    optional {
+        dpkg_var_lib_t.read();
+    }
+
+    optional {
+        gssproxy_t.unix_stream_connect();
+    }
+
+    optional {
+        hwloc_dhwd_t.exec.exec();
+        hwloc_dhwd_t.runtime.read();
+    }
+
+    optional {
+        inetd_t.rw_inherited_tcp_sockets();
+    }
+
+    optional {
+        innd_t.conf.read();
+//        inn_read_news_lib($1_t)
+//        inn_read_news_spool($1_t)
+    }
+
+    optional {
+        ipsec_spd_t.match();
+    }
+
+//    optional {
+//        kerberos_manage_krb5_home_files($1_t)
+//        kerberos_relabel_krb5_home_files($1_t)
+//        kerberos_home_filetrans_krb5_home($1_t, file, ".k5login")
+//    }
+
+    optional {
+        locate_var_lib_t.read();
+    }
+
+//    optional {
+//        mpd_manage_user_data_content($1_t)
+//        mpd_relabel_user_data_content($1_t)
+//    }
+
+    // for running depmod as part of the kernel packaging process
+    optional {
+        modules_conf_t.read();
+    }
+
+    optional {
+        mail_spool_t.rw();
+    }
+
+//    optional {
+//        mysql_manage_mysqld_home_files($1_t)
+//        mysql_relabel_mysqld_home_files($1_t)
+//        mysql_home_filetrans_mysqld_home($1_t, file, ".my.cnf")
+//
+//        if (allow_user_mysql_connect) {
+//            mysql_stream_connect($1_t)
+//        }
+//    }
+
+//    optional {
+//        oident_manage_user_content($1_t)
+//        oident_relabel_user_content($1_t)
+//        oident_home_filetrans_oidentd_home($1_t, file, ".oidentd.conf")
+//    }
+
+    optional {
+        pcscd_t.runtime<common_file>.read();
+        pcscd_t.unix_stream_connect();
+    }
+
+//    optional {
+//        if (allow_user_postgresql_connect) {
+//            postgresql_stream_connect($1_t)
+//            postgresql_tcp_connect($1_t)
+//        }
+//    }
+
+//    optional {
+//        ppp_manage_home_files($1_t)
+//        ppp_relabel_home_files($1_t)
+//        ppp_home_filetrans_ppp_home($1_t, file, ".ppprc")
+//    }
+
+    optional {
+        resmgrd_t.unix_stream_connect();
+    }
+
+    optional {
+        exports_t.dontaudit_getattr();
+        nfsd_rw_t.manage();
+    }
+
+    optional {
+        slrnpull_spool_t.list();
+    }
+
+    optional {
+        udev_t.runtime.read();
+    }
+
+    optional {
+        usernetctl_t.domtrans();
+    }
+
+    optional {
+        systemd_userdbd_t.unix_stream_connect(); init_t.runtime.list(); init_t.unix_stream_connect();
+    }
+
+//    optional {
+//        virt_home_filetrans_virt_home($1_t, dir, ".libvirt")
+//        virt_home_filetrans_virt_home($1_t, dir, ".virtinst")
+//        virt_home_filetrans_virt_content($1_t, dir, "isos")
+//        virt_home_filetrans_svirt_home($1_t, dir, "qemu")
+//        virt_home_filetrans_virt_home($1_t, dir, "VirtualMachines")
+//    }
+}
+
+//
+// Groupings
+//
+
+// All user domains should inherit either admin_userdomain or
+// unpriv_userdomain, depending on the privilege level of the user.
+
+virtual domain admin_userdomain inherits userdomain {
+    /// Privileged/administration users
+}
+
+api user_api {
+
+    fn security_admin(domain source) {
+        /// Privileged/sec administration users
+        allow(source, self, capability, [ dac_override dac_read_search ]);
+
+        aide_t.domtrans(source);
+
+        audit.read_log(source);
+        auditd_etc_t.read(source);
+
+        checkpolicy_t.domtrans(source);
+
+        // Relabel non authentication files
+        file_type<common_dir>.relabel(source);
+        file_type<common_file>.relabel(source);
+        file_type<common_pipe>.relabel(source);
+        file_type<common_named_socket>.relabel(source);
+        file_type<common_character_device>.relabelfrom(source);
+        file_type<common_block_device>.relabelfrom(source);
+        delete(authentication_files<common_dir>.relabel(source));
+        delete(authentication_files<common_file>.relabel(source));
+        delete(authentication_files<common_pipe>.relabel(source));
+        delete(authentication_files<common_named_socket>.relabel(source));
+        delete(authentication_files<common_character_device>.relabelfrom(source));
+        delete(authentication_files<common_block_device>.relabelfrom(source));
+
+        consoletype_t.domtrans(source);
+
+        // Relabel generic device nodes
+        device_node<common_dir>.relabelfrom(source);
+        device_node<common_file>.relabelfrom(source);
+        device_node<common_pipe>.relabelfrom(source);
+        device_node<common_named_socket>.relabelfrom(source);
+        device_node<common_character_device>.relabel(source);
+        device_node<common_block_device>.relabel(source);
+
+        dmesg_t.domtrans(source);
+
+        // Necessary for managing /boot/efi
+        dosfs_t.manage(source);
+
+        // Create boot flag
+        etc_runtime_t.manage(source);
+        root_t.filetrans(source, etc_runtime_t, file);
+
+        init_exec_t.exec(source);
+
+        load_policy_t.domtrans(source);
+
+        netlabel_mgmt_t.domtrans(source);
+
+        policy_config_t.manage(source);
+
+        samhain_t.domtrans(source);
+
+        setfiles_t.domtrans(source);
+
+        selinux.read_policy(source);
+        selinux.set_enforce_mode(source);
+        selinux.set_all_booleans(source);
+        selinux.set_parameters(source);
+
+        selinux_config_t.list(source);
+
+        semanage_t.domtrans(source);
+
+        setkey_t.domtrans(source);
+
+        shadow_t.relabel(source);
+
+        shell_exec_t.exec(source);
+
+        syslog.send_messages(source);
+        syslog.read_log(source);
+
+        // Relabel from unlabeled_t
+        unlabeled_t<common_dir>.relabelfrom(source);
+        unlabeled_t<common_file>.relabelfrom(source);
+        unlabeled_t<common_pipe>.relabelfrom(source);
+        unlabeled_t<common_named_socket>.relabelfrom(source);
+        unlabeled_t<common_character_device>.relabelfrom(source);
+        unlabeled_t<common_block_device>.relabelfrom(source);
+
+        // TODO MLS/MCS contraints
+        // mls_process_read_all_levels($1)
+        // mls_file_read_all_levels($1)
+        // mls_file_upgrade($1)
+        // mls_file_downgrade($1)
+    }
+}
+
+virtual domain unpriv_userdomain inherits userdomain {
+    /// Unprivileged users
+}
+
+virtual domain user_app_domain inherits app_domain {
+    /// Virtual for interactive user applications, both CLI and GUI.
+
+//    ubac_constrained($1)
+}
+
+virtual resource user_home_content inherits common_file {
+    /// Private app data files in user home directory
+    /// Home directories may be in network shares, so this confers
+    /// configurable access to NFS and CIFS/SMB network shares.
+
+    user_home_t.associate();
+
+//TODO:
+//files_poly_member($1)
+//ubac_constrained($1)
+
+    fn getattr(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.getattr(source);
+        } else {
+            nfs_t.dontaudit_getattr(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.getattr(source);
+        } else {
+            cifs_t.dontaudit_getattr(source);
+        }
+    }
+
+    fn dontaudit_getattr(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_getattr(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_getattr(source);
+        }
+    }
+
+    fn setattr(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.setattr(source);
+        } else {
+            nfs_t.dontaudit_setattr(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.setattr(source);
+        } else {
+            cifs_t.dontaudit_setattr(source);
+        }
+    }
+
+    fn dontaudit_setattr(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_setattr(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_setattr(source);
+        }
+    }
+
+    fn read_inherited(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.read_inherited(source);
+        } else {
+            nfs_t.dontaudit_read_inherited(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.read_inherited(source);
+        } else {
+            cifs_t.dontaudit_read_inherited(source);
+        }
+    }
+
+    fn dontaudit_read_inherited(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_read_inherited(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_read_inherited(source);
+        }
+    }
+
+    fn read(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.read(source);
+        } else {
+            nfs_t.dontaudit_read(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.read(source);
+        } else {
+            cifs_t.dontaudit_read(source);
+        }
+    }
+
+    fn dontaudit_read(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_read(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_read(source);
+        }
+    }
+
+    fn append_inherited(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.append_inherited(source);
+        } else {
+            nfs_t.dontaudit_append_inherited(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.append_inherited(source);
+        } else {
+            cifs_t.dontaudit_append_inherited(source);
+        }
+    }
+
+    fn dontaudit_append_inherited(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_append_inherited(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_append_inherited(source);
+        }
+    }
+
+    fn append(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.append(source);
+        } else {
+            nfs_t.dontaudit_append(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.append(source);
+        } else {
+            cifs_t.dontaudit_append(source);
+        }
+    }
+
+    fn dontaudit_append(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_append(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_append(source);
+        }
+    }
+
+    fn write_inherited(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.write_inherited(source);
+        } else {
+            nfs_t.dontaudit_write_inherited(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.write_inherited(source);
+        } else {
+            cifs_t.dontaudit_write_inherited(source);
+        }
+    }
+
+    fn dontaudit_write_inherited(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_write_inherited(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_write_inherited(source);
+        }
+    }
+
+    fn write(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.write(source);
+        } else {
+            nfs_t.dontaudit_write(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.write(source);
+        } else {
+            cifs_t.dontaudit_write(source);
+        }
+    }
+
+    fn dontaudit_write(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_write(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_write(source);
+        }
+    }
+
+    fn rw_inherited(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.rw_inherited(source);
+        } else {
+            nfs_t.dontaudit_rw_inherited(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.rw_inherited(source);
+        } else {
+            cifs_t.dontaudit_rw_inherited(source);
+        }
+    }
+
+    fn dontaudit_rw_inherited(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_rw_inherited(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_rw_inherited(source);
+        }
+    }
+
+    fn rw(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.rw(source);
+        } else {
+            nfs_t.dontaudit_rw(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.rw(source);
+        } else {
+            cifs_t.dontaudit_rw(source);
+        }
+    }
+
+    fn dontaudit_rw(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_rw(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_rw(source);
+        }
+    }
+
+    fn create(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.create(source);
+        } else {
+            nfs_t.dontaudit_create(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.create(source);
+        } else {
+            cifs_t.dontaudit_create(source);
+        }
+    }
+
+    fn dontaudit_create(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_create(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_create(source);
+        }
+    }
+
+    fn rename(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.rename(source);
+        } else {
+            nfs_t.dontaudit_rename(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.rename(source);
+        } else {
+            cifs_t.dontaudit_rename(source);
+        }
+    }
+
+    fn dontaudit_rename(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_rename(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_rename(source);
+        }
+    }
+
+    fn delete(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.delete(source);
+        } else {
+            nfs_t.dontaudit_delete(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.delete(source);
+        } else {
+            cifs_t.dontaudit_delete(source);
+        }
+    }
+
+    fn dontaudit_delete(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_delete(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_delete(source);
+        }
+    }
+
+    fn manage(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.manage(source);
+        } else {
+            nfs_t.dontaudit_manage(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.manage(source);
+        } else {
+            cifs_t.dontaudit_manage(source);
+        }
+    }
+
+    fn dontaudit_manage(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.dontaudit_manage(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.dontaudit_manage(source);
+        }
+    }
+
+    fn relabelfrom(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.relabelfrom(source);
+        } else {
+            nfs_t.dontaudit_relabelfrom(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.relabelfrom(source);
+        } else {
+            cifs_t.dontaudit_relabelfrom(source);
+        }
+    }
+
+    fn dontaudit_relabelfrom(domain source) {
+        if (use_nfs_home_dirs) {
+            nfs_t.relabelfrom(source);
+        } else {
+            nfs_t.dontaudit_relabelfrom(source);
+        }
+
+        if (use_samba_home_dirs) {
+            cifs_t.relabelfrom(source);
+        } else {
+            cifs_t.dontaudit_relabelfrom(source);
+        }
+    }
+
+    // relabelto and relabel doesn't make sense since
+    // nfs_t and cifs_t are genfs.
+}
+
+virtual resource user_runtime_content inherits common_file {
+    /// Private app data files created in /run/user/%{USERID}/
+
+//ubac_constrained($1)
+}
+
+virtual resource user_tmp_content inherits tmpfile {
+    /// Private app temporary files.
+
+//ubac_constrained($1)
+}
+
+virtual resource user_tmpfs_content inherits tmpfsfile {
+    /// Private app shared memory segments (tmpfs).
+
+//ubac_constrained($1)
+}
+
+//
+// Concrete types
+//
+resource user_home_dir_t inherits common_dir, mountpoint {
+    /// The top-level user home directory only.
+    /// For example, /home/foo.  Subdirectories and files below
+    /// are user_home_t or a private app type.
+
+    file_context("HOME_DIR", dir, system_u:object_r:user_home_dir_t:s0-mls_systemhigh);
+
+    //files_poly(user_home_dir_t)
+    //files_poly_member(user_home_dir_t)
+    //files_poly_parent(user_home_dir_t)
+    //ubac_constrained()
+}
+
+resource user_home_t inherits common_pipe, common_named_socket, mountpoint, user_home_content {
+    /// General user home directory content.
+    file_context("HOME_DIR/.+", any);
+}
+//files_poly_parent(user_home_t)
+
+resource user_bin_t inherits user_home_content {
+    file_context("HOME_DIR/bin(/.*)?", any);
+    file_context("HOME_DIR/\.local/bin(/.*)?", any);
+}
+
+resource user_cert_t inherits user_home_content {
+    file_context("HOME_DIR/\.pki(/.*)?", any);
+}
+
+resource user_devpts_t inherits user_pty {
+    file_context("/dev/pts/[0-9]+", chardev);
+}
+
+resource user_tmp_t inherits common_pipe, common_named_socket, user_tmp_content {
+    file_context("/tmp/gconfd-%{USERNAME}", dir);
+}
+
+resource user_tmpfs_t inherits user_tmpfs_content {}
+
+resource user_tty_device_t inherits user_tty {}
+
+resource user_runtime_root_t inherits common_dir, mountpoint {
+    file_context("/run/user", dir);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+//files_poly_parent(user_runtime_root_t)
+
+resource user_runtime_t inherits common_pipe, common_named_socket, mountpoint, user_runtime_content {
+    /// General user home directory content.
+    file_context("/run/user/[^/]+", dir);
+//    file_context("/run/user/[^/]+/.+", dir, <<none>>);
+    file_context("/run/user/%{USERID}", dir);
+//    file_context("/run/user/%{USERID}/.+", any, <<none>>);
+}
+//files_poly(user_runtime_t)
+//files_poly_member(user_runtime_t)
+//files_poly_parent(user_runtime_t)

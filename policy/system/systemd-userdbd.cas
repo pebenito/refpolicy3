@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_userdbd_t inherits daemon {
+    /// User/group record query.
+
+    //
+    // Resources
+    //
+    @alias(systemd_userdbd_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-userdbd", file);
+        file_context("/usr/lib/systemd/systemd-userwork", file);
+    }
+
+    @alias(systemd_userdbd_runtime_t)
+    extend runtime {
+        file_context("/run/systemd/userdb(/.*)?", any);
+    }
+
+    @alias(systemd_userdbd_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/systemd-userdbd\.(service|socket)", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, systemd_userdbd_t, self, capability, dac_read_search);
+
+    auth.read_shadow_passwords();
+
+    cgroup_t.list(systemd_userdbd_t);
+
+    etc_runtime_t.read(systemd_userdbd_t);
+
+    file_type<filesystem>.getattr_superblock(systemd_userdbd_t);
+
+    filesystem.getattr_superblock(systemd_userdbd_t);
+
+    init_t.unix_stream_connect(systemd_userdbd_t);
+
+    nss.get_passwd_entry();
+
+    sysctl_t.kernel.read(systemd_userdbd_t); sysctl_t.list(systemd_userdbd_t);
+
+    systemd_homed_t.unix_stream_connect();
+
+    urandom_device_t.read(systemd_userdbd_t);
+
+    usr_t.read(systemd_userdbd_t);
+}

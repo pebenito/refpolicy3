@@ -1,0 +1,163 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain local_login_t inherits bin_login_domain, local_login_domain {
+    /// The /bin/login program run locally.
+
+    //
+    // Declarations
+    //
+    @alias(local_login_tmp_t)
+    extend tmp {}
+
+    @alias(local_login_lock_t)
+    resource lock inherits lockfile {}
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ chown dac_read_search dac_override fowner fsetid kill setgid setuid sys_nice sys_resource sys_tty_config ]);
+    dontaudit(this, self, capability, net_admin);
+    allow(this, self, process, [ setcap setexec setrlimit setsched ]);
+    allow(this, self, key, [ search write link ]);
+
+    this.lock.manage();
+    var_lock_t.filetrans(local_login_t, local_login_t.lock, file);
+
+    acpi_bios_t.dontaudit_getattr();
+    acpi_bios_t.dontaudit_setattr();
+
+    autofs_t.list();
+
+    cgroup_t.getattr_superblock();
+    cgroup_t.list();
+
+    crack_db_t.read();
+
+    device_t<common_block_device>.dontaudit_getattr();
+    device_t<common_block_device>.dontaudit_setattr();
+    device_t<common_character_device>.dontaudit_getattr();
+    device_t<common_character_device>.dontaudit_setattr();
+    device_t<symlink>.dontaudit_setattr();
+
+    etc_runtime_t.read();
+
+    faillog_t.rw();
+
+    fixed_disk_device_t.dontaudit_getattr();
+    fixed_disk_device_t<common_character_device>.dontaudit_getattr(); // /dev/rawctl
+    fixed_disk_device_t.dontaudit_setattr();
+
+    framebuf_device_t.dontaudit_read();
+    framebuf_device_t.dontaudit_setattr();
+
+    fs_t.getattr_superblock();
+
+    init_t.dontaudit_inherit_file_descriptors();
+
+    kernel_t.search_keys();
+    kernel_t.link_keys();
+
+    misc_device_t.dontaudit_getattr();
+    misc_device_t.dontaudit_setattr();
+
+    mnt_t.list();
+
+    mouse_device_t.setattr();
+    mouse_device_t.getattr();
+
+    nss.get_entry();
+
+    pam_t.runtime.manage(); runtime_t.list(); var_t.list();
+
+    pam_console_t.runtime.manage();
+    pam_console_t.domtrans();
+
+    power_device_t.getattr();
+    power_device_t.setattr();
+
+    proc_t.getattr_superblock();
+    proc_t.read();
+
+    removable_device_t.dontaudit_getattr();
+    removable_device_t.dontaudit_setattr();
+
+    scanner_device_t.dontaudit_getattr();
+    scanner_device_t.dontaudit_setattr();
+
+    sound_device_t.getattr();
+    sound_device_t.setattr();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.list();
+
+    tty.rw();
+    tty.relabel();
+    tty.setattr();
+
+    tty_device_t.rw();
+    tty_device_t.relabel();
+    tty_device_t.setattr();
+
+    user_home_t.list(); user_home_dir_t.list(); home_root_t.list();
+
+    userdomain.shell_setexec_rolechg_domtrans(this, this.roles); bin_t.list();
+    userdomain.send_general_signals();
+
+    usr_t.read();
+
+    v4l_device_t.dontaudit_getattr();
+    v4l_device_t.dontaudit_setattr();
+
+    var_log_t.list(); var_t.list();
+
+    wtmp_t.rw(); var_t.list();
+
+    if (allow_polyinstantiation) {
+        setfiles_t.domtrans(local_login_t);
+    }
+
+    if (console_login) {
+        // Able to relabel /dev/console to user tty types.
+        console_device_t.relabel();
+    }
+
+    if (distro_debian) {
+        auth_use_pam_motd_dynamic(local_login_t)
+    }
+
+    optional {
+        faillog_t.manage();
+
+        system_dbusd_t.client();
+
+        systemd_t.dbus_send();
+
+        systemd_logind_t.inhibit_logins();
+        systemd_logind_t.runtime<common_pipe>.manage(local_login_t);
+
+        systemd_machined_t.abstract_stream_connect(local_login_t);
+    }
+
+    //optional {
+    //    alsa_t.domtrans(); usr_t.list(); bin_t.list();
+    //}
+
+    //optional {
+    // Search for mail spool file.
+    //mail_spool_t.getattr(); var_spool_t.list(local_login_t); var_t.list(local_login_t);
+    //}
+
+    //allow local_login_t userdomain:key { create link read search setattr view write } ;
+
+    //optional {
+    //allow local_login_t gpmctl_t:sock_file getattr_sock_file_perms;
+    //allow local_login_t gpmctl_t:fifo_file getattr_fifo_file_perms;
+    //allow local_login_t gpmctl_t:sock_file setattr_sock_file_perms;
+    //}
+
+    //optional {
+    //xdm_t.tmp.rw();
+    //allow local_login_t xdm_t:key { read write setattr link };
+    //}
+}

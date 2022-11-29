@@ -1,0 +1,202 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//
+// Virtuals
+//
+virtual domain daemon inherits common_domain {
+    /// Virtual for long-running services (daemons).
+
+    //
+    // Resources
+    //
+    resource conf inherits configfile {
+        /// The configuration files for this daemon.
+    }
+
+    resource initrc_exec inherits init_script_file {
+        /// The sysvinit script for this daemon.
+    }
+
+    resource log inherits logfile {
+        /// The log for this daemon.
+    }
+
+    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+        /// Runtime files in /run and /var/run.
+    }
+
+    resource tmp inherits tmpfile, common_fifo_file, common_named_socket {
+        /// Temporary files in /tmp and /var/tmp.
+    }
+
+    resource tmpfs inherits tmpfsfile, common_fifo_file, common_named_socket {
+        /// POSIX shared memory segments (tmpfs files)
+    }
+
+    resource unit inherits common_file {
+        /// The systemd unit for this daemon.
+    }
+
+    //
+    // Policy
+    //
+    this.conf.mmap_read();
+    this.conf.watch();
+
+    // default to append-only logs
+    this.log.create();
+    this.log.setattr();
+    this.log.watch();
+    delete(allow(this, this.log, file, write));
+    var_log_t.list(); var_t.list();
+
+    this.runtime.mmap_manage();
+    this.runtime.watch();
+    runtime_t.filetrans(this, this.runtime, dir_notdevfile_class_set); var_t.list();
+
+    this.tmp.mmap_manage();
+    this.tmp.watch();
+    tmp_t.filetrans(this, this.tmp, dir_notdevfile_class_set);
+
+    this.tmpfs.mmap_manage();
+    this.tmpfs.watch();
+    tmpfs_t.filetrans(this, this.tmpfs, dir_notdevfile_class_set);
+
+    etc_t.read();
+
+    //
+    // Functions
+    //
+    fn unix_stream_connect(domain source) {
+        /// Connect to this daemon over a unix stream socket.
+        runtime_t.list(source);
+        this.runtime<common_named_socket>.rw(source);
+        allow(source, this, unix_stream_socket, [getattr connectto]);
+    }
+
+    fn unix_datagram_send(source domain) {
+        /// Send unix datagrams to this daemon.
+        runtime_t.list(source);
+        this.runtime<common_named_socket>.rw(source);
+        allow(source, this, unix_dgram_socket, [getattr sendto]);
+    }
+}
+
+virtual domain init inherits common_domain {
+    /// Virtual for init programs.
+
+    allow(this, self, process, setexec);
+
+    daemon.domtrans();
+    allow(this, daemon, process, [rlimitinh nnp_transition nosuid_transition]);
+
+    domain.get_process_group();
+    domain.send_kill_signals(); allow(this, self, capability, kill);
+    domain.getattr();
+    domain.send_general_signals();
+    domain.check_existence();
+    domain.send_stop_signals();
+    domain.send_child_terminated_signals();
+
+    kernel_t.userspace_entrypoint();
+
+    system_app_domain.domtrans();
+    allow(this, system_app_domain, process, [rlimitinh nnp_transition nosuid_transition]);
+
+    @alias(init_exec_t)
+    extend exec {
+        /// The init executable
+        file_context("/sbin/init", file);
+    }
+
+    //
+    // Concrete member functions
+    //
+    fn unix_stream_connect(source domain) {
+        /// Connect to this daemon over a unix stream socket.
+        /// The sockets are expected to be in the daemon's runtime directory.
+        this.runtime<common_named_socket>.rw(source); runtime_t.list(source);
+        allow(source, this, unix_stream_socket, [ getattr connectto ]);
+    }
+
+    fn unix_datagram_send(source domain) {
+        /// Send unix datagrams to this daemon.
+        /// The sockets are expected to be in the daemon's runtime directory.
+        this.runtime<common_named_socket>.rw(source); runtime_t.list(source);
+        allow(source, this, unix_dgram_socket, [ getattr sendto ]);
+    }
+}
+
+//
+// Groupings
+//
+virtual domain init_script inherits common_domain {
+    /// Virtual for init script domains
+
+    extend exec inherits init_script_file {}
+}
+
+virtual resource init_script_file inherits executable {
+    /// Virtual for init scripts
+}
+
+virtual domain system_app_domain inherits app_domain {
+    /// Virtual for applications run non-interactively by init and init scripts/units.
+}
+
+virtual resource systemdunit inherits common_file {
+    /// Systemd unit files.
+}
+
+//
+// Concrete types
+//
+
+@alias(initrc_t, systemd_unit_command_t)
+domain init_script_t inherits system_app_domain {
+    /// Generic init scripts domain.
+
+    //
+    // Resources
+    //
+    extend exec {
+        file_context("/etc/rc\.d/rc", file);
+        file_context("/etc/rc\.d/rc\.[^/]+", file);
+        file_context("/etc/rc\.d/init\.d/.*", file);
+        file_context("/etc/sysconfig/network-scripts/ifup-ipsec", file);
+        file_context("/etc/X11/prefdm", file);
+        file_context("/usr/bin/open_init_pty", file);
+        file_context("/usr/bin/sepg_ctl", file);
+        file_context("/usr/libexec/dcc/start-.*", file);
+        file_context("/usr/libexec/dcc/stop-.*", file);
+        file_context("/usr/sbin/open_init_pty", file);
+        file_context("/etc/network/if-pre-up\.d/.*", file); // distro_debian
+        file_context("/etc/network/if-up\.d/.*", file); // distro_debian
+        file_context("/etc/network/if-down\.d/.*", file); // distro_debian
+        file_context("/etc/network/if-post-down\.d/.*", file); // distro_debian
+        file_context("/etc/vmware/init\.d/vmware", file); // distro_gentoo
+        file_context("/etc/x11/startDM\.sh", file); // distro_gentoo
+        file_context("/usr/lib/systemd/rhel[^/]*", file); // distro_redhat
+    }
+
+    @alias(initrc_runtime_t)
+    resource runtime inherits runtimefile {
+        /// Runtime files in /run and /var/run.
+    }
+
+    @alias(initrc_state_t)
+    resource state inherits common_file {
+        /// Init script state files.
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, process, setexec);
+
+    daemon.domtrans();
+    allow(this, daemon, process, [rlimitinh nnp_transition nosuid_transition]);
+
+    system_app_domain.domtrans();
+    allow(this, system_app_domain, process, [rlimitinh nnp_transition nosuid_transition]);
+}

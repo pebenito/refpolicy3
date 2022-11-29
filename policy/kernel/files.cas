@@ -1,0 +1,1288 @@
+// SPDX-License-Identifier: GPL-2.0
+
+// this is the equivalent of files, corecommands, miscfiles, modules
+// plus ld_so_t, lib_t, and textrel_shlib_t from libraries module from refpolicy2.
+
+//
+// Groupings of files
+//
+
+@hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write authentication files.")
+virtual resource authentication_file inherits security_file {
+    /// The group of all sensitive authentication files.
+    /// This should be inherited for files that have credentials, such as /etc/shadow.
+}
+
+@hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write system certificates.")
+virtual resource cert_type inherits common_file {
+    /// The group of all certificates.
+    /// This should be inherited for files that are SSL/TLS certificates.
+}
+
+@hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write configuration files.")
+virtual resource configfile inherits common_file {
+    /// The group of all configuration files.
+    /// This should be inherited for files that are configurations, typically in /etc.
+}
+
+@hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write executables.")
+virtual resource executable inherits common_file {
+    /// The group of all executables.
+    /// This should be inherited for files that are executables, but not shared libraries.
+}
+
+virtual resource lockfile inherits common_file {
+    /// The group of all lock files.
+    /// This should be inherited for files in /run/lock or /var/lock.
+}
+
+virtual resource logfile inherits common_file {
+    /// The group of all log files.
+
+    tmp_t<filesystem>.associate();
+    tmpfs_t.associate();
+}
+
+// DO NOT MAKE THIS INHERIT ANY FILE
+// otherwise unlabeled_t will become
+// a regular file.
+virtual resource mountpoint {
+    /// The group of all system mount points.
+    /// This should be inherited for general mount points, such as /, /usr, /var, etc.
+    /// This should not include application-specific mount points.  The mount_t domain
+    /// will be able to mount on any dir/file that inherits this.
+
+//    optional_policy(`
+//        init_mountpoint(this)
+//    ')
+
+}
+
+// Types that are to be polyinstantiated
+virtual resource polyinstantiated {
+    /// Virtual for polyinstantiated directories.
+
+    resource parentdirs inherits dir {}
+    resource memberdirs inherits dir {}
+
+    fn poly_parent(dir parent) {
+        // equivalent of typeattribute parent this.parentdirs;
+    }
+
+    fn poly_member(domain source, dir member) {
+        // equivalent of typeattribute member this.memberdirs;
+        type_member(source, this, dir, member);
+    }
+
+    fn setup_poly(domain source) {
+        // Need to give access to /selinux/member
+        //selinux_compute_member($1)
+
+        // Need sys_admin capability for mounting
+        allow(source, self, capability, [ chown fowner fsetid sys_admin ]);
+
+        // Need to give access to the directories to be polyinstantiated
+        allow(source, this, dir, [add_entry_dir_perms create setattr mounton rmdir]);
+
+        // Need to give access to the polyinstantiated subdirectories
+        allow(source, this.memberdirs, dir, list_dir_perms);
+
+        // Need to give access to parent directories where original
+        // is remounted for polyinstantiation aware programs (like gdm)
+        allow(source, this.parentdirs, dir, [getattr mounton]);
+
+        // Need to give permission to create directories where applicable
+        allow(source, self, process, setfscreate);
+        allow(source, this.memberdirs, [create setattr relabelto]);
+        allow(source, this, dir, [write add_name open]);
+        allow(source, this.parentdirs, dir, [rw_dir_perms relabel_dir_perms]);
+
+        // Default type for mountpoints
+        //allow $1 poly_t:dir { create mounton }; // not ported
+        xattr_filesystem.mount(source);
+        xattr_filesystem.unmount(source);
+
+        if (distro_redhat) {
+            // namespace.init
+            bin_t.exec(source);
+
+            home_root_t.list(source);
+
+            setfiles_t.domtrans(source);
+
+            tmp_t.list(source);
+        }
+    }
+}
+
+virtual resource runtimefile inherits common_file {
+    /// The group of all runtime files.
+    /// This should be inherited for files in /run or in /var/run.
+}
+
+@hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write sensitive security files.")
+virtual resource security_file inherits common_file {
+    /// The group of all security files.
+    /// This should be inherited for files that contain security-critical content, such as
+    /// security mechanism configurations, firewall rules, etc.
+}
+
+virtual resource spoolfile inherits tmpfile {
+    /// The group of all spool files.
+    /// This should be inherited for files in /run or in /var/run.
+}
+
+@hint(class=file, perm=[read relabelfrom], hint="Only trusted processes should read private keys. Additional types may be needed to allow access to specific keys.")
+@hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write private keys. Additional types may be needed to allow access to specific keys.")
+virtual resource tls_privkey_type inherits common_file, authentication_file {
+    /// The group of all SSH/TLS private keys.
+    /// This should be inherited for private keys in /etc/ssl/private, but may be
+    /// used in other locations.
+}
+
+virtual resource tmpfile inherits common_file {
+    /// The group of all temporary files.
+    /// This should be inherited for files in /tmp.
+}
+
+virtual resource tmpfsfile inherits common_file {
+    /// The group of all shared memory segments.
+    /// This should be inherited for shared memory segments in /dev/shm.
+    /// There may be some confusion since many temp dirs have a tmpfs mounted.  Those should
+    /// use tmpfile instead.
+
+    // make a poly member of tmp_t?
+}
+
+
+//
+// Concrete resources
+//
+
+resource bin_t inherits executable {
+    /// The default for executable files in system directories.
+    /// This should be used when the executable should run in the current domain
+    /// (no transition). Using this as an entrypoint for a domain should be avoided
+    /// since this encompasses a large number of files.
+
+    //
+    // /dev
+    //
+    file_context(/dev/MAKEDEV, file);
+
+    //
+    // /emul
+    //
+    if (distro_redhat) {
+        file_context(/emul/ia32-linux/bin(/.*)?, any);
+        file_context(/emul/ia32-linux/sbin(/.*)?, any);
+        file_context(/emul/ia32-linux/usr(/.*)?/bin(/.*)?, any);
+        file_context(/emul/ia32-linux/usr(/.*)?/Bin(/.*)?, any);
+        file_context(/emul/ia32-linux/usr(/.*)?/sbin(/.*)?, any);
+        file_context(/emul/ia32-linux/usr/libexec(/.*)?, any);
+    }
+
+    //
+    // /etc
+    //
+    file_context(/etc/acpi/actions(/.*)?, any);
+
+    file_context(/etc/apcupsd/apccontrol, file);
+    file_context(/etc/apcupsd/changeme, file);
+    file_context(/etc/apcupsd/commfailure, file);
+    file_context(/etc/apcupsd/commok, file);
+    file_context(/etc/apcupsd/masterconnect, file);
+    file_context(/etc/apcupsd/mastertimeout, file);
+    file_context(/etc/apcupsd/offbattery, file);
+    file_context(/etc/apcupsd/onbattery, file);
+
+    file_context(/etc/avahi/.*\.action, file);
+
+    file_context(/etc/cipe/ip-up.*, file);
+    file_context(/etc/cipe/ip-down.*, file);
+
+    file_context(/etc/ConsoleKit/run-seat\.d(/.*)?, any);
+    file_context(/etc/ConsoleKit/run-session\.d(/.*)?, any);
+
+    file_context(/etc/cron\.daily(/.*)?, any);
+    file_context(/etc/cron\.hourly(/.*)?, any);
+    file_context(/etc/cron\.weekly(/.*)?, any);
+    file_context(/etc/cron\.monthly(/.*)?, any);
+
+    file_context(/etc/dhcp/dhclient\.d(/.*)?, any);
+
+    file_context(/etc/hotplug/.*agent, file);
+    file_context(/etc/hotplug/.*rc, file);
+    file_context(/etc/hotplug/hotplug\.functions, file);
+    file_context(/etc/hotplug\.d/default/default.*, any);
+
+    file_context(/etc/kde/env(/.*)?, any);
+    file_context(/etc/kde/shutdown(/.*)?, any);
+
+    file_context(/etc/mail/make, file);
+
+    file_context(/etc/mcelog/.*-error-trigger, file);
+    file_context(/etc/mcelog/.*\.local, file);
+
+    file_context(/etc/mgetty\+sendfax/new_fax, file);
+
+    file_context(/etc/netplug\.d(/.*)?, any);
+
+    file_context(/etc/PackageKit/events(/.*)?, any);
+
+    file_context(/etc/pki/tls/certs/make-dummy-cert, file);
+    file_context(/etc/pki/tls/misc(/.*)?, file);
+
+    file_context(/etc/pm/power\.d(/.*)?, any);
+    file_context(/etc/pm/sleep\.d(/.*)?, any);
+
+    file_context(/etc/ppp/ip-down\..*, file);
+    file_context(/etc/ppp/ip-up\..*, file);
+    file_context(/etc/ppp/ipv6-up\..*, file);
+    file_context(/etc/ppp/ipv6-down\..*, file);
+
+    file_context(/etc/profile\.d(/.*)?, any);
+
+    file_context(/etc/racoon/scripts(/.*)?, any);
+
+    file_context(/etc/rc\.d/init\.d/functions, file);
+
+    file_context(/etc/security/namespace\.init, file);
+
+    file_context(/etc/sysconfig/crond, file);
+    file_context(/etc/sysconfig/init, file);
+    file_context(/etc/sysconfig/netconsole, file);
+    file_context(/etc/sysconfig/readonly-root, file);
+
+    file_context(/etc/sysconfig/network-scripts/ifup.*, any);
+    file_context(/etc/sysconfig/network-scripts/ifdown.*, any);
+    file_context(/etc/sysconfig/network-scripts/net.*, any);
+    file_context(/etc/sysconfig/network-scripts/init.*, any);
+
+    file_context(/etc/update-motd\.d(/.*)?, any);
+
+    file_context(/etc/vmware-tools(/.*)?, any);
+
+    file_context(/etc/X11/xdm/GiveConsole, file);
+    file_context(/etc/X11/xdm/TakeConsole, file);
+    file_context(/etc/X11/xdm/Xsetup_0, file);
+    file_context(/etc/X11/xinit(/.*)?, any);
+
+    file_context(/etc/xen/qemu-ifup, file);
+    file_context(/etc/xen/scripts(/.*)?, any);
+
+    if (distro_debian) {
+        file_context(/etc/mysql/debian-start, file);
+    }
+
+    if (distro_redhat) {
+        file_context(/etc/mcelog/mcelog\.setup, file);
+        file_context(/etc/mcelog/triggers(/.*)?, any);
+    }
+
+    //
+    // /opt
+    //
+    file_context(/opt/(.*/)?bin(/.*)?, any);
+
+    file_context(/opt/(.*/)?libexec(/.*)?, any);
+
+    file_context(/opt/(.*/)?sbin(/.*)?, any);
+
+    file_context(/opt/google/talkplugin(/.*)?, any);
+
+    file_context(/opt/gutenprint/cups/lib/filter(/.*)?, any);
+
+    file_context(/opt/OpenPrinting-Gutenprint/cups/lib/filter(/.*)?, any);
+
+    if (distro_gentoo) {
+        file_context(/opt/RealPlayer/realplay(\.bin)?, any);
+        file_context(/opt/RealPlayer/postint(/.*)?, any);
+        file_context(/opt/vmware/workstation/lib/lib/wrapper-gtk24\.sh, file);
+    }
+
+    //
+    // /usr
+    //
+    file_context(/usr/(.*/)?Bin(/.*)?, any);
+    file_context(/usr/(.*/)?bin(/.*)?, any);
+    file_context(/usr/bin(/.*)?, any);
+    file_context(/usr/bin/insmod_ksymoops_clean, file);
+
+    file_context(/usr/bin/mkfs\.cramfs, file);
+    file_context(/usr/bin/mountpoint, file);
+
+    file_context(/usr/lib/(.*/)?bin(/.*)?, any);
+    file_context(/usr/lib/postfix/configure-instance\.sh, file);
+
+    file_context(/usr/(.*/)?sbin(/.*)?, any);
+    file_context(/usr/lib/(.*/)?sbin(/.*)?, any);
+
+    file_context(/usr/lib/atril/atrild, file);
+    file_context(/usr/lib/at-spi2-core(/.*)?, any);
+    file_context(/usr/lib/avahi/avahi-daemon-check-dns\.sh, file);
+    file_context(/usr/lib/bluetooth/.*, file);
+    file_context(/usr/lib/bridge-utils/.*\.sh, file);
+    file_context(/usr/lib/ccache/bin(/.*)?, any);
+    file_context(/usr/lib/dhcpcd/dhcpcd-hooks(/.*)?, any);
+    file_context(/usr/lib/dhcpcd/dhcpcd-run-hooks, file);
+    file_context(/usr/lib/dovecot/.+, any);
+    file_context(/usr/lib/fence(/.*)?, any);
+    file_context(/usr/lib/pgsql/test/regress/.*\.sh, file);
+    file_context(/usr/lib/qt.*/bin(/.*)?, any);
+    file_context(/usr/lib/wicd/monitor\.py, file);
+    file_context(/usr/lib/apt/apt-helper, file);
+    file_context(/usr/lib/apt/apt\.systemd\.daily, file);
+    file_context(/usr/lib/apt/methods.+, file);
+    file_context(/usr/lib/ConsoleKit/.*, file);
+    file_context(/usr/lib/ConsoleKit/run-seat\.d(/.*)?, any);
+    file_context(/usr/lib/ConsoleKit/run-session\.d(/.*)?, any);
+    file_context(/usr/lib/ConsoleKit/scripts(/.*)?, any);
+    file_context(/usr/lib/courier(/.*)?, any);
+    file_context(/usr/lib/crda/setregdomain, file);
+    file_context(/usr/lib/cups(/.*)?, any);
+    file_context(/usr/lib/cyrus/.*, file);
+    file_context(/usr/lib/cyrus-imapd/.*, file);
+    file_context(/usr/lib/dconf/dconf-service, file);
+    file_context(/usr/lib/dpkg/.+, file);
+    file_context(/usr/lib/emacsen-common/.*, any);
+    file_context(/usr/lib/evince/evinced, file);
+    file_context(/usr/lib/getconf(/.*)?, any);
+    file_context(/usr/lib/gimp/.*/plug-ins(/.*)?, any);
+    file_context(/usr/lib/git-core(/.*), file);
+    file_context(/usr/lib/gnome-settings-daemon/.*, file);
+    file_context(/usr/lib/gvfs/gvfs.*, file);
+    file_context(/usr/lib/ipsec/.*, file);
+    file_context(/usr/lib/kde4/libexec/.*, file);
+    file_context(/usr/lib/[^/]+/libexec/kf5/.*, file);
+    file_context(/usr/lib/mailman/bin(/.*)?, any);
+    file_context(/usr/lib/mailman/mail(/.*)?, any);
+    file_context(/usr/lib/mediawiki/math/texvc.*, any);
+    file_context(/usr/lib/misc/sftp-server, file);
+    file_context(/usr/lib/mon/alert\.d(/.*)?, any);
+    file_context(/usr/lib/nagios/plugins(/.*)?, any);
+    file_context(/usr/lib/netsaint/plugins(/.*)?, any);
+    file_context(/usr/lib/NetworkManager/nm-.*, file);
+    file_context(/usr/lib/networkmanager/nm-.*, file);
+    file_context(/usr/lib/news/bin(/.*)?, any);
+    file_context(/usr/lib/nspluginwrapper/np.*, any);
+    file_context(/usr/lib/nut/.*, file);
+    file_context(/usr/lib/portage/bin(/.*)?, any);
+    file_context(/usr/lib/pm-utils(/.*)?, any);
+    file_context(/usr/lib/readahead(/.*)?, any);
+    file_context(/usr/lib/rpm/rpmd, file);
+    file_context(/usr/lib/rpm/rpmk, file);
+    file_context(/usr/lib/rpm/rpmq, file);
+    file_context(/usr/lib/rpm/rpmv, file);
+    file_context(/usr/lib/rsyslog/rsyslog-rotate, file);
+    file_context(/usr/lib/security/pam_krb5/pam_krb5_storetmp, file);
+    file_context(/usr/lib/selinux/hll/pp, file);
+    file_context(/usr/lib/sftp-server, file);
+    file_context(/usr/lib/ssh(/.*)?, any);
+    file_context(/usr/lib/systemd/systemd.*, file);
+    file_context(/usr/lib/systemd/system-shutdown(/.*)?, any);
+    file_context(/usr/lib/systemd/system-sleep(/.*)?, any);
+    file_context(/usr/lib/tumbler-1/tumblerd, file);
+    file_context(/usr/lib/udev/[^/]*, file);
+    file_context(/usr/lib/udev/scsi_id, file);
+    file_context(/usr/lib/upstart(/.*)?, any);
+    file_context(/usr/lib/vte/gnome-pty-helper, file);
+    file_context(/usr/lib/xfce4/exo-1/exo-compose-mail-1, file);
+    file_context(/usr/lib/xfce4/exo-1/exo-helper-1, file);
+    file_context(/usr/lib/xfce4/exo-2/exo-helper-2, file);
+    file_context(/usr/lib/xfce4/notifyd/xfce4-notifyd, file);
+    file_context(/usr/lib/xfce4/panel/migrate, file);
+    file_context(/usr/lib/xfce4/panel/wrapper, file);
+    file_context(/usr/lib/xfce4/panel/wrapper-1\.0, file);
+    file_context(/usr/lib/xfce4/panel/wrapper-2\.0, file);
+    file_context(/usr/lib/xfce4/session/balou-export-theme, file);
+    file_context(/usr/lib/xfce4/session/balou-install-theme, file);
+    file_context(/usr/lib/xfce4/session/xfsm-shutdown-helper, file);
+    file_context(/usr/lib/xfce4/xfconf/xfconfd, file);
+    file_context(/usr/lib/xfce4/xfwm4/helper-dialog, file);
+
+    file_context(/usr/lib/couchdb/erlang/lib/couch-[0-9.]+/priv/couchspawnkillable, file);
+
+    file_context(/usr/lib/debug/bin(/.*)?, file);
+    file_context(/usr/lib/debug/sbin(/.*)?, file);
+    file_context(/usr/lib/debug/usr/bin(/.*)?, file);
+    file_context(/usr/lib/debug/usr/sbin(/.*)?, file);
+
+    file_context(/usr/lib/selinux/hll(/.*)?, any);
+
+    file_context(/usr/lib/[^/]*thunderbird[^/]*/thunderbird, file);
+    file_context(/usr/lib/[^/]*thunderbird[^/]*/thunderbird-bin, file);
+    file_context(/usr/lib/[^/]*thunderbird[^/]*/open-browser\.sh, file);
+    file_context(/usr/lib/[^/]*/run-mozilla\.sh, file);
+    file_context(/usr/lib/[^/]*/mozilla-xremote-client, file);
+    file_context(/usr/lib/thunderbird.*/mozilla-xremote-client, file);
+
+    file_context(/usr/libexec(/.*)?, any);
+
+    file_context(/usr/libexec/openssh/sftp-server, file);
+
+    file_context(/usr/local/(.*/)?bin(/.*)?, any);
+    file_context(/usr/local/sbin(/.*)?, any);
+    file_context(/usr/local/Brother(/.*)?, any);
+    file_context(/usr/local/Printer(/.*)?, any);
+    file_context(/usr/local/linuxprinter/filters(/.*)?, any);
+
+    file_context(/usr/sbin(/.*)?, any);
+    file_context(/usr/sbin/insmod_ksymoops_clean, file);
+    file_context(/usr/sbin/mkfs\.cramfs, file);
+
+    file_context(/usr/share/mdadm/checkarray, file);
+    file_context(/usr/share/(.*/)?bin(/.*)?, any);
+    file_context(/usr/share/ajaxterm/ajaxterm\.py.*, file);
+    file_context(/usr/share/ajaxterm/qweb\.py.*, file);
+    file_context(/usr/share/apr(-[0-9])?/build/[^/]+\.sh, file);
+    file_context(/usr/share/apr(-[0-9])?/build/libtool, file);
+    file_context(/usr/share/build-1/[^/]+\.sh, file);
+    file_context(/usr/share/build-1/libtool, file);
+    file_context(/usr/share/dayplanner/dayplanner, file);
+    file_context(/usr/share/debconf/.+, file);
+    file_context(/usr/share/denyhosts/scripts(/.*)?, any);
+    file_context(/usr/share/denyhosts/plugins(/.*)?, any);
+    file_context(/usr/share/dput/execute-dput, file);
+    file_context(/usr/share/cluster/.*\.sh, any);
+    file_context(/usr/share/cluster/ocf-shellfuncs, file);
+    file_context(/usr/share/cluster/svclib_nfslock, file);
+    file_context(/usr/share/cvs/contrib/rcs2log, file);
+    file_context(/usr/share/e16/misc(/.*)?, any);
+    file_context(/usr/share/gedit/plugins/externaltools/tools(/.*)?, any);
+    file_context(/usr/share/gedit-2/plugins/externaltools/tools(/.*)?, any);
+    file_context(/usr/share/gitolite/hooks/common/update, file);
+    file_context(/usr/share/gitolite/hooks/gitolite-admin/post-update, file);
+    file_context(/usr/share/gnome-sound-recorder/org\.gnome\.SoundRecorder, file);
+    file_context(/usr/share/gnucash/finance-quote-check, file);
+    file_context(/usr/share/gnucash/finance-quote-helper, file);
+    file_context(/usr/share/hal/device-manager/hal-device-manager, file);
+    file_context(/usr/share/hal/scripts(/.*)?, any);
+    file_context(/usr/share/ifupdown2/__main__\.py, file);
+    file_context(/usr/share/libalpm/scripts(/.*)?, any);
+    file_context(/usr/share/mc/extfs/.*, file);
+    file_context(/usr/share/Modules/init(/.*)?, any);
+    file_context(/usr/share/org\.gnome\.Weather/org\.gnome\.Weather\.Application, file);
+    file_context(/usr/share/org\.gnome\.Weather/org\.gnome\.Weather\.BackgroundService, file);
+    file_context(/usr/share/printconf/util/print\.py, file);
+    file_context(/usr/share/PackageKit/pk-upgrade-distro\.sh, file);
+    file_context(/usr/share/PackageKit/helpers(/.*)?, any);
+    file_context(/usr/share/reportbug/handle_bugscript, file);
+    file_context(/usr/share/sandbox/sandboxX\.sh, file);
+    file_context(/usr/share/sectool/.*\.py, file);
+    file_context(/usr/share/selinux/devel/policygentool, file);
+    file_context(/usr/share/smartmontools/.*, file);
+    file_context(/usr/share/smolt/client(/.*)?, any);
+    file_context(/usr/share/shorewall/compiler\.pl, file);
+    file_context(/usr/share/shorewall/configpath, file);
+    file_context(/usr/share/shorewall-perl(/.*)?, any);
+    file_context(/usr/share/shorewall-shell(/.*)?, any);
+    file_context(/usr/share/shorewall-lite(/.*)? , any);
+    file_context(/usr/share/shorewall6-lite(/.*)?, any);
+    file_context(/usr/share/spamassassin/sa-update\.cron, any);
+    file_context(/usr/share/system-config-printer/applet\.py, file);
+    file_context(/usr/share/texlive/texmf-dist/scripts/checkcites/checkcites\.lua, file);
+    file_context(/usr/share/texlive/texmf-dist/scripts/checklistings/checklistings\.sh, file);
+    file_context(/usr/share/texlive/texmf-dist/scripts/fontools/autoinst, file);
+    file_context(/usr/share/texlive/texmf-dist/scripts/match_parens/match_parens, file);
+    file_context(/usr/share/texlive/texmf-dist/scripts/yplan/yplan, file);
+    file_context(/usr/share/texmf-dist/scripts(/.*)?, any);
+    file_context(/usr/share/turboprint/lib(/.*)?, file);
+    file_context(/usr/share/vhostmd/scripts(/.*)?, any);
+
+    file_context(/usr/X11R6/lib(64)?/X11/xkb/xkbcomp, file);
+
+    if (distro_debian) {
+        file_context(/usr/lib/[^/]+/tumbler-1/tumblerd, file);
+        file_context(/usr/lib/[^/]+/xfce4/exo-1/exo-helper-1, file);
+        file_context(/usr/lib/[^/]+/xfce4/exo-2/exo-helper-2, file);
+        file_context(/usr/lib/[^/]+/xfce4/notifyd/xfce4-notifyd, file);
+        file_context(/usr/lib/[^/]+/xfce4/panel/migrate, file);
+        file_context(/usr/lib/[^/]+/xfce4/panel/wrapper, file);
+        file_context(/usr/lib/[^/]+/xfce4/panel/wrapper-1\.0, file);
+        file_context(/usr/lib/[^/]+/xfce4/panel/wrapper-2\.0, file);
+        file_context(/usr/lib/[^/]+/xfce4/session/balou-export-theme, file);
+        file_context(/usr/lib/[^/]+/xfce4/session/balou-install-theme, file);
+        file_context(/usr/lib/[^/]+/xfce4/session/xfsm-shutdown-helper, file);
+        file_context(/usr/lib/[^/]+/xfce4/xfconf/xfconfd, file);
+        file_context(/usr/lib/[^/]+/xfce4/xfwm4/helper-dialog, file);
+
+        file_context(/usr/lib/gdm3/.*, file);
+        file_context(/usr/lib/openssh/agent-launch, file);
+        file_context(/usr/lib/udisks/.*, file);
+        file_context(/usr/share/bug/.*, file);
+    }
+
+    if (distro_gentoo) {
+        file_context(/usr/[^/-]+-[^/-]+-linux-[^/-]+/gcc-bin/.*(/.*)?, any);
+        file_context(/usr/[^/-]+-[^/-]+-linux-[^/-]+/binutils-bin(/.*)?, any);
+        file_context(/usr/[^/-]+-[^/-]+-linux-[^/-]+/[^/]+/gcc-bin/.*(/.*)?, any);
+        file_context(/usr/[^/-]+-[^/-]+-linux-[^/-]+/[^/]+/binutils-bin(/.*)?, any);
+
+        file_context(/usr/lib/rcscripts/addons(/.*)?, any);
+        file_context(/usr/lib/rcscripts/sh(/.*)?, any);
+        file_context(/usr/lib/rcscripts/net\.modules\.d/helpers\.d/dhclient-.*, file);
+        file_context(/usr/lib/rcscripts/net\.modules\.d/helpers\.d/udhcpc-.*, file);
+    }
+
+    if (distro_redhat) {
+        file_context(/etc/gdm/XKeepsCrashing[^/]*, file);
+        file_context(/etc/gdm/[^/]+, dir);
+        file_context(/etc/gdm/[^/]+/.*, any);
+
+        file_context(/usr/lib/.*/program(/.*)?, any);
+        file_context(/usr/lib/bluetooth(/.*)?, file);
+        file_context(/usr/lib/vmware-tools/(s)?bin32(/.*)?, any);
+        file_context(/usr/lib/vmware-tools/(s)?bin64(/.*)?, any);
+        file_context(/usr/share/authconfig/authconfig-gtk\.py, file);
+        file_context(/usr/share/authconfig/authconfig-tui\.py, file);
+        file_context(/usr/share/authconfig/authconfig\.py, file);
+        file_context(/usr/share/clamav/clamd-gen, file);
+        file_context(/usr/share/clamav/freshclam-sleep, file);
+        file_context(/usr/share/createrepo(/.*)?, any);
+        file_context(/usr/share/fedora-usermgmt/wrapper, file);
+        file_context(/usr/share/hplip/[^/]*, file);
+        file_context(/usr/share/hwbrowser/hwbrowser, file);
+        file_context(/usr/share/pwlib/make/ptlib-config, file);
+        file_context(/usr/share/pydict/pydict\.py, file);
+        file_context(/usr/share/rhn/rhn_applet/applet\.py, file);
+        file_context(/usr/share/rhn/rhn_applet/needed-packages\.py, file);
+        file_context(/usr/share/ssl/misc(/.*)?, any);
+        file_context(/usr/share/switchdesk/switchdesk-gui\.py, file);
+        file_context(/usr/share/system-config-date/system-config-date\.py, file);
+        file_context(/usr/share/system-config-selinux/polgen\.py, file);
+        file_context(/usr/share/system-config-selinux/system-config-selinux\.py, file);
+        file_context(/usr/share/system-config-display/system-config-display, file);
+        file_context(/usr/share/system-config-httpd/system-config-httpd, file);
+        file_context(/usr/share/system-config-keyboard/system-config-keyboard, file);
+        file_context(/usr/share/system-config-language/system-config-language, file);
+        file_context(/usr/share/system-config-lvm/system-config-lvm\.py, file);
+        file_context(/usr/share/system-config-mouse/system-config-mouse, file);
+        file_context(/usr/share/system-config-netboot/system-config-netboot\.py, file);
+        file_context(/usr/share/system-config-netboot/pxeos\.py, file);
+        file_context(/usr/share/system-config-netboot/pxeboot\.py, file);
+        file_context(/usr/share/system-config-network(/netconfig)?/[^/]+\.py, file);
+        file_context(/usr/share/system-config-network/neat-control\.py, file);
+        file_context(/usr/share/system-config-nfs/nfs-export\.py, file);
+        file_context(/usr/share/system-config-nfs/system-config-nfs\.py, file);
+        file_context(/usr/share/system-config-rootpassword/system-config-rootpassword, file);
+        file_context(/usr/share/system-config-samba/system-config-samba\.py, file);
+        file_context(/usr/share/system-config-securitylevel/system-config-securitylevel\.py, file);
+        file_context(/usr/share/system-config-services/gui\.py, file);
+        file_context(/usr/share/system-config-services/serviceconf\.py, file);
+        file_context(/usr/share/system-config-services/system-config-services, file);
+        file_context(/usr/share/system-config-soundcard/system-config-soundcard, file);
+        file_context(/usr/share/system-config-users/system-config-users, file);
+        file_context(/usr/share/system-logviewer/system-logviewer\.py, file);
+        file_context(/usr/share/texmf/web2c/mktexdir, file);
+        file_context(/usr/share/texmf/web2c/mktexnam, file);
+        file_context(/usr/share/texmf/web2c/mktexupd, file);
+        file_context(/usr/share/texmf/texconfig/tcfmgr, file);
+    }
+
+    //
+    // /var
+    //
+    file_context(/var/mailman/bin(/.*)?, any);
+
+    file_context(/var/ftp/bin(/.*)?, any);
+
+    file_context(/var/lib/asterisk/agi-bin(/.*)?, any);
+    file_context(/usr/lib/chkrootkit/.*, file);
+    file_context(/usr/lib/yp/.+, file);
+
+    file_context(/var/qmail/bin, dir);
+    file_context(/var/qmail/bin(/.*)?, any);
+    file_context(/var/qmail/rc, file);
+}
+
+//
+// boot_t is the type for files in /boot
+//
+resource boot_t inherits common_file, mountpoint {
+    /// Files in /boot.
+    /// This includes kernel images, initramfs images, booleader config files, such as grub.cfg, etc.
+
+    file_context(/initrd\.img.*, symlink);
+    file_context(/vmlinuz.*, symlink);
+
+    file_context(/boot, dir);
+    file_context(/boot/.*, any);
+    // TODO add back in when we figure out what to do with none GLOBAL
+    // file_context(/boot/\.journal, any, any, <<none>>);
+}
+
+//
+// cert_t is the type of files in the system certs directories.
+//
+resource cert_t inherits cert_type {
+    /// System certificate files, including root certificate authorities.
+
+    file_context(/etc/httpd/alias/[^/]*\.db(\.[^/]*)*, file);
+    file_context(/etc/pki(/.*)?, any);
+    file_context(/etc/ssl(/.*)?, any);
+
+    file_context(/usr/share/ssl/certs(/.*)?, any);
+    file_context(/usr/share/ssl/private(/.*)?, any);
+
+    file_context(/var/named/chroot/etc/pki(/.*)?, any);
+}
+
+@hint(hint="This indicates that your file did not match any file_context specification when labeling was initialized.  Normally this should be addressed by fixing the file context entries.")
+resource default_t inherits common_file, mountpoint {
+    /// This is the default for files that do not match any specification in the file_contexts.
+    /// The security properties of these files should be considered unknown, similar to unlabeled files.
+
+    file_context(/.*, any);
+    // file_context(/\.journal, any, any, any, <<none>>);
+}
+
+resource etc_t inherits configfile {
+    /// The default for configuration files in /etc.
+
+    file_context(/etc, dir);
+    file_context(/etc/.*, any);
+    file_context(/etc/localtime, symlink);
+
+    file_context(/etc/cups/client\.conf, file);
+
+    file_context(/etc/ipsec\.d/examples(/.*)?, any);
+
+    file_context(/usr/etc(/.*)?, any);
+
+    file_context(/usr/local/etc(/.*)?, any);
+
+    file_context(/var/db/.*\.db, file);
+
+    file_context(/var/ftp/etc(/.*)?, any);
+
+    file_context(/var/spool/postfix/etc(/.*)?, any);
+
+    if (distro_debian) {
+        // on Debian /lib/init/rw is a tmpfs used like /run
+        file_context(/run/resolvconf(/.*)?, dir);
+    }
+}
+//optional_policy(`
+//    # for systemd ProtectSystem
+//    init_mountpoint(etc_t)
+//')
+
+resource etc_runtime_t inherits configfile {
+    /// This is a configuration file in /etc that is automatically generated during boot.
+
+    file_context(/etc/\.fstab\.hal\..+, file);
+    file_context(/etc/blkid(/.*)?, any);
+    file_context(/etc/cmtab, file);
+    file_context(/etc/fstab\.REVOKE, file);
+    file_context(/etc/ioctl\.save, file);
+    file_context(/etc/killpower, file);
+    file_context(/etc/mtab, file);
+    file_context(/etc/mtab~[0-9]*, file);
+    file_context(/etc/mtab\.tmp, file);
+    file_context(/etc/mtab\.fuselock, file);
+    file_context(/etc/nohotplug, file);
+    file_context(/etc/nologin.*, file);
+
+    file_context(/etc/network/ifstate, file);
+
+    file_context(/etc/ptal/ptal-printd-like, file);
+
+    file_context(/etc/sysconfig/hwconf, file);
+    file_context(/etc/sysconfig/iptables\.save, file);
+    file_context(/etc/sysconfig/firstboot, file);
+
+    file_context(/etc/zfs/zpool\.cache, file);
+
+    if (distro_gentoo) {
+        file_context(/etc/profile\.env, file);
+        file_context(/etc/csh\.env, file);
+        file_context(/etc/env\.d/.*, file);
+    }
+
+    if (distro_redhat) {
+        file_context(/\.autofsck, file);
+        file_context(/\.autorelabel, file);
+        file_context(/\.suspended, file);
+        file_context(/fastboot, file);
+        file_context(/forcefsck, file);
+        file_context(/fsckoptions, file);
+        file_context(/halt, file);
+        file_context(/poweroff, file);
+    }
+}
+
+resource fonts_t inherits common_file {
+    /// System fonts in /usr.
+
+    file_context(/usr/local/share/fonts(/.*)?, any);
+
+    file_context(/usr/share/fonts(/.*)?, any);
+    file_context(/usr/share/ghostscript/fonts(/.*)?, any);
+    file_context(/usr/share/texmf[^/]*/fonts(/.*)?, any);
+    file_context(/usr/share/X11/fonts(/.*)?, any);
+
+    file_context(/usr/X11R6/lib/X11/fonts(/.*)?, any);
+
+    if (distro_debian) {
+        file_context(/var/lib/msttcorefonts(/.*)?, any);
+    }
+}
+
+resource fonts_cache_t inherits common_file {
+    /// System fontconfig cache.
+
+    file_context(/var/cache/fontconfig(/.*)?, any);
+}
+
+//
+// home_root_t is the type for the directory where user home directories
+// are created
+//
+@hint(class=notcommondir_class_set, hint="Only directories and symlinks should be home_root_t; this indicates a labeling problem.")
+resource home_root_t inherits common_dir, mountpoint {
+    ///  The parent directory for user home directories, such as /home.
+
+    file_context(HOME_ROOT, dir, system_u:object_r:home_root_t:s0-mls_systemhigh);
+    file_context(HOME_ROOT, symlink);
+    // file_context(HOME_ROOT/\.journal, any, <<none>>);
+}
+//files_poly_parent(home_root_t)
+
+//
+// type for /usr/share/hwdata
+//
+resource hwdata_t inherits common_file {
+    /// Hardware identification and configuration data, such as pci.ids and usb.ids.
+
+    if (distro_gentoo) {
+        file_context(/usr/share/misc/(pci|usb)\.ids, file);
+    }
+
+    if (distro_redhat) {
+        file_context(/usr/share/hwdata(/.*)?, any);
+    }
+
+    if (distro_debian) {
+        file_context(/var/lib/usbutils(/.*)?, any);
+    }
+
+}
+
+@hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write kernel modules.")
+resource kernel_module_t alias modules_object_t inherits common_file {
+    /// Kernel modules (*.ko).
+
+    file_context(/usr/lib/modules(/.*)?, any);
+}
+//optional_policy(`
+//    init_mountpoint(kernel_module_t)
+//')
+
+resource ld_so_cache_t inherits common_file {
+    /// Dynamic linker cache (ld.so.cache).
+
+    file_context(/etc/ld\.so\.cache, file);
+    file_context(/etc/ld\.so\.preload, file);
+    file_context(/etc/ld-musl-[^/]*\.path, file);
+)
+
+@hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write the library linker.")
+resource ld_so_t inherits common_file {
+    /// Dynamic loaders (ld.so)
+
+    file_context(/emul/ia32-linux/usr(/.*)?/lib(/.*)?/ld-[^/]*\.so(\.[^/]*)*, any);
+    file_context(/emul/ia32-linux/lib(/.*)?/ld-[^/]*\.so(\.[^/]*)*, file);
+
+    file_context(/usr/lib/ld-[^/]*\.so(\.[^/]*)*, file);
+    file_context(/usr/lib/(.*/)?ld-[^/]*\.so(\.[^/]*)?, file);
+
+    file_context(/var/ftp/lib(64)?/ld[^/]*\.so(\.[^/]*)*, file);
+    file_context(/var/spool/postfix/lib(64)?/ld.*\.so.*, file);
+
+    if (distro_gentoo) {
+        file_context(/emul/linux/x86/lib(/.*)?/ld-[^/]*\.so(\.[^/]*)*, file);
+    }
+}
+
+@hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write shared libraries.")
+resource lib_t inherits common_file {
+    /// System libraries, both directories (/lib, /usr/lib) and dynamic linked libraries (*.so).
+
+    file_context(/etc/ppp/plugins/rp-pppoe\.so, file);
+
+    file_context(/opt/.*\.so, any);
+    file_context(/opt/(.*/)?lib(/.*)?, any);
+    file_context(/opt/(.*/)?lib64(/.*)?, any);
+    file_context(/opt/(.*/)?java/.+\.jar, file);
+
+    file_context(/opt/(.*/)?jre/.+\.jar, file);
+
+    file_context(/opt/google/chrome/libudev\.so\.0, any);
+    file_context(/opt/google/chrome-beta/libudev\.so\.0, any);
+    file_context(/opt/google/chrome-unstable/libudev\.so\.0, any);
+
+    file_context(/opt/openoffice4/program/.+\.so(\.[^/]*)*, file);
+
+    // despite the extensions, they are actually libs
+    file_context(/opt/Acrobat[5-9]/Reader/intellinux/plugins/.*\.api, file);
+
+    file_context(/usr/lib, any);
+    file_context(/usr/lib/.*, any);
+
+    file_context(/usr/(.*/)?java/.+\.jar, file);
+    file_context(/usr/(.*/)?java/.+\.jsa, file);
+
+    file_context(/usr/(.*/)?lib(/.*)?, any);
+    file_context(/usr/(.*/)?lib64(/.*)?, any);
+
+    file_context(/usr/lib/postfix/lib.*so.*, file);
+
+    file_context(/usr/lib/dovecot/(.*/)?lib.*\.so.*, file);
+
+    file_context(/usr/lib/systemd/libsystemd-shared-[0-9]+\.so.*, file);
+
+    file_context(/usr/(local/)?.*\.so(\.[^/]*)*, file);
+
+    file_context(/var/ftp/lib(64)?(/.*)?, any);
+
+    file_context(/var/lib/spamassassin/compiled/.*\.so.*, file);
+
+    file_context(/var/mailman/pythonlib(/.*)?/.+\.so(\..*)?, file);
+
+    file_context(/var/spool/postfix/lib(64)?(/.*)?, any);
+    file_context(/var/spool/postfix/usr(/.*)?, any);
+
+    if (distro_debian) {
+        file_context(/emul/ia32-linux/usr(/.*)?/lib(/.*)?, any);
+        file_context(/emul/ia32-linux/lib(/.*)?, any);
+
+        file_context(/usr/(.*/)?dh-python/dh_pypy, file);
+    }
+
+    if (distro_gentoo) {
+        file_context(/emul/linux/x86/usr(/.*)?/lib(/.*)?, any);
+        file_context(/emul/linux/x86/lib(/.*)?, any);
+
+        // despite the extensions, they are actually libs
+        file_context(/opt/Acrobat[5-9]/Reader/intellinux/plug_ins/.*\.api, file);
+        file_context(/opt/Acrobat[5-9]/Reader/intellinux/plug_ins3d/.*\.x3d, file);
+        file_context(/opt/Acrobat[5-9]/Reader/intellinux/SPPlugins/.*\.ap[il], file);
+
+        file_context(/opt/netscape/plugins(/.*)?, any);
+        file_context(/opt/RealPlayer/codecs(/.*)?, any);
+        file_context(/opt/RealPlayer/common(/.*)?, any);
+        file_context(/opt/RealPlayer/lib(/.*)?, any);
+        file_context(/opt/RealPlayer/mozilla(/.*)?, any);
+        file_context(/opt/RealPlayer/plugins(/.*)?, any);
+    }
+
+    if (distro_redhat) {
+        file_context(/emul/ia32-linux/usr(/.*)?/lib(/.*)?, any);
+        file_context(/emul/ia32-linux/usr(/.*)?/java/.+\.so(\.[^/]*)*, file);
+        file_context(/emul/ia32-linux/usr(/.*)?/java/.*\.jar, file);
+        file_context(/emul/ia32-linux/usr(/.*)?/java/.*\.jsa, file);
+        file_context(/emul/ia32-linux/lib(/.*)?, any);
+
+        file_context(/opt/Adobe/Reader[0-9]?/Reader/intellinux/SPPlugins/.*\.ap[il], file);
+        file_context(/opt/ibm/java.*/jre/.+\.jar, file);
+
+        file_context(/usr/share/rhn/rhn_applet/eggtrayiconmodule\.so, file);
+
+        file_context(/usr/lib/.*/program(/.*)?\.so, any);
+    }
+}
+// TODO: Will distros like having tunables, or a separate file for
+// adding extends, e.g. files_gentoo.hll?
+//
+//if (distro_gentoo) {
+//    # openrc unfortunately mounts a tmpfs
+//    # at /lib/rc/
+//    files_mountpoint(lib_t)
+//}
+
+//optional_policy(`
+//    postgresql_loadable_module(lib_t)
+//    postgresql_loadable_module(textrel_shlib_t)
+//')
+
+resource locale_t inherits common_file {
+    /// System localization data (/etc/localtime, /usr/share/locale)
+
+    file_context(/etc/avahi/etc/localtime, file);
+    file_context(/etc/localtime, file);
+    file_context(/etc/timezone, file);
+
+    file_context(/usr/lib/locale(/.*)?, any);
+
+    file_context(/usr/share/locale(/.*)?, any);
+    file_context(/usr/share/X11/locale(/.*)?, any);
+    file_context(/usr/share/zoneinfo(/.*)?, any);
+
+    if (distro_debian) {
+        file_context(/etc/locale\.alias, file);
+    }
+
+    if (distro_gentoo) {
+        file_context(/emul/linux/x86/usr/(X11R6/)?lib/X11/locale(/.*)?, any);
+    }
+
+    if (distro_redhat) {
+        file_context(/etc/sysconfig/clock, file);
+        file_context(/var/empty/sshd/etc/localtime, file);
+        file_context(/var/spool/postfix/etc/localtime, file);
+    }
+}
+
+resource lost_found_t inherits common_dir {
+    /// The lost+found directory.  Contents will have their own labels.
+
+    file_context(/lost\+found, dir, system_u:object_r:lost_found_t:mls_systemhigh);
+    // file_context(/lost\+found/.*, any, <<none>>);
+
+    file_context(/boot/lost\+found, dir, system_u:object_r:lost_found_t:mls_systemhigh);
+    // file_context(/boot/lost\+found/.*, any, <<none>>);
+
+    file_context(/tmp/lost\+found, dir, system_u:object_r:lost_found_t:mls_systemhigh);
+    // file_context(/tmp/lost\+found/.*, any, <<none>>);
+
+    file_context(/usr/lost\+found, dir, system_u:object_r:lost_found_t:mls_systemhigh);
+    // file_context(/usr/lost\+found/.*, any, <<none>>);
+
+    file_context(/usr/local/lost\+found, dir, system_u:object_r:lost_found_t:mls_systemhigh);
+    // file_context(/usr/local/lost\+found/.*, any, <<none>>);
+
+    file_context(/var/lost\+found, dir, system_u:object_r:lost_found_t:mls_systemhigh);
+    // file_context(/var/lost\+found/.*, any, <<none>>);
+
+    file_context(/var/log/lost\+found, dir, system_u:object_r:lost_found_t:mls_systemhigh);
+    // file_context(/var/log/lost\+found/.*, any, <<none>>);
+
+    file_context(/var/log/audit/lost\+found, dir, system_u:object_r:lost_found_t:mls_systemhigh);
+    // file_context(/var/log/audit/lost\+found/.*, any, <<none>>);
+
+    file_context(/var/tmp/lost\+found, dir, system_u:object_r:lost_found_t:mls_systemhigh);
+    // file_context(/var/tmp/lost\+found/.*, any, <<none>>);
+
+HOME_ROOT/lost\+found, dir, system_u:object_r:lost_found_t:mls_systemhigh);
+// HOME_ROOT/lost\+found/.*, any, <<none>>);
+}
+
+resource man_t inherits common_file {
+    /// System man pages.
+    file_context(/opt/(.*/)?man(/.*)?, any);
+
+    file_context(/usr/(.*/)?man, dir);
+    file_context(/usr/(.*/)?man/.*, any);
+    file_context(/usr/lib/perl5/man(/.*)?, any);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+resource man_cache_t inherits common_file {
+    /// Man page cache.
+    file_context(/var/cache/man(/.*)?, any);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+resource mnt_t inherits common_dir, mountpoint {
+    /// General mount points, such as /mnt and /media.
+
+    file_context(/afs, dir);
+    file_context(/misc, dir);
+    file_context(/net, dir);
+
+    // Do not relabel subdirectories, since we don't want to change any
+    // removable media by default.
+    file_context(/mnt(/[^/]*), symlink);
+    file_context(/mnt(/[^/]*)?, dir);
+    // file_context(/mnt/[^/]*/.*, any, <<none>>);
+
+    file_context(/media(/[^/]*), symlink);
+    file_context(/media(/[^/]*)?, dir);
+    // file_context(/media/[^/]*/.*, any, <<none>>);
+}
+
+resource net_conf_t inherits configfile {
+    /// Networking configuration files.
+
+    file_context("/etc/ethers", file);
+    file_context("/etc/hosts", file);
+    file_context("/etc/hosts\.allow.*", file);
+    file_context("/etc/hosts\.deny.*", file);
+    file_context("/etc/hostname", file);
+    file_context("/etc/denyhosts.*", file);
+    file_context("/etc/resolv\.conf.*", file);
+    file_context("/etc/yp\.conf.*", file);
+    file_context("/etc/systemd/network(/.*)?", any);
+    file_context("/etc/tor/torsocks\.conf", file);
+
+//if (distro_debian) {
+//file_context("/dev/shm/network(/.*)?", any);
+//file_context("/run/network(/.*)?", any);
+//file_context("/run/resolvconf/.*", file);
+//typeattribute net_conf_t daemonpidfile;
+// net_conf_t inherits runtimefile;
+//var_t.list(initrc_t);
+//var_run_t.filetrans(initrc_t, net_conf_t, dir, "network");
+//} // end build option distro_debian
+
+//if (distro_redhat) {
+//    file_context("/etc/sysconfig/network-scripts/.*resolv\.conf", file);
+//    file_context("/etc/sysconfig/networking(/.*)?", any);
+//    file_context("/etc/sysconfig/network-scripts(/.*)?", any);
+//}
+}
+
+resource no_access_t inherits common_file {
+    /// Files that are inaccessible except to highest privileged processes, such as admins.
+}
+
+resource poly_t inherits common_dir, polyinstantiated {
+    /// The default for polyinstantiated directories.
+}
+
+resource public_content_t alias readable_t inherits common_file { // customizable
+    /// Read-only public shared data for network servers such as Apache, FTP, NFS, and Samba servers.
+
+    file_context(/srv/([^/]*/)?ftp(/.*)?, any);
+    file_context(/srv/([^/]*/)?rsync(/.*)?, any);
+
+    file_context(/var/ftp(/.*)?, any);
+}
+
+resource public_content_rw_t inherits common_file { // customizable
+    /// Writable public shared data for network servers such as Apache, FTP, NFS, and Samba servers.
+
+    file_context(/var/spool/abrt-upload(/.*)?, any);
+}
+
+resource root_t inherits common_dir, mountpoint, noxattr_filesystem {
+    /// The root directory (/) and rootfs filesystem.
+
+    file_context(/, dir);
+    // initrd mount point, only used during boot
+    file_context(/initrd, dir);
+
+    genfscon(rootfs, /, dir);
+}
+
+@hint(class=[file fifo_file sock_file], hint="Runtime directories are shared. A different type should use used, e.g. foo_t.runtime, to keep data private.")
+@hint(class=dir, perm=create, hint="Runtime directories are shared. A different type should use used, e.g. foo_t.runtime, to keep data private.")
+@derive(strategy=common_dir)
+resource runtime_t alias var_run_t inherits common_dir, runtimefile, mountpoint  {
+    /// The runtime directory (/run and /var/run)
+
+    file_context(/run, dir, system_u:object_r:runtime_t:s0-mls_systemhigh)
+    file_context(/run, symlink);
+    // file_context(/run/.*, any, <<none>>);
+    file_context(/run/shm, symlink);
+
+    file_context(/var/run, symlink);
+
+    file_context(/var/spool/postfix/pid, dir);
+
+    if (distro_debian) {
+        // on Debian /lib/init/rw is a tmpfs used like /run
+        file_context(/usr/lib/init/rw(/.*)?, any, system_u:object_r:runtime_t:s0-mls_systemhigh);
+    }
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+resource shell_exec_t inherits executable {
+    /// Shell interpreters, such as /bin/bash and /bin/zsh
+
+    file_context(/usr/bin/d?ash, file);
+    file_context(/usr/bin/bash, file);
+    file_context(/usr/bin/bash2, file);
+    file_context(/usr/bin/fish, file);
+    file_context(/usr/bin/git-shell, file);
+    file_context(/usr/bin/ksh.*, file);
+    file_context(/usr/bin/mksh, file);
+    file_context(/usr/bin/nologin, file);
+    file_context(/usr/bin/sash, file);
+    file_context(/usr/bin/scponly, file);
+    file_context(/usr/bin/scponlyc, file);
+    file_context(/usr/bin/sh, file);
+    file_context(/usr/bin/smrsh, file);
+    file_context(/usr/bin/tcsh, file);
+    file_context(/usr/bin/yash, file);
+    file_context(/usr/bin/zsh.*, file);
+
+    file_context(/usr/lib/git-core/git-shell, file);
+
+    file_context(/usr/lib/sudo/sesh, file);
+
+    file_context(/usr/libexec/git-core/git-shell, file);
+    file_context(/usr/libexec/sesh, file);
+    file_context(/usr/libexec/sudo/sesh, file);
+
+    file_context(/usr/sbin/nologin, file);
+    file_context(/usr/sbin/scponlyc, file);
+    file_context(/usr/sbin/sesh, file);
+    file_context(/usr/sbin/smrsh, file);
+}
+
+resource src_t inherits mountpoint {
+    /// System source files typically in /usr/src.
+
+    file_context(/usr/local/src(/.*)?, any);
+    file_context(/usr/src(/.*)?, any);
+}
+
+resource swapfile_t inherits filesystem_image {
+    /// File image for swap.
+}
+
+resource system_map_t inherits common_file {
+    /// Kernel symbol map (/boot/System.map and /proc/kallsyms).
+
+    file_context(/boot/efi(/.*)?/System\.map(-.*)?, file);
+    file_context(/boot/System\.map(-.*)?, file);
+
+    genfscon(proc, /kallsyms, any);
+}
+//optional_policy(`
+//    init_mountpoint(system_map_t)
+//')
+
+resource tetex_data_t inherits spoolfile {
+    /// /var/{spool,lib}/texmf index files.
+
+    file_context(/var/lib/texmf(/.*)?, any);
+    file_context(/var/cache/fonts(/.*)?, any);
+    file_context(/var/spool/texmf(/.*)?, any);
+}
+
+@hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write shared libraries.")
+resource textrel_shlib_t inherits common_file {
+    /// Shared objects in the system lib directories that have text relocations.
+}
+
+resource tls_privkey_t inherits tls_privkey_type {
+    /// General SSL/TLS private keys in /etc/ssl.
+
+    file_context(/etc/pki/.*/private(/.*)?, any, system_u:object_r:tls_privkey_t:s0-mls_systemhigh);
+}
+
+@hint(class=[file fifo_file sock_file], hint="Temp directories are shared. A different type should use used, e.g. foo_t.tmp, to keep data private.")
+@hint(class=dir, perm=create, hint="Temp directories are shared. A different type should use used, e.g. foo_t.tmp, to keep data private.")
+resource tmp_t inherits tmpfile, mountpoint, polyinstantiated {
+    /// Top-level dir of temporary directories, such as /tmp and /var/tmp.
+    file_context(/tmp, dir, system_u:object_r:tmp_t,s0-mls_systemhigh)
+    // file_context(/tmp/.*, any, <<none>>);
+    // file_context(/tmp/\.journal, any, <<none>>);
+
+    file_context(/tmp/systemd-private-[^/]+, dir, system_u:object_r:tmp_t:s0-mls_systemhigh);
+    file_context(/tmp/systemd-private-[^/]+/tmp, dir, system_u:object_r:tmp_t:s0-mls_systemhigh);
+    // file_context(/tmp/systemd-private-[^/]+/tmp/.*, any, <<none>>);
+
+    file_context(/usr/tmp, dir, system_u:object_r:tmp_t:s0-mls_systemhigh);
+    // file_context(/usr/tmp/.*, any, <<none>>);
+
+    file_context(/var/tmp, dir, system_u:object_r:tmp_t:s0-mls_systemhigh)
+    file_context(/var/tmp, symlink, system_u:object_r:tmp_t:s0);
+    // file_context(/var/tmp/.*, any, <<none>>);
+    file_context(/var/tmp/systemd-private-[^/]+, dir, system_u:object_r:tmp_t:s0-mls_systemhigh);
+    file_context(/var/tmp/systemd-private-[^/]+/tmp, dir, system_u:object_r:tmp_t:s0-mls_systemhigh);
+    // file_context(/var/tmp/systemd-private-[^/]+/tmp/.*, any, <<none>>);
+
+    this.poly_parent(this);
+
+    root_t.poly_parent(this);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+@hint(class=file perm=[create write relabelto], hint="This is used for non-sensitive public data. A different type should be used for private data.")
+resource usr_t inherits common_file, mountpoint {
+    /// Default for generally accessible non-sensitive data in /usr and /opt.
+
+    file_context(/emul, dir);
+    file_context(/emul/.*, any);
+
+    file_context(/opt, dir);
+    file_context(/opt/.*, any);
+
+    file_context(/usr, dir);
+    file_context(/usr/.*, any);
+    // file_context(/usr/\.journal, any, <<none>>);
+
+    file_context(/usr/doc(/.*)?/lib(/.*)?, any);
+
+    file_context(/usr/include(/.*)?, any);
+
+    // file_context(/usr/local/\.journal, any, <<none>>);
+}
+
+@hint(class=[file fifo_file sock_file], hint="/var directories are shared. A different type should use used, e.g. foo_t.data, to keep data private.")
+@hint(class=dir, perm=create, hint="/var directories are shared. A different type should use used, e.g. foo_t.data, to keep data private.")
+@derive(strategy=common_dir)
+resource var_t inherits common_dir, mountpoint {
+    /// The /var directory.
+
+    file_context(/srv, dir);
+    file_context(/srv/.*, any);
+
+    file_context(/var, dir);
+    file_context(/var/.*, any);
+    // file_context(/var/\.journal, any, <<none>>);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+@hint(class=[file fifo_file sock_file], hint="/var/lib directories are shared. A different type should use used, e.g. foo_t.data, to keep data private.")
+@hint(class=dir, perm=create, hint="/var/lib directories are shared. A different type should use used, e.g. foo_t.data, to keep data private.")
+resource var_lib_t inherits common_dir, mountpoint {
+    /// The /var/lib directory.
+
+    file_context(/opt/(.*/)?var/lib(64)?(/.*)?, any);
+
+    file_context(/var/lib(/.*)?, any);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+@hint(class=[file fifo_file sock_file], hint="Lock directories are shared. A different type should use used, e.g. foo_t.lock, to keep data private.")
+@hint(class=dir, perm=create, hint="Lock directories are shared. A different type should use used, e.g. foo_t.lock, to keep data private.")
+@derive(strategy=common_dir)
+resource var_lock_t inherits common_dir, lockfile, mountpoint {
+    /// The /var/lock directory.
+
+    file_context(/var/lock, dir, system_u:object_r:var_lock_t:s0-mls_systemhigh);
+    file_context(/var/lock, symlink);
+    // file_context(/var/lock/.*, any, <<none>>);
+    file_context(/var/lock/subsys, dir, system_u:object_r:var_lock_t:s0-mls_systemhigh);
+}
+
+@hint(class=[file fifo_file sock_file], hint="Log directories are shared. A different type should use used, e.g. foo_t.log, to keep data private.")
+@hint(class=dir, perm=create, hint="Log directories are shared. A different type should use used, e.g. foo_t.log, to keep data private.")
+resource var_log_t inherits common_file, logfile, mountpoint {
+    file_context("/var/axfrdns/log/main(/.*)?", any);
+    file_context("/var/dnscache/log/main(/.*)?", any);
+    file_context("/var/log", dir, system_u:object_r:var_log_t:s0-mls_systemhigh);
+    file_context("/var/log/.*", any);
+    file_context("/var/log/dmesg", file);
+    file_context("/var/log/syslog", file);
+    file_context("/var/log/boot\.log", file, system_u:object_r:var_log_t:mls_systemhigh);
+    file_context("/var/log/messages[^/]*", any, system_u:object_r:var_log_t:mls_systemhigh);
+    file_context("/var/log/secure[^/]*", any, system_u:object_r:var_log_t:mls_systemhigh);
+    file_context("/var/log/maillog[^/]*", any, system_u:object_r:var_log_t:mls_systemhigh);
+    file_context("/var/log/spooler[^/]*", any, system_u:object_r:var_log_t:mls_systemhigh);
+    file_context("/run/log", dir, system_u:object_r:var_log_t:s0-mls_systemhigh);
+    file_context("/var/spool/bacula/log(/.*)?", any);
+    file_context("/var/spool/plymouth/boot\.log", any, system_u:object_r:var_log_t:mls_systemhigh);
+    file_context("/var/spool/rsyslog(/.*)?", any);
+    file_context("/var/tinydns/log/main(/.*)?", any);
+}
+
+@hint(class=[file fifo_file sock_file], hint="Spool directories are shared. A different type should use used, e.g. foo_t.spool, to keep data private.")
+@hint(class=dir, perm=create, hint="Spool directories are shared. A different type should use used, e.g. foo_t.spool, to keep data private.")
+@derive(strategy=common_dir)
+resource var_spool_t inherits common_dir, spoolfile {
+    /// The /var/spool directory.
+
+    file_context(/var/spool(/.*)?, any);
+}

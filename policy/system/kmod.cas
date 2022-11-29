@@ -1,0 +1,176 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain kmod_t inherits system_app_domain {
+    /// Tools for managing kernel modules.
+
+    //
+    // Resources
+    //
+
+    @alias(modules_conf_t)
+    resource conf inherits configfile {
+        /// Configuration files.
+        file_context("/etc/modules\.conf.*", file);
+        file_context("/etc/modprobe\.conf.*", file);
+        file_context("/etc/modprobe\.d(/.*)?", any);
+        file_context("/usr/lib/modules/modprobe\.conf", file);
+    }
+
+    @alias(modules_dep_t)
+    resource dep inherits common_file {
+        /// Kernel module dependencies.
+        file_context("/usr/lib/modules/[^/]+/modules\..+", file);
+    }
+
+    @alias(kmod_exec_t)
+    extend exec {
+        file_context("/usr/bin/depmod.*", file);
+        file_context("/usr/bin/generate-modprobe\.conf", file);
+        file_context("/usr/bin/insmod.*", file);
+        file_context("/usr/bin/kmod", file);
+        file_context("/usr/bin/modprobe.*", file);
+        file_context("/usr/bin/modules-update", file);
+        file_context("/usr/bin/rmmod.*", file);
+        file_context("/usr/bin/update-modules", file);
+        file_context("/usr/sbin/depmod.*", file);
+        file_context("/usr/sbin/generate-modprobe\.conf", file);
+        file_context("/usr/sbin/insmod.*", file);
+        file_context("/usr/sbin/modprobe.*", file);
+        file_context("/usr/sbin/modules-update", file);
+        file_context("/usr/sbin/rmmod.*", file);
+        file_context("/usr/sbin/update-modules", file);
+    }
+
+    @alias(kmod_tmpfiles_conf_t)
+    resource tmpfiles_conf inherits configfile, systemd_tmpfiles_configfile {
+        file_context("/run/tmpfiles\.d/kmod\.conf", file);
+        file_context("/run/tmpfiles\.d/static-nodes\.conf", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ dac_override net_raw sys_nice sys_tty_config ]);
+    allow(this, self, process, execmem);
+    // for the radeon/amdgpu modules
+    dontaudit(this, self, capability, sys_admin);
+
+    this.conf.read();
+
+    this.dep.mmap_manage();
+    kernel_module_t.filetrans(kmod_t, this.dep, file);
+
+    // for /run/tmpfiles.d/kmod.conf
+    this.tmpfiles_conf.manage();
+    systemd_tmpfiles_t.conf.filetrans(this, this.tmpfiles_conf, file);
+
+    acpi_bios_t.rw();
+
+    agp_device_t.rw();
+
+    alsa_t.domtrans();
+
+    bin_t.exec();
+
+    debugfs_t.mount();
+    debugfs_t.read();
+
+    domain.send_general_signals();
+
+    etc_t.read();
+    etc_t.exec();
+
+    etc_runtime_t.read();
+
+    fs_t.getattr_superblock();
+
+    init_t.initctl.rw();
+
+    kernel.insert_modules();
+    kernel.request_module_load();
+
+    kernel_t.userspace_entrypoint();
+    kernel_t.set_scheduler();
+
+    kernel_module_t.mmap_manage();
+
+    kvmfs_t.mount();
+
+    mount_t.domtrans();
+
+    mtrr_device_t.rw();
+
+    proc_t.rw();
+    proc_t.net.read();
+
+    runtime_t.list(); var_t.list();
+
+    shell_exec_t.exec();
+
+    sound_device_t.mmap_rw();
+
+    src_t.read();
+
+    // Rules for /proc/sys/kernel/tainted
+    sysctl_t.kernel.rw(); sysctl_t.list();
+    sysctl_t.kernel.hotplug.read();
+
+    sysfs_t.rw();
+
+    syslog.send_messages();
+
+    system_map_t.read(); boot_t.list();
+
+    // kmod needs to create /run/tmpdiles.d
+    systemd_tmpfiles_t.conf<common_dir>.create();
+    runtime_t.filetrans(kmod_t, systemd_tmpfiles_t.conf, dir, "tmpfiles.d");
+
+    tmp_t.list();
+
+    tmpfs_t<common_character_device>.dontaudit_rw();
+
+    tracefs_t.list();
+
+    // for when /var is not mounted early in the boot:
+    unlabeled_t<dir>.dontaudit_list();
+
+    urandom_device_t.read();
+
+    usbfs_t.list();
+
+    usr_t.read();
+
+    usr_home_dir_t.dontaudit_list();
+
+    var_log_t.list();
+
+//typeattribute kmod_t mlsfilewrite;
+}
+
+// TODO: These should be handled by domtrans:
+//allow kmod_t user_devpts_t:chr_file { rw_chr_file_perms };
+//allow kmod_t user_tty_device_t:chr_file { rw_chr_file_perms };
+
+//allow kmod_t apt_t:fd use;
+//allow kmod_t apt_devpts_t:chr_file { rw_chr_file_perms };
+
+// for postinst of a new kernel package
+//allow kmod_t dpkg_script_tmp_t:dir manage_dir_perms;
+//allow kmod_t dpkg_script_tmp_t:file manage_file_perms;
+//allow kmod_t dpkg_script_tmp_t:file map;
+//allow kmod_t dpkg_script_tmp_t:lnk_file read_lnk_file_perms;
+
+//dontaudit kmod_t firstboot_t:fifo_file { read write };
+//dontaudit kmod_t firstboot_t:unix_stream_socket { read write };
+
+//iptables_t.runtime.dontaudit_read();
+
+//ramfs_t.manage();
+//dontaudit kmod_t xserver_log_t:file { append ioctl write };
+//xserver_t.unix_stream_connect(); // this expects "xserver_tmp_t" is an alias of xserver_t.runtime, otherwise xserver_t.unix_stream_connect() needs to be updated.
+//dontaudit kmod_t xserver_t:unix_stream_socket { read write };
+
+//allow kmod_t rpm_t:fifo_file rw_fifo_file_perms;
+
+//xserver_misc_device_t.rw();
+//allow kmod_t xserver_log_t:file getattr;

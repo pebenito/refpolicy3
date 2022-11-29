@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_generator_t inherits systemd_app_domain {
+    /// Systemd unit generators
+
+    //
+    // Resources
+    //
+    @alias(systemd_generator_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/system-environment-generators/.*", file);
+        file_context("/usr/lib/systemd/system-generators/.*", file);
+        file_context("/usr/lib/systemd/user-environment-generators/.*", file);
+        file_context("/usr/lib/systemd/user-generators/.*", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, dac_override);
+    allow(this, self, process, setfscreate);
+
+    bin_t.exec();
+
+    boot_t.read();
+
+    efivarfs_t.list();
+
+    etc_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    fixed_disk_device_t.read(); fixed_disk_device_t<common_character_device>.read();
+
+    fsadm_t.exec.exec();
+
+    init_t.ps();
+    init_t.runtime.create(); runtime_t.list(); var_t.list();
+    init_t.runtime.read();
+    init_t.runtime.rename();
+    init_t.runtime.setattr();
+    init_t.runtime<common_dir>.manage();
+    init_t.runtime<symlink>.manage();
+
+    init_script_t.exec.read();
+
+    kernel_t.inherit_file_descriptors();
+
+    kmsg_device_t.write();
+
+    lvm_t.exec.exec();
+    lvm_t.conf.mmap_read();
+
+    mountpoint<dir>.list();
+
+    proc_t.read();
+    proc_t.dontaudit_getattr_superblock();
+
+    shell_exec_t.exec();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    sysfs_t.read();
+    sysfs_t<common_dir>.write();
+
+    // Units are in /etc/systemd/system, /usr/lib/systemd/system and /run/systemd
+    systemd_unit_t.list();
+
+    tmpfs_t.list();
+
+    tty_device_t.rw();
+
+    udev_t.runtime.read();
+
+    // Where an unlabeled mountpoint is encounted:
+    dontaudit(this, unlabeled_t, dir, list_dir_perms);
+
+    urandom_device_t.read();
+
+    usr_t.list();
+
+    if (distro_gentoo) {
+        shell_exec_t.entrypoint();
+    }
+}

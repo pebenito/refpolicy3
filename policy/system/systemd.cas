@@ -1,0 +1,1042 @@
+// SPDX-License-Identifier: GPL-2.0
+
+// TODO: define systemd classes
+
+//
+// API
+//
+let enable_unit_perms = [ enable status ];
+let disable_unit_perms = [ disable status ];
+let enabledisable_unit_perms = [ enable disable status ];
+let reload_unit_perms = [ reload ];
+let start_unit_perms = [ start status ];
+let stop_unit_perms = [ stop status ];
+let startstop_unit_perms = [ start stop status ];
+let status_unit_perms = [ status ];
+let admin_unit_perms = [ enable disable start stop reload status ];
+let unconfined_unit_perms = [ enable disable start stop reload status ];
+
+let admin_systemd_perms = [ disable enable halt reboot reload start status stop ];
+let unconfined_systemd_perms = [ disable enable halt reboot reload start status stop ];
+
+api systemd_unit_api {
+    /// Systemd unit API
+
+    fn enable(domain source) {
+        allow(source, this, service, enable_unit_perms);
+        allow(source, this, file, getattr);
+    }
+
+    fn enabledisable(domain source) {
+        allow(source, this, service, enabledisable_unit_perms);
+        allow(source, this, file, getattr);
+    }
+
+    fn disable(domain source) {
+        allow(source, this, service, disable_unit_perms);
+        allow(source, this, file, getattr);
+    }
+
+    fn reload(domain source) {
+        allow(source, this, service, reload_unit_perms);
+        allow(source, this, file, getattr);
+    }
+
+    fn start(domain source) {
+        allow(source, this, service, start_unit_perms);
+        allow(source, this, file, getattr);
+    }
+
+    fn startstop(domain source) {
+        allow(source, this, service, startstop_unit_perms);
+        allow(source, this, file, getattr);
+    }
+
+    fn status(domain source) {
+        allow(source, this, service, status_unit_perms);
+        allow(source, this, file, getattr);
+    }
+
+    fn stop(domain source) {
+        allow(source, this, service, stop_unit_perms);
+        allow(source, this, file, getattr);
+    }
+
+    fn admin(domain source) {
+        allow(source, this, service, admin_unit_perms);
+        allow(source, this, file, getattr);
+    }
+
+    fn unconfined(domain source) {
+        allow(source, this, service, unconfined_unit_perms);
+        allow(source, this, file, getattr);
+    }
+}
+
+//
+// Virtuals
+//
+virtual domain systemd_common {
+    /// Common rules between systemd_app_domain and systemd_daemon.
+    /// Do not inherit this directly.
+
+    // Do not audit setsockopt(fd, SOL_SOCKET, SO_SNDBUFFORCE, ...) failure (e.g. when using create_log_socket() internal function)
+    dontaudit(this, self, capability, net_admin);
+
+    console_device_t.rw();
+
+    // For /sys/firmware/efi/efivars/SystemdOptions-*
+    efivarfs_t.read();
+
+    init_t.ps();
+
+    kmsg_device_t.write();
+
+    libs.libselinux_linked();
+
+    proc_t.read();
+
+    selinux.use_status_page();
+    selinux.file_contexts_setfscreate();
+
+    sysctl_t.crypto.read(); sysctl_t.list();
+
+    syslog.send_messages();
+}
+
+virtual domain systemd_app_domain inherits system_app_domain, systemd_common {
+    /// System apps that are part of systemd, e.g. systemd-backlight.
+}
+
+virtual domain systemd_daemon inherits daemon, systemd_common {
+    /// Daemons that are part of systemd, e.g. systemd-logind.
+}
+
+virtual resource systemd_mountpoint inherits mountpoint {
+    /// Locations where systemd pid1 may mount.
+}
+
+virtual resource systemd_path_unit_location {
+    /// The type of files and directories that path units monitor.
+}
+
+virtual resource user_systemdunit inherits systemd_unit_api {
+    /// Units only used by systemd --unit.
+//typeattribute systemd_user_runtime_unit_t ubac_constrained_type;
+}
+
+virtual domain systemd_user inherits common_domain, systemd_common {
+    /// `systemd --user` sessions.
+
+    //
+    // Policy
+    //
+    allow(this, self, process, [ setsockcreate setcap ]);
+    allow(this, self, capability, [ dac_read_search sys_resource ]);
+    dontaudit(this, self, capability, dac_override);
+    allow(this, self, bpf, [ prog_load prog_run ]);
+    allow(this, self, udp_socket, manage_socket_perms);
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+
+    // the user@.service unit is restarted when containers are created
+    systemd_user_manager_unit_t.startstop();
+    systemd_user_manager_unit_t.reload();
+
+    systemd_user_runtime_t.manage();
+    user_runtime_t.filetrans(this, systemd_user_runtime_t, dir); user_runtime_root_t.list(); runtime_t.list();
+
+    systemd_user_runtime_notify_t.manage();
+    systemd_user_runtime_t.filetrans(this, systemd_user_runtime_notify_t, sock_file, "notify");
+
+    systemd_user_runtime_unit_t.manage();
+    systemd_user_runtime_t.filetrans(this, systemd_user_runtime_unit_t, dir, "generator.early");
+    systemd_user_runtime_t.filetrans(this, systemd_user_runtime_unit_t, dir, "generator.late");
+    systemd_user_runtime_t.filetrans(this, systemd_user_runtime_unit_t, dir, "transient");
+    systemd_user_runtime_t.filetrans(this, systemd_user_runtime_unit_t, dir, "user");
+
+    systemd_user_tmpfs_t.manage();
+    tmpfs_t.filetrans(this, systemd_user_tmpfs_t, file);
+
+    audit.send_messages();
+
+    cgroup_t.manage();
+    cgroup_t.getattr_superblock();
+    cgroup_t<common_dir>.manage();
+    cgroup_t.watch();
+
+    entrypoint.getattr();
+
+    etc_t.read();
+    // /etc/localtime
+    etc_t<symlink>.watch();
+
+    fixed_disk_device_t.getattr();
+
+    home_root_t.list();
+
+    init_t.send_general_signals();
+    init_t.link_keys();
+    // for /run/systemd/notify
+    init_t.unix_datagram_send();
+    // container engines will move container processes to different slices
+    init_t.dbus_send();
+
+    init_t.exec.entrypoint();
+
+    // these should be handled by domtrans:
+    init_t.rw_inherited_pipes();
+    init_t.rw_inherited_unix_stream_sockets();
+
+    locale_t.watch();
+
+    mount_t.runtime.read();
+    mount_t.runtime.watch();
+    mount_t.runtime.watch_reads();
+    mount_t.runtime<common_dir>.watch();
+
+    proc_t.dontaudit_getattr_superblock();
+
+    selinux.get_access_decisions();
+    selinux.get_create_contexts();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+    // for /proc/sys/fs/nr_open
+    sysctl_t.fs.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.read();
+    sysfs_t<common_dir>.write();
+
+    system_dbusd_t.client();
+
+    systemd_conf_home_t.manage();
+
+    systemd_data_home_t.manage();
+
+    // Run generators in /usr/lib/systemd/user-environment-generators with no domain transition
+    systemd_generator_t.exec.exec();
+
+    systemd_unit_t.read();
+
+    systemd_user_unit_t.read();
+
+    systemd_user_runtime_unit_t.read();
+
+    tmpfs_t.getattr_superblock();
+    tmpfs_t.list();
+
+    // for systemd to read udev status
+    udev_t.runtime.read();
+
+    urandom_device_t.read();
+
+    user_bin_t.exec();
+
+    usr_t.list();
+
+    xdg_config_t.mmap_read();
+    xdg_config_t<common_dir>.create();
+    xdg_config_t.filetrans(this, systemd_conf_home_t, dir, "systemd");
+
+    xdg_data_t.mmap_read();
+    xdg_data_t<common_dir>.create();
+    xdg_data_t.filetrans(this, systemd_data_home_t, dir, "systemd");
+
+    //
+    // Functions
+    //
+    fn setexec_domtrans(domain source, role src_role=source.roles) {
+        allow(source, source, process, [setexec]);
+        init_exec_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        role_associate(src_role, this.roles);
+    }
+
+    fn unix_stream_connect(domain source) {
+        /// Connect to this daemon over a unix stream socket.
+        runtime_t.list(source);
+        systemd_user_runtime_t<common_named_socket>.rw(source);
+        allow(source, this, unix_stream_socket, [ getattr connectto ]);
+    }
+
+    fn activated(common_domain source) {
+        source.domtrans(this);
+    }
+
+    fn unix_stream_activated(common_domain source, named_socket sock=source.runtime) {
+        allow(this, source, unix_stream_socket, [ manage_socket_perms listen ]);
+        sock<common_named_socket>.manage();
+        source.domtrans(this);
+    }
+
+    @associated_call
+    fn user_derived_domain(userdomain source) {
+        //
+        // systemd --user rules
+        //
+        allow(this, source, process, [ setsched rlimitinh signal_perms ]);
+
+        source.ps(this);
+
+        // TODO: check role associations and stdin/out, fds, etc.
+        source.bin_domtrans(this);
+        source.shell_domtrans(this);
+
+        //
+        // User domain rules
+        //
+        this.send_general_signals(source);
+        this.unix_stream_connect(source);
+        this.rw_inherited_stream_sockets(source);
+        this.rw_inherited_pipes(source);
+        allow(source, this, system, [ disable enable reload start stop status ]);
+
+        init_t.dbus_send(source);
+
+        systemd_conf_home_t.admin(source);
+        systemd_conf_home_t.startstop(source);
+        systemd_conf_home_t.reload(source);
+
+        systemd_data_home_t.admin(source);
+
+        systemd_journal_t.mmap_read(source);
+
+        systemd_user_runtime_t.admin(source);
+
+        systemd_user_runtime_notify_t.admin(source);
+
+        systemd_user_unit_t.read(source);
+        systemd_user_unit_t.startstop(source);
+        systemd_user_unit_t.reload(source);
+
+        systemd_user_runtime_unit_t.read(source);
+        systemd_user_runtime_unit_t.startstop(source);
+        systemd_user_runtime_unit_t.reload(source);
+    }
+//TODO:
+//dbus_spec_session_bus_client($1, $1_systemd_t)
+//dbus_connect_spec_session_bus($1, $1_systemd_t)
+//typeattribute $1_systemd_t process_user_target;
+//typeattribute $1_systemd_t $1_application_exec_domain;
+//typeattribute $1_systemd_t ubac_constrained_type;
+//role $1_r types $1_systemd_t;
+// These should be handled with general socket activation perms
+// but the user daemons need a virtual:
+//allow $1_systemd_t systemd_user_unix_stream_activated_socket_type:unix_stream_socket { create_socket_perms listen };
+//allow $1_systemd_t systemd_user_activated_sock_file_type:dir manage_dir_perms;
+//allow $1_systemd_t systemd_user_activated_sock_file_type:sock_file manage_sock_file_perms;
+}
+
+//
+// Concrete types
+//
+@alias(init_t)
+domain systemd_t inherits init {
+    /// Systemd init program (pid 1)
+
+    //
+    // Resources
+    //
+
+    @alias(systemd_journal_t)
+    resource journal inherits logfile, systemd_tmpfiles_managed {
+        /// Systemd journal data.
+        file_context("/run/log/journal(/.*)?", any, system_u:object_r:systemd_journal_t:mls_systemhigh);
+        file_context("/var/log/journal(/.*)?", any, system_u:object_r:systemd_journal_t:mls_systemhigh);
+    }
+
+    @alias(init_runtime_t)
+    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+        /// Runtime files in /run and /var/run.
+    }
+
+    @alias(init_var_lib_t)
+    resource state inherits common_file, systemd_tmpfiles_managed {
+        /// Contents of /var/lib/systemd/*
+
+        file_context("/var/lib/systemd(/.*)?", any, this);
+    }
+
+    @alias(init_tmp_t)
+    resource tmp inherits tmpfile, common_fifo_file, common_named_socket {
+        /// Temporary files in /tmp and /var/tmp.
+    }
+
+    @alias(init_tmpfs_t)
+    resource tmpfs inherits tmpfsfile, common_fifo_file, common_named_socket {
+        /// POSIX shared memory segments (tmpfs files)
+    }
+
+    //
+    // Policy
+    //
+
+    // Use capabilities. old rule:
+    allow(this, self, capability, [ chown dac_override dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice sys_resource sys_time sys_tty_config mknod lease audit_write audit_control setfcap ]);
+    allow(this, self, capability2, [ wake_alarm block_suspend audit_read bpf perfmon ]);
+
+    // is ~sys_module really needed? observed:
+    // sys_boot
+    // sys_tty_config
+    // kill
+    // setuid (from /sbin/shutdown)
+    // sys_chroot (from /usr/bin/chroot)
+
+    // manage the capabilities granted to namespace processes
+    allow(this, self, cap_userns, [ audit_write chown dac_override dac_read_search fowner fsetid ipc_lock ipc_owner kill lease linux_immutable mknod net_admin net_bind_service net_raw setfcap setgid setpcap setuid sys_admin sys_boot sys_chroot sys_module sys_nice sys_pacct sys_ptrace sys_rawio sys_resource sys_time sys_tty_config ]);
+    allow(this, self, cap2_userns, [ audit_read bpf block_suspend mac_admin mac_override perfmon syslog wake_alarm ]);
+    // setexec and setkeycreate for systemd --user
+    allow(this, self, process, [ getcap setcap getsched setsched setpgid setfscreate setsockcreate setexec setkeycreate setcap setrlimit ]);
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+    allow(this, self, fifo_file, rw_fifo_file_perms);
+    allow(this, self, unix_dgram_socket, [ manage_socket_perms sendto ]);
+    allow(this, self, unix_stream_socket, [ manage_stream_socket_perms connectto ]);
+    allow(this, self, netlink_audit_socket, [ nlmsg_relay create_socket_perms ]);
+    allow(this, self, netlink_selinux_socket, manage_socket_perms;
+    allow(this, self, udp_socket, create_socket_perms);
+    allow(this, self, netlink_route_socket, [ manage_socket_perms nlmsg_read nlmsg_write ]);
+    allow(this, self, key, [ search setattr write ]);
+    allow(this, self, bpf, [ map_create map_read map_write prog_load prog_run ]);
+    allow(this, self, system, [ status reboot halt reload ]);
+    dontaudit(this, self, process, setcurrent);
+
+    // Re-exec itself
+    this.exec.exec();
+
+    this.initctl.manage();
+    device_t.filetrans(this, initctl_t, fifo_file);
+    var_run_t.filetrans(this, initctl_t, fifo_file); var_t.list();
+
+    this.runtime.manage();
+    this.runtime.watch();
+    runtime_t.filetrans(this, this.runtime, dir_notdevfile_class_set); var_t.list();
+
+    // for /run/systemd/inaccessible/{chr,blk,fifo}
+    this.runtime<blk_file>.create();
+    this.runtime<chr_file>.create();
+    this.runtime<fifo_file>.create();
+    this.runtime<blk_file>.relabelto();
+    this.runtime<chr_file>.relabelto();
+    this.runtime<fifo_file>.relabelto();
+
+    this.tmpfs.manage();
+    tmpfs_t.filetrans(this, this.tmpfs, file);
+
+    // mounton is required for systemd-timesyncd
+    this.var_lib.manage();
+    this.var_lib<dir>.mounton();
+
+    audit.send_messages();
+
+    autofs_t.list();
+    autofs_t.mount();
+    autofs_t.ummount();
+
+    autofs_device_t.rw();
+
+    bin_t.exec();
+
+    boot_t<filesystem>.remount();
+
+    cert_t.read();
+
+    cgroup_t.manage();
+    cgroup_t.watch();
+    cgroup_t<symlink>.create();
+    cgroup_t<symlink>.relabel();
+    cgroup_t<common_dir>.manage();
+    cgroup_t<common_dir>.relabel();
+
+    chkpwd_t.domtrans();
+
+    chroot_exec_t.exec();
+
+    /// Socket activations
+    allow(this, daemon, unix_dgram_socket, manage_socket_perms);
+    allow(this, daemon, unix_stream_socket, manage_stream_socket_perms);
+    allow(this, daemon, tcp_socket, manage_stream_socket_perms);
+    allow(this, daemon, udp_socket, manage_socket_perms);
+    allow(this, daemon.runtime, dir, manage_dir_perms);
+    allow(this, daemon.runtime, fifo_file, manage_fifo_file_perms);
+    allow(this, daemon.runtime, sock_file, manage_sock_file_perms);
+
+    default_context_t.read(); selinux_config_t.list(); etc_t.list();
+
+    device_node<common_dir>.relabelfrom();
+    device_node<common_file>.relabelfrom();
+    device_node<common_pipe>.relabelfrom();
+    device_node<common_named_socket>.relabelfrom();
+    device_node<common_character_device>.relabel();
+    device_node<common_block_device>.relabel();
+
+    device_t.relabel();
+    device_t.manage();
+    device_t<symlink>.manage();
+    device_t<symlink>.relabel();
+    device_t<common_file>.relabel();
+    device_t<common_pipe>.relabelfrom();
+    device_t<common_named_socket>.relabelfrom();
+    device_t<common_character_device>.read();
+    device_t<common_character_device>.relabelfrom();
+    device_t<common_block_device>.relabelfrom();
+    // Early devtmpfs
+    device_t<common_character_device>.rw_inherited();
+
+    devlog_t.manage();
+    device_t.filetrans(this, devlog_t, sock_file);
+    this.runtime.filetrans(this, devlog_t, sock_file, "syslog"); runtime_t.list(); var_t.list();
+
+    devpts_t.relabel();
+
+    debugfs_t.unmount();
+
+    domain.ps();
+    domain.set_scheduler();
+
+    efivarfs_t.read();
+
+    // If /etc/localtime is missing, a watch on /etc is added.
+    etc_t<dir>.watch();
+    etc_t<symlink>.watch();
+
+    etc_runtime_t.manage(); etc_t<dir>.rw();
+    etc_runtime_t.relabelto();
+    etc_runtime_t<dir>.relabelto();
+    etc_t.filetrans(this, etc_runtime_t, file);
+
+    event_device_t.manage();
+    event_device_t.rw();
+
+    faillog_t.rw();
+
+    file_type<common_dir>.list();
+    file_type<common_file>.getattr();
+    file_type<common_named_socket>.getattr();
+    file_type<filesystem>.unmount();
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+    filesystem.mount();
+    filesystem.remount();
+    filesystem.unmount();
+
+    fs_t.getattr_superblock();
+
+    // Add/remove user home directories
+    home_root_t.filetrans(this, user_home_dir_t, dir);
+
+    hugetlbfs_t<common_dir>.manage();
+
+    // run systemd misc initializations
+    // in the init_script_t domain, as would be
+    // done in traditional sysvinit/upstart.
+    init_script_t.bin_domtrans();
+    init_script_t.shell_domtrans();
+    // Modify utmp.
+    init_script_t.runtime.rw();
+    init_script_t.runtime.setattr();
+
+    inotifyfs_t.list();
+
+    kernel_t.share_unsafe_state();
+    kernel_t.search_keys();
+    kernel_t.set_scheduler();
+    kernel_t.link_keys();
+    kernel_t.rw_inherited_stream_sockets();
+    kernel_t.rw_inherited_datagram_sockets();
+    kernel_t.abstract_stream_connect();
+    allow(this, kernel_t, system, module_request);
+
+    kernel_module_t.mmap_read();
+
+    kmsg_device_t.write();
+
+    ld_so_cache_t.rw();
+
+    locale_t.watch();
+
+    lockfile.read();
+    lockfile<common_dir>.relabel();
+
+    lvm_control_t.rw();
+
+    // systemd watches utab in order to mount the
+    // local filesystem at boot
+    mount_runtime_t<common_dir>.watch();
+    mount_runtime_t.watch();
+    mount_runtime_t.watch_reads();
+
+    nfsd_fs_t.read();
+
+    null_device_t.create();
+
+    pam_var_console_t<common_dir>.relabel();
+
+    proc_t.getattr_superblock();
+    proc_t.read();
+    proc_t.mdstat.read();
+    proc_t.net.read();
+
+    pstore_t<common_dir>.relabel();
+    pstore_t<common_dir>.getattr();
+    pstore_t<common_dir>.create();
+
+    // this may be related to /dev/log
+    ramfs_t<common_named_socket>.write();
+
+    random_device_t.create();
+    random_device_t.read();
+
+    root_t.watch();
+    // file descriptors inherited from the rootfs:
+    root_t<common_file>.dontaudit_rw_inherited();
+    root_t<character_device>.dontaudit_rw_inherited();
+
+    runtimefile.read();
+    runtimefile.delete();
+    runtimefile.relabel();
+    runtimefile<symlink>.relabel();
+    runtimefile<common_dir>.relabel();
+    runtimefile<common_dir>.manage();
+    runtimefile<common_pipe>.create();
+    runtimefile<common_pipe>.delete();
+    runtimefile<common_named_socket>.create();
+    runtimefile<common_named_socket>.delete();
+    runtimefile<common_named_socket>.relabel();
+
+    runtime_t.list(); var_t.list();
+    runtime_t<common_file>.exec(); var_t.list();
+    runtime_t<common_file>.rw(); var_t.list();
+    runtime_t<common_file>.delete(); var_t.list();
+    runtime_t.watch(); var_t.list();
+
+    selinux.set_all_booleans();
+    selinux.validate_contexts();
+    selinux.get_create_contexts();
+    selinux.get_access_decisions();
+    // for starting systemd --user in the right domain:
+    selinux.get_user_contexts();
+
+    selinuxfs_t.mmap_read();
+
+    shadow_t.dontaudit_read();
+
+    spoolfile<common_named_socket>.create();
+    spoolfile<common_named_socket>.delete();
+
+    sysctl_entry.read(); sysctl_t.list(); proc_t.net.list();
+
+    sysctl_t.fw.rw();
+    sysctl_t.kernel.rw();
+    sysctl_t.net.rw();
+    sysctl_t.net.unix.rw();
+
+    sysfs_t.read();
+    sysfs_t<common_dir>.manage();
+    sysfs_t<common_dir>.relabel();
+
+    sysfs_types.relabel();
+    sysfs_types<common_dir>.relabel();
+    sysfs_types<symlink>.relabel();
+
+    syslog.send_messages();
+
+    allow(this, system_app_domain, process, [ dyntransition siginh ]);
+    allow(this, system_app_domain, unix_stream_socket, manage_stream_socket_perms);
+    allow(this, system_app_domain, unix_dgram_socket, manage_socket_perms);
+
+    allow(this, systemd_mountpoint, dir_file_class_set, [ getattr mounton ]);
+
+    allow(this, systemd_path_unit_location, [ dir file ], [ getattr watch ]);
+
+    systemd_transient_unit_t<common_dir>.relabel();
+
+    // Start systemd --user sessions.
+    systemd_user.setexec_domtrans();
+    allow(this, systemd_user, process, [ setsched rlimitinh noatsecure ]);
+
+    systemdunit.manage();
+    systemdunit<common_dir>.manage();
+    systemdunit<symlink>.manage();
+
+    terminal.rw(); devpts_t.list();
+
+    tmp_t<common_dir>.manage();
+    tmp_t<common_dir>.relabel();
+    tmp_t<dir>.mounton();
+
+    tmpfs_t.manage();
+    tmpfs_t<common_file>.read();
+    tmpfs_t<common_block_device>.relabel();
+    tmpfs_t<common_character_device>.relabel();
+    tmpfs_t<common_pipe>.relabel();
+    tmpfs_t<symlink>.relabelfrom();
+    tmpfs_t.getattr_superblock();
+    // for privatetmp functions
+    tmpfs_t.relabel();
+    tmpfs_t<common_file>.relabel();
+    tmpfs_t<common_named_socket>.relabelfrom();
+    tmpfs_t<symlink>.manage();
+
+    allow(this, unlabeled_t, dir, list_dir_perms);
+
+    urandom_device_t.create();
+    urandom_device_t.rw();
+
+    var_auth_t.rw();
+    var_auth_t<symlink>.rw();
+    var_auth_t<common_dir>.manage();
+
+    var_lib_t<common_file>.manage();
+
+    var_lock_t.setattr();
+
+    var_log_t.rw(); var_t.list();
+
+    var_t.dontaudit_write();
+
+    watchdog_device_t.write();
+
+    wtmp_t.relabel();
+
+    zero_device_t.create();
+
+//typeattribute init_t can_load_kernmodule);
+
+
+// handle instances where an old labeled init script is encountered.
+//typeattribute init_t init_run_all_scripts_domain;
+//allow init_run_all_scripts_domain systemdunit:service { status start stop };
+
+// typeattribute init_t nsswitch_domain;
+
+// Mostly for systemd. Allow init to link to various keyrings
+//allow this init_linkable_keyring_type:key link;
+
+// for starting systemd --user in the right domain:
+// typeattribute init_t can_change_process_identity;
+// typeattribute init_t can_change_process_role;
+
+// systemd_socket_activated policy
+// typeattribute init_t mlsnetwrite;
+
+// read from systemd-journal and similar
+// typeattribute init_t mlsnetreadtoclr;
+
+// typeattribute init_t mcssetcats;
+// typeattribute init_t mlsfileread;
+// typeattribute init_t mlsfilewrite;
+// typeattribute init_t mlsprocwrite;
+// typeattribute init_t mlsfduse;
+// typeattribute init_t mlsprocsetsl;
+
+    //
+    // Functions
+    //
+    fn admin(domain source) {
+        /// Admin systemd (--system and --user).
+        allow(source, this, system, admin_systemd_perms);
+
+        this.telinit(source);
+
+        // for /etc/fstab
+        etc_t<systemdunit>.admin(source);
+
+        null_device_t<systemdunit>.admin(source);
+
+        systemdunit.admin(source);
+
+        allow(source, user_systemd, system, admin_systemd_perms);
+
+        user_systemdunit.admin(source);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to systemd (--system and --user)
+        this.admin(source);
+    }
+}
+
+resource power_unit_t inherits systemdunit {
+    /// Units for power state (shutdown, reboot, sleep, etc.)
+    file_context("/usr/lib/systemd/system/[^/]*halt.*", file);
+    file_context("/usr/lib/systemd/system/[^/]*hibernate.*", file);
+    file_context("/usr/lib/systemd/system/[^/]*power.*", file);
+    file_context("/usr/lib/systemd/system/[^/]*reboot.*", file);
+    file_context("/usr/lib/systemd/system/[^/]*shutdown.*", file);
+    file_context("/usr/lib/systemd/system/[^/]*sleep.*", file);
+    file_context("/usr/lib/systemd/system/[^/]*suspend.*", file);
+}
+
+resource systemd_conf_home_t inherits user_systemdunit, user_home_content {
+    /// Files in ~/.config/systemd.
+    file_context("HOME_DIR/\.config/systemd(/.*)?", any);
+// systemd_conf_home_t inherits xdg_config_type;
+}
+
+resource systemd_data_home_t inherits user_home_content {
+    /// Files in ~/.local/share/systemd.
+    file_context("HOME_DIR/\.local/share/systemd(/.*)?", any);
+// systemd_data_home_t xdg_data_type;
+// TBD systemd_data_home_t polymember for particular types
+}
+
+resource systemd_transient_unit_t inherits systemdunit {
+    /// Transient units for systemd pid 1.
+}
+
+
+resource systemd_user_manager_unit_t inherits systemdunit {
+    /// The user@.service unit for systemd --user instances.
+    file_context("/usr/lib/systemd/system/user@\.service", file);
+}
+
+resource systemd_user_runtime_t inherits user_runtime_content, common_named_socket, common_pipe, common_block_device, common_character_device, symlink {
+    /// systemd --user instance data in /run/user/<uid>/systemd/*
+    file_context("/run/user/%{USERID}/systemd", dir);
+}
+
+resource systemd_user_runtime_notify_t inherits user_runtime_content, common_named_socket {
+    /// systemd --user instance notify socket.
+}
+
+resource systemd_user_runtime_unit_t inherits user_runtime_content, user_systemdunit {
+    file_context("/run/user/%{USERID}/systemd/generator(/.*)?", any);
+    file_context("/run/user/%{USERID}/systemd/generator\.early(/.*)?", any);
+    file_context("/run/user/%{USERID}/systemd/generator\.late(/.*)?", any);
+    file_context("/run/user/%{USERID}/systemd/transient(/.*)?", any);
+    file_context("/run/user/%{USERID}/systemd/user(/.*)?", any);
+}
+
+resource systemd_user_unit_t inherits user_systemdunit, common_file {
+    /// Systemwide units for systemd --user instances.
+    file_context("/usr/lib/systemd/user(/.*)?", any);
+}
+
+resource systemd_user_tmpfs_t inherits tmpfsfile {
+// typeattribute systemd_user_tmpfs_t ubac_constrained_type;
+}
+
+//
+// Extends
+//
+extend daemon {
+    resource unit inherits systemdunit {
+        /// The systemd unit for this daemon.
+    }
+
+    allow(this, init_t, unix_stream_socket, rw_inherited_socket_perms);
+    allow(this, init_t, unix_dgram_socket, sendto);
+
+    // StandardInputText uses a memfd rw shm segment.
+    // Cannot deny writes or it breaks.
+    allow(this, init_t.tmpfs, file, rw_inherited_file_perms);
+
+    // systemd_stream_connect_socket_proxyd($1)
+
+    //
+    // Concrete member functions
+    //
+    fn admin(domain source) {
+        /// Administrate this daemon.
+        allow(source, this, process, admin_process_perms);
+        this.ps(source);
+        this.startstop(source);
+
+        this.conf.admin(source);
+
+        this.runtime.admin(source);
+
+        this.tmp.admin(source);
+
+        this.tmpfs.admin(source);
+    }
+
+    fn enable(domain source) {
+        this.unit.status(source);
+    }
+
+    fn enabledisable(domain source) {
+        this.enable(source);
+        this.disable(source);
+    }
+
+    fn disable(domain source) {
+        this.unit.disable(source);
+    }
+
+    fn reload(domain source) {
+        this.unit.reload(source);
+    }
+
+    fn start(domain source) {
+        this.unit.start(source);
+    }
+
+    fn startstop(domain source) {
+        this.start(source);
+        this.stop(source);
+    }
+
+    fn status(domain source) {
+        this.unit.status(source);
+    }
+
+    fn stop(domain source) {
+        this.unit.stop(source);
+    }
+}
+
+extend init_script_file inherits systemd_unit_api {}
+
+extend init_script_t {
+    extend runtime inherits systemd_tmpfiles_managed {}
+
+    boot_t.read();
+
+    allow(this, null_device_t, service, [ status start stop reload ]);
+
+    bin_t.entrypoint();
+
+    shell_exec_t.entrypoint();
+
+    usbfs_t.read();
+
+    fn bin_domtrans(domain source, role src_role) {
+        bin_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        type_transition(source, bin_t, process, this);
+        role_associate(src_role, this.roles);
+    }
+
+    fn shell_domtrans(domain source, role src_role) {
+        shell_exec_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        type_transition(source, shell_exec_t, process, this);
+        role_associate(src_role, this.roles);
+    }
+}
+
+extend kernel_t {
+    input_device_t.manage();
+//    dev_filetrans_input_dev(kernel_t)
+
+    selinux.get_create_contexts(kernel_t);
+
+    fixed_disk_device_t.manage();
+    //storage_dev_filetrans_fixed_disk(kernel_t)
+}
+
+extend syslogd_t {
+    // Extend syslogd_t for systemd-journald use.
+
+    extend conf {
+        file_context("/etc/systemd/journal.*\.conf", file);
+        file_context("/etc/systemd/journald\.conf\.d(/.*)?", any);
+    }
+
+    extend devlog {
+        file_context("/run/systemd/journal/socket", socket, system_u:object_r:devlog_t:mls_systemhigh);
+        file_context("/run/systemd/journal/stdout", socket, system_u:object_r:devlog_t:mls_systemhigh);
+        file_context("/run/systemd/journal/syslog", socket, system_u:object_r:devlog_t:mls_systemhigh);
+        file_context("/run/systemd/journal/dev-log", socket, system_u:object_r:devlog_t:mls_systemhigh);
+    }
+
+    extend exec {
+        file_context("/usr/lib/systemd/systemd-journald", file);
+        file_context("/usr/lib/systemd/systemd-kmsg-syslogd", file);
+    }
+
+    extend runtime {
+        file_context("/run/systemd/journal(/.*)?", any, system_u:object_r:syslogd_runtime_t:mls_systemhigh);
+    }
+
+    extend unit {
+        file_context("/usr/lib/systemd/system/[^/]*systemd-journal.*", file);
+    }
+
+    // dac_read_search:  journald traverses /run/user/UID (which is mode 0700) to read symlinks in /run/user/UID/systemd/units/
+    allow(this, self, capability, [ audit_control dac_read_search ]);
+    allow(this, self, capability2, audit_read);
+    allow(this, self, capability, [ chown setgid setuid sys_ptrace ]);
+    allow(this, self, netlink_audit_socket, [ manage_socket_perms nlmsg_write ]);
+
+    domain.ps();
+
+    init_t.unix_datagram_send();
+    init_t.runtime.read();
+    init_t.runtime.rename();
+    init_t.runtime.delete();
+    init_t.runtime<common_dir>.create();
+    init_t.runtime<common_pipe>.read();
+    init_t.runtime.filetrans(this, this.devlog, sock_file, "dev-log");
+
+    kernel_t.rw_inherited_stream_sockets();
+    kernel_t.rw_inherited_datagram_sockets();
+    allow(this, kernel_t, netlink_audit_socket, [ rw_socket_perms nlmsg_read nlmsg_write ]);
+
+    kmsg_device_t.rw();
+
+    // TODO: revalidate this
+    runtime_t.filetrans(this, this.tmp, dir, "log");
+
+    syslog.read_kernel_ring_buffer();
+    // needed for systemd-initrd case when syslog socket is unlabelled
+    syslog.send_messages();
+
+    systemd_t.journal.mmap_manage();
+
+    systemd_user_runtime_t.list(); user_runtime_t.list(); user_runtime_root_t.list();
+
+    udev_runtime_t<common_file>.read();
+
+    urandom_device_t.read();
+
+    // remove /run/log/journal when switching to permanent storage
+    var_log_t<common_dir>.delete();
+
+//typeattribute syslogd_runtime_t daemonpidfile;
+//var_run_t.filetrans(initrc_t, syslogd_runtime_t, dir, "syslogd");
+}
+
+extend lvm_t inherits systemd_common {
+    // Extend for systemd-cryptsetup
+    extend exec {
+        file_context("/usr/lib/systemd/systemd-cryptsetup", file);
+    }
+
+    hugetlbfs_t<common_dir>.manage();
+
+    systemd_homework_t.rw_sysv_semaphores();
+}
+
+extend system_app_domain {
+    allow(this, init_t, unix_stream_socket, rw_inherited_socket_perms);
+    allow(this, init_t, unix_dgram_socket, sendto);
+}
+
+extend systemdunit inherits systemd_unit_api {}
+
+extend udev_t {
+    // systemd-vconsole-setup will be called by udev during virtual terminal initialization
+    allow(this, self, capability sys_tty_config;
+
+    // for systemd-udevd to rename interfaces
+    allow(this, self, netlink_route_socket, nlmsg_write);
+
+    init_t.unix_datagram_send(udev_t);
+    init_t.unix_stream_connect(udev_t);
+    init_t.dbus_send(udev_t);
+    allow(udev_t, init_t, system, start);
+
+    // for hdparm init script run by udev
+    init_script_t.status();
+
+    systemd_sessions_t.runtime<common_file>.read(udev_t);
+
+    systemd_hwdb_t<common_file>.mmap_read(udev_t);
+
+    systemd_login_t.runtime.read();
+    systemd_login_t.inherit_file_descriptors();
+
+    systemdunit.startstop(udev_t);
+}

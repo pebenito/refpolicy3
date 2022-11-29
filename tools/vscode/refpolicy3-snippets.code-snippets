@@ -1,0 +1,314 @@
+{
+	"header": {
+        "prefix": "header",
+		"body": [
+			"// SPDX-License-Identifier: GPL-2.0",
+			"",
+			"$0"
+		],
+		"description": "SPDX GPL-2.0 header."
+	},
+	"daemon from filename": {
+        "prefix": "daemon",
+		"body": [
+			"domain ${TM_FILENAME_BASE/-/_/g}_t inherits daemon {",
+			"    /// ${1:description_text}",
+			"",
+			"    //",
+			"    // Resources",
+			"    //",
+			"    @alias(${TM_FILENAME_BASE/-/_/g}_config_t)",
+			"    extend config {",
+            "        ${2:insert_config_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${TM_FILENAME_BASE/-/_/g}_exec_t)",
+			"    extend exec {",
+            "        ${3:insert_exec_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${TM_FILENAME_BASE/-/_/g}_initrc_exec_t)",
+			"    extend initrc_exec {",
+            "        ${4:insert_initrc_exec_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${TM_FILENAME_BASE/-/_/g}_log_t)",
+			"    extend log {",
+            "        ${5:insert_log_contexts}",
+			"    }",
+			"",
+			"    @alias(${TM_FILENAME_BASE/-/_/g}_runtime_t)",
+			"    extend runtime {",
+            "        ${6:insert_runtime_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${TM_FILENAME_BASE/-/_/g}_tmp_t)",
+			"    extend tmp {",
+            "        ${7:insert_tmp_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${TM_FILENAME_BASE/-/_/g}_tmpfs_t)",
+			"    extend tmpfs {",
+            "        ${8:insert_tmpfs_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${TM_FILENAME_BASE/-/_/g}_unit_t)",
+			"    extend unit {",
+            "        ${9:insert_unit_file_contexts}",
+			"    }",
+			"",
+			"    //",
+			"    // Policy",
+			"    //",
+			"    $0",
+			"}"
+		],
+		"description": "Template for refpolicy3 daemons."
+	},
+	"daemon custom name": {
+        "prefix": "daemon",
+		"body": [
+			"domain ${1:name}_t inherits daemon {",
+			"    /// ${2:description_text}",
+			"",
+			"    //",
+			"    // Resources",
+			"    //",
+			"    @alias(${1}_config_t)",
+			"    extend config {",
+            "        ${3:insert_config_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${1}_exec_t)",
+			"    extend exec {",
+            "        ${4:insert_exec_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${1}_initrc_exec_t)",
+			"    extend initrc_exec {",
+            "        ${5:insert_initrc_exec_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${1}_log_t)",
+			"    extend log {",
+            "        ${6:insert_log_contexts}",
+			"    }",
+			"",
+			"    @alias(${1}_runtime_t)",
+			"    extend runtime {",
+            "        ${7:insert_runtime_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${1}_tmp_t)",
+			"    extend tmp {",
+            "        ${8:insert_tmp_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${1}_tmpfs_t)",
+			"    extend tmpfs {",
+            "        ${9:insert_tmpfs_file_contexts}",
+			"    }",
+			"",
+			"    @alias(${1}_unit_t)",
+			"    extend unit {",
+            "        ${10:insert_unit_file_contexts}",
+			"    }",
+			"",
+			"    //",
+			"    // Policy",
+			"    //",
+			"    $0",
+			"}"
+		],
+		"description": "Template for refpolicy3 daemons."
+	},
+    "common_domain from filename": {
+        "prefix": "domain",
+		"body": [
+			"domain ${TM_FILENAME_BASE/-/_/g}_t inherits ${1|common_domain,system_app_domain,user_app_domain|} {",
+			"    /// ${2:description_text}",
+			"",
+			"    //",
+			"    // Resources",
+			"    //",
+			"    @alias(${TM_FILENAME_BASE/-/_/g}_exec_t)",
+			"    extend exec {",
+            "        ${3:insert_exec_file_contexts}",
+            "    }",
+			"",
+			"    //",
+			"    // Policy",
+			"    //",
+			"    $0",
+			"}"
+		],
+		"description": "Template for refpolicy3 common_domains."
+	},
+	"common_domain custom name": {
+        "prefix": "domain",
+		"body": [
+			"domain ${1:name}_t inherits ${2|common_domain,system_app_domain,user_app_domain|} {",
+			"    /// ${3:description_text}",
+			"",
+			"    //",
+			"    // Resources",
+			"    //",
+			"    @alias(${1}_exec_t)",
+			"    extend exec {",
+            "        ${4:insert_exec_file_contexts}",
+            "    }",
+			"",
+			"    //",
+			"    // Policy",
+			"    //",
+			"    $0",
+			"}"
+		],
+		"description": "Template for refpolicy3 common_domains."
+	},
+    "file_context template": {
+        "prefix": "file_context",
+        "body": "file_context(\"${1:path_regex}\", ${2|any,file,pipe,symlink,socket,chardev,blockdev|});"
+    },
+    "nested conf file declaration": {
+        "prefix": ["nest-conf", "tmpfs-conf", "decl-conf"],
+        "body": [
+            "    @alias()",
+            "    resource config inherits configfile {",
+            "        /// Configuration files.",
+            "        $0",
+            "    }"
+        ]
+    },
+    "extend conf file": {
+        "prefix": ["ext-conf"],
+        "body": [
+            "    @alias()",
+            "    extend config {",
+            "        $0",
+            "    }"
+        ]
+    },
+    "nested lock file declaration": {
+        "prefix": ["nest-lock", "tmpfs-lock", "decl-lock"],
+        "body": [
+            "    @alias()",
+            "    resource lock inherits lockfile {",
+            "        /// Lock files.",
+            "        $0",
+            "    }"
+        ]
+    },
+    "extend lock resource": {
+        "prefix": ["ext-lock"],
+        "body": [
+            "    @alias()",
+            "    extend lock {",
+            "        $0",
+            "    }"
+        ]
+    },
+    "nested runtime declaration": {
+        "prefix": ["nest-run", "run-decl", "decl-run"],
+        "body": [
+            "    @alias()",
+            "    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {",
+            "        /// Runtime files in /run and /var/run.",
+            "        $0",
+            "    }"
+        ]
+    },
+    "extend runtime resource": {
+        "prefix": ["ext-run"],
+        "body": [
+            "    @alias()",
+            "    extend runtime {",
+            "        $0",
+            "    }"
+        ]
+    },
+    "nested tmp declaration": {
+        "prefix": ["nest-tmp", "tmp-decl", "decl-tmp"],
+        "body": [
+            "    @alias()",
+            "    resource tmp inherits tmpfile, common_fifo_file, common_named_socket {",
+            "        /// Temporary files in /tmp and /var/tmp.",
+            "        $0",
+            "    }"
+        ]
+    },
+    "extend tmp resource": {
+        "prefix": ["ext-tmp"],
+        "body": [
+            "    @alias()",
+            "    extend tmp {",
+            "        $0",
+            "    }"
+        ]
+    },
+    "nested tmpfs declaration": {
+        "prefix": ["nest-tmpfs", "tmpfs-decl", "decl-tmpfs"],
+        "body": [
+            "    @alias()",
+            "    resource tmpfs inherits tmpfsfile, common_fifo_file, common_named_socket {",
+            "        /// POSIX shared memory segments (tmpfs files)",
+            "        $0",
+            "    }",
+        ]
+    },
+    "extend tmpfs resource": {
+        "prefix": ["ext-tmpfs"],
+        "body": [
+            "    @alias()",
+            "    extend tmpfs {",
+            "        $0",
+            "    }"
+        ]
+    },
+    "nested state declaration": {
+        "prefix": ["nest-state", "state-decl", "decl-state"],
+        "body": [
+            "    @alias()",
+            "    resource state inherits common_file {",
+            "        /// Contents of /var/lib/...",
+            "        $0",
+            "    }"
+        ]
+    },
+    "extend state resource": {
+        "prefix": ["ext-state"],
+        "body": [
+            "    @alias()",
+            "    extend state {",
+            "        $0",
+            "    }"
+        ]
+    },
+    "module": {
+        "prefix": "module",
+        "body": [
+            "module ${1:name} {",
+            "    $0",
+            "}"
+        ]
+    },
+    "port": {
+        "prefix": ["port-decl", "decl-port"],
+        "body": [
+            "    resource port inherits ${1|network_port,reserved_network_port,rpc_network_port|} {",
+            "        /// ${2:description_text}",
+            "        ${3:portcons}",
+            "    }"
+        ]
+    },
+    "tunable": {
+        "prefix": "tunable",
+        "body": [
+            "tunable ${1:name} {",
+            "    /// ${2:description}",
+            "    default ${3|false,true|};",
+            "}",
+            "$0"
+        ]
+    }
+}

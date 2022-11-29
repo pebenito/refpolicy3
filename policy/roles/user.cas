@@ -1,0 +1,269 @@
+// SPDX-License-Identifier: GPL-2.0
+
+@associate([
+    session_dbus
+    systemd_user
+])
+domain user_t inherits common_user, unpriv_userdomain {
+
+    // port access is audited even if dac would not have allowed it, so dontaudit it here
+    reserved_network_port.dontaudit_tcp_bind();
+
+    // Need the following rule to allow users to run vpnc
+    xserver_port_t.tcp_bind();
+
+    usr_t.exec();
+
+    public_content_t.read();
+    public_content_t.dontaudit_write();
+
+    public_content_rw_t.manage();
+    public_content_rw_t<dir>.watch();
+
+    if (user_dmesg) {
+        syslog.read_kernel_ring_buffer();
+    } else {
+        syslog.dontaudit_read_kernel_ring_buffer();
+    }
+
+    if (user_exec_noexattrfile) {
+        noxattr_filesystem.exec();
+    }
+
+    // Allow users to run TCP servers (bind to ports and accept connection from
+    // the same domain and outside users) disabling this forces FTP passive mode
+    // and may change other protocols
+    if (user_tcp_server) {
+        networking.tcp_server();
+        unreserved_port_t.tcp_bind();
+    }
+
+    // Allow users to run UDP servers (bind to ports and accept connection from
+    // the same domain and outside users)
+    if (user_udp_server) {
+        networking.udp_server();
+        unreserved_port_t.udp_bind();
+    }
+
+    optional {
+        if ( user_ping ) {
+            ping_t.domtrans(); usr_t.list(); bin_t.list();
+            traceroute_t.domtrans();
+        }
+    }
+
+    // Run pppd in pppd_t by default for user
+    optional {
+        if (pppd_for_user) {
+            pppd_t.domtrans(); usr_t.list(); bin_t.list();
+        }
+    }
+
+    optional {
+        setroubleshootd_t.unix_stream_connect();
+    }
+
+    optional {
+        // kwalletd5 inherits a socket from init
+        init_t.rw_inherited_unix_stream_sockets();
+        // for polkit-kde-auth
+        init_t.ps();
+
+        systemd_logind_t.dbus_send();
+
+        systemd_hostnamed_t.dbus_send();
+
+        systemd_logind_t.inherit_file_descriptors();
+        systemd_logind_t.inhibit.write_inherited();
+    }
+
+    optional {
+        if (usbguard_user_modify_rule_files) {
+            usbguard_t.unix_stream_connect();
+        }
+    }
+
+//optional_policy(`
+//    apache_role(user, user_t, user_application_exec_domain, user_r)
+//')
+
+//optional_policy(`
+//    git_client_role_template(user, user_t, user_application_exec_domain, user_r)
+//    git_role(user, user_t, user_application_exec_domain, user_r)
+//')
+
+//optional_policy(`
+//    modemmanager_dbus_chat(user_t)
+//')
+
+//optional_policy(`
+//    screen_role_template(user, user_t, user_application_exec_domain, user_r)
+//')
+
+//optional_policy(`
+//    vlock_run(user_t, user_r)
+//')
+
+//optional_policy(`
+//    xscreensaver_role(user, user_t, user_application_exec_domain, user_r)
+//')
+
+//optional_policy(`
+//    xserver_role(user, user_t, user_application_exec_domain, user_r)
+//')
+
+//if (!distro_redhat) {
+//    optional_policy(`
+//        auth_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        bluetooth_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        cdrecord_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        chromium_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        cron_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        dirmngr_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        evolution_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        games_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        gnome_role_template(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        gpg_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        hadoop_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        irc_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        java_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        libmtp_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        lpd_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        mozilla_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        mplayer_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        mta_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        ooffice_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        postgresql_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        pulseaudio_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        pyzor_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        razor_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        rssh_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        sigrok_run(user_r, user_t)
+//    ')
+
+//    optional_policy(`
+//        spamassassin_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        ssh_role_template(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        su_role_template(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        sudo_role_template(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        syncthing_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        telepathy_role_template(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        thunderbird_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        tvtime_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        uml_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        userhelper_role_template(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        vmware_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        wireshark_role(user, user_t, user_application_exec_domain, user_r)
+//    ')
+
+//    optional_policy(`
+//        wm_role_template(user, user_t, user_application_exec_domain, user_r)
+//    ')
+//}
+
+}

@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain netlabel_mgmt_t inherits app_domain {
+    /// Netlabel management tools.
+
+    @alias(netlabel_mgmt_exec_t)
+    extend exec {
+        file_context("/usr/bin/netlabelctl", file);
+        file_context("/usr/sbin/netlabelctl", file);
+    }
+
+    // modify the network subsystem configuration
+    allow(this, self, capability, net_admin);
+    allow(this, self, netlink_socket, manage_socket_perms);
+    allow(this, self, netlink_generic_socket, manage_socket_perms);
+
+    etc_t.read();
+
+    proc_t.net.read(); proc_t.list();
+}

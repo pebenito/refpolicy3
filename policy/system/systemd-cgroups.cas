@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_cgroups_t inherits systemd_app_domain {
+    /// Configure cgroups on boot.
+
+    //
+    // Resources
+    //
+    @alias(systemd_cgroups_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-cgroups-agent", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, net_admin);
+
+    kernel_t.userspace_entrypoint();
+
+    // for /proc/cmdline
+    proc_t.read();
+
+    // write to /run/systemd/cgroups-agent
+    init_t.unix_datagram_send();
+    init_t.unix_stream_connect();
+    // for /proc/1/environ
+    init_t.ps();
+
+    libs.libselinux_linked();
+
+    selinuxfs_t.getattr_superblock(); sysfs_t.getattr_superblock(); sysfs_t.list();
+
+//    typeattribute systemd_cgroups_t mlsfduse;
+//if (enable_mls) {
+//    kernel_ranged_domtrans_to(systemd_cgroups_t, systemd_cgroups_exec_t, s0 - mls_systemhigh)
+//}
+}

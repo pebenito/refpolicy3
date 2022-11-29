@@ -1,0 +1,293 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain auditctl_t inherits system_app_domain {
+    /// Audit rule configuration.
+
+    //
+    // Resources
+    //
+    @alias(auditctl_exec_t)
+    extend exec  {
+        file_context("/usr/bin/auditctl", file);
+        file_context("/usr/sbin/auditctl", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ dac_override dac_read_search fsetid ]);
+    allow(this, self, netlink_audit_socket, nlmsg_readpriv);
+
+    audit.set_parameters(auditctl_t);
+
+    auditd_t.conf.read();
+    dontaudit(this, auditd_t.conf, file, map);
+
+    domain.ps(auditctl_t);
+
+    etc_t.read(auditctl_t);
+
+    // Needed for adding watches
+    file_type<common_file>.getattr(auditctl_t);
+
+    kernel_t.set_scheduler(auditctl_t);
+
+    proc_t.dontaudit_getattr_superblock(auditctl_t);
+    proc_t<symlink>.read(auditctl_t);
+
+    sysctl_t.kernel.read(auditctl_t); sysctl_t.list(auditctl_t); proc_t.list(auditctl_t);
+
+    syslog.send_messages(auditctl_t);
+
+    user_devpts_t.rw_inherited();
+
+    user_tty_device_t.rw_inherited();
+
+//typeattribute auditctl_t mlsfileread;
+}
+
+domain auditd_t inherits daemon {
+    /// Linux audit daemon.
+
+    //
+    // Resources
+    //
+    @alias(auditd_etc_t)
+    extend conf inherits security_file {
+        file_context("/etc/audit(/.*)?", any, system_u:object_r:auditd_etc_t:mls_systemhigh);
+    }
+
+    @alias(auditd_exec_t)
+    extend exec  {
+        file_context("/usr/bin/auditd", file);
+        file_context("/usr/sbin/auditd", file);
+    }
+
+    @alias(auditd_initrc_exec_t)
+    extend initrc_exec  {
+        file_context("/etc/rc\.d/init\.d/auditd", file);
+    }
+
+    // TODO: This needs to drop logfile inheritance
+    @alias(auditd_log_t)
+    extend log inherits security_file, mountpoint {
+        file_context("/var/log/audit(/.*)?", any, system_u:object_r:auditd_log_t:mls_systemhigh);
+    }
+
+    @alias(audit_port_t)
+    resource port inherits reserved_network_port {
+        /// Audit remote logging port
+        //TODO:
+        //network_port(audit, tcp,60,s0)
+    }
+
+    @alias(auditd_runtime_t)
+    extend runtime {
+        file_context("/run/audit_events", socket, system_u:object_r:auditd_runtime_t:mls_systemhigh);
+        file_context("/run/audispd_events", socket, system_u:object_r:audisp_runtime_t:mls_systemhigh);
+        file_context("/run/auditd\.pid", file, system_u:object_r:auditd_runtime_t:mls_systemhigh);
+        file_context("/run/auditd_sock", socket, system_u:object_r:auditd_runtime_t:mls_systemhigh);
+    }
+
+    @alias(auditd_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/auditd.*", file);
+    }
+
+    //
+    // Policy
+    //
+
+    allow(this, self, capability, [ chown fsetid sys_nice sys_resource ]);
+    dontaudit(this, self, capability, sys_tty_config);
+    allow(this, self, process, [ setcap setpgid setsched ]);
+
+    dontaudit(this, this.conf, file, map);
+
+    this.log.manage(); var_log_t.list();
+
+    this.port.tcp_bind();
+
+    anon_inodefs_t.rw();
+
+    audisp_t.domtrans();
+    audisp_t.send_general_signals();
+
+    // Needs to be able to getattr on the audisp-remote binary to verify
+    // the plugin configuration.
+    audisp_remote_t.exec.getattr();
+
+    audit.set_parameters();
+
+    autofs_t.list();
+
+    bin_t.exec();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    init_t.telinit();
+
+    network.tcp_server();
+
+    nss.get_hosts_entry();
+
+    power_unit_t.start();
+
+    proc_t.read();
+
+    selinux_config_t.dontaudit_read();
+
+    selinuxfs_t.list();
+
+    shell_exec_t.exec();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    system_mail_t.domtrans();
+
+//typeattribute auditd_t mlsfileread;
+//typeattribute auditd_t mlsfilewrite;
+
+//if (enable_mcs) {
+//    range_transition { init_t initrc_t } auditd_exec_t:process s15:c0.c1023;
+//}
+
+//if (enable_mls) {
+//    range_transition { init_t initrc_t } auditd_exec_t:process s15:c0.c1023;
+//    typeattribute auditd_t mlsrangetrans;
+//}
+}
+
+domain audisp_t inherits system_app_domain {
+    /// Audit dispatcher
+
+    //
+    // Resources
+    //
+    @alias(audisp_exec_t)
+    extend exec  {
+        file_context("/usr/bin/audispd", file);
+        file_context("/usr/sbin/audispd", file);
+    }
+
+    @alias(audisp_runtime_t)
+    resource runtime inherits runtimefile, common_named_socket {
+        /// Runtime files in /run and /var/run.
+    }
+
+
+    //
+    // Policy
+    //
+    allow(this, self, capability { dac_override setpcap sys_nice };
+    allow(this, self, process { setcap setsched };
+
+    this.runtime.manage();
+    var_run_t.filetrans(this, this.runtime, sock_file); var_t.list();
+
+    audisp_remote_t.domtrans();
+    audisp_remote_t.check_existence();
+    audisp_remote_t.send_kill_signals();
+    audisp_remote_t.send_stop_signals();
+    audisp_remote_t.send_general_signals();
+
+    auditd_t.rw_inherited_stream_sockets();
+
+    bin_t.exec();
+
+    etc_t.mmap_read();
+
+    etc_runtime_t.read();
+
+    nss.get_hosts_entry();
+
+    proc_t.read();
+
+    shell_exec_t.exec();
+
+    syslog.send_messages();
+
+    // TODO: no dbus messages?
+    system_dbusd_t.client();
+
+//typeattribute audisp_t mlsfilewrite;
+}
+
+domain audisp_remote_t inherits common_domain {
+    /// Audit dispatcher remote logger.
+
+    //
+    // Resources
+    //
+    @alias(audisp_remote_exec_t)
+    extend exec  {
+        file_context("/usr/bin/audisp-remote", file);
+        file_context("/usr/sbin/audisp-remote", file);
+    }
+
+    @alias(audisp_runtime_t)
+    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+        /// Runtime files in /run and /var/run.
+    }
+
+    @alias(audit_spool_t)
+    resource spool inherits security_file, mountpoint {
+        file_context("/var/spool/audit(/.*)?", any, system_u:object_r:audit_spool_t:mls_systemhigh);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ setpcap setuid ]);
+    allow(this, self, process, setcap);
+    allow(this, self, tcp_socket, manage_socket_perms);
+
+    this.spool.manage();
+    var_spool_t.filetrans(this, this.spool, [ dir file ]);
+
+    // TODO: this should be handled by domtrans
+    audisp_t.rw_inherited_unix_stream_sockets();
+
+    audit.send_messages();
+
+    auditd_t.port.tcp_bind();
+    auditd_t.port.tcp_connect();
+
+    bin_t.exec();
+
+    etc_t.read();
+
+    network.tcp_client();
+    network.tcp_server();
+
+    nss.get_hosts_entry();
+
+    syslog.send_messages();
+
+    var_log_t.list(); var_t.list();
+}
+
+module auditctl {
+    domain auditctl_t;
+}
+
+module auditd {
+    domain auditd_t;
+}
+
+module audisp {
+    domain audisp_t;
+    domain audisp_remote_t;
+}
+
+module audit {
+    module auditctl;
+    module auditd;
+    module audisp;
+}

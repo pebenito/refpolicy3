@@ -1,0 +1,387 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain udev_t inherits daemon {
+    /// Dynamic /dev
+
+    //
+    // Resources
+    //
+    @alias(udev_etc_t)
+    extend conf {}
+
+    @alias(udev_exec_t)
+    extend exec {
+        file_context("/usr/bin/udev", file);
+        file_context("/usr/bin/udevadm", file);
+        file_context("/usr/bin/udevd", file);
+        file_context("/usr/bin/udevinfo", file);
+        file_context("/usr/bin/udevsend", file);
+        file_context("/usr/bin/udevstart", file);
+        file_context("/usr/bin/wait_for_sysfs", file);
+        file_context("/usr/sbin/udev", file);
+        file_context("/usr/sbin/udevadm", file);
+        file_context("/usr/sbin/udevd", file);
+        file_context("/usr/sbin/udevsend", file);
+        file_context("/usr/sbin/udevstart", file);
+        file_context("/usr/sbin/wait_for_sysfs", file);
+        file_context("/usr/lib/systemd/systemd-udevd", file);
+        file_context("/usr/lib/udev/udev-acl", file);
+
+        if (distro_debian) {
+            file_context("/usr/lib/udev/create_static_nodes", file);
+        }
+
+        if (distro_redhat) {
+            file_context("/usr/sbin/start_udev", file);
+        }
+    }
+
+    @alias(udev_rules_t)
+    resource rules inherits common_file {
+        file_context("/etc/udev/rules\.d(/.*)?", any); // udev_rules_t
+        file_context("/usr/lib/udev/rules\.d(/.*)?", any); // udev_rules_t
+        file_context("/run/udev/rules\.d(/.*)?", any); // udev_rules_t
+    }
+
+    @alias(udev_runtime_t)
+    extend runtime {
+        file_context("/run/udev(/.*)?", any);
+
+        if (distro_debian) {
+            file_context("/run/xen-hotplug", dir);
+        }
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ chown dac_override dac_read_search fowner fsetid mknod net_admin net_raw setgid setuid sys_admin sys_nice sys_ptrace sys_rawio sys_resource ]);
+    dontaudit(this, self, capability, sys_tty_config);
+    allow(this, self, capability2, [ wake_alarm block_suspend ]);
+    allow(this, self, process, [ transition ptrace setsched setpgid setcap share dyntransition execmem setkeycreate setsockcreate ]);
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+    allow(this, self, netlink_generic_socket, manage_socket_perms);
+    allow(this, self, rawip_socket, manage_socket_perms);
+
+    this.rules.manage();
+    this.rules.watch();
+
+    this.runtime.watch();
+
+    anon_inodefs_t.rw();
+
+    alsa_t.domtrans();
+    alsa_t.state.read(); var_lib_t.list();
+    alsa_t.conf.read();
+
+    audit.send_messages();
+
+    bluetooth_t.domtrans();
+
+    boot_t.list();
+
+    brctl_t.domtrans();
+
+    cgroup_t.read();
+
+    consoletype_exec_t.exec();
+
+    debugfs_t.list();
+
+    default_t.dontaudit_getattr();
+
+    device_t.manage();
+    device_t<common_named_socket>.manage();
+    device_t<common_character_device>.manage();
+    device_t<common_block_device>.manage();
+    device_t.relabel();
+    device_t<common_character_device>.relabel();
+    device_t<common_block_device>.relabel();
+    device_t.watch();
+    device_t<symlink>.watch();
+    device_t<common_named_socket>.watch();
+    device_t<common_character_device>.watch();
+    device_t<common_block_device>.watch();
+    device_t.relabelfrom();
+    device_t<common_file>.relabelfrom();
+    device_t<common_pipe>.relabelfrom();
+    device_t<common_named_socket>.relabelfrom();
+    device_t<common_character_device>.relabelfrom();
+    device_t<common_block_device>.relabelfrom();
+    device_t<common_file>.rw();
+    device_t<common_file>.delete();
+    // udev_node.c/node_symlink() symlink labels are explicitly
+    // preserved, instead of short circuiting the relabel
+    device_t<symlink>.manage();
+    device_t<symlink>.relabel();
+
+    device_node<common_character_device>.manage();
+    device_node<common_block_device>.manage();
+    device_node<common_character_device>.relabel();
+    device_node<common_block_device>.relabel();
+    device_node<common_dir>.watch();
+    device_node<symlink>.watch();
+    device_node<common_named_socket>.watch();
+    device_node<common_character_device>.watch();
+    device_node<common_block_device>.watch();
+    device_node<common_dir>.relabelfrom();
+    device_node<common_file>.relabelfrom();
+    device_node<common_pipe>.relabelfrom();
+    device_node<common_named_socket>.relabelfrom();
+    device_node<common_character_device>.relabel();
+    device_node<common_block_device>.relabel();
+
+    devicekit_t.unix_datagram_send();
+    devicekit_t.runtime<common_file>.read();
+
+    dhcpc_t.domtrans();
+    dhcpc_t.send_general_signals();
+    dhcpc_t.conf.read();
+    dhcpc_t.runtime<common_file>.read();
+    dhcpc_t.runtime<common_file>.delete();
+
+    domain.ps();
+    domain.dontaudit_debug();
+
+    efivarfs_t.manage();
+
+    etc_t.read();
+    etc_t.exec();
+
+    etc_runtime_t.read();
+
+    executable.exec(); bin_t.list();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    fixed_disk_device_t.watch();
+
+    fsadm_t.domtrans();
+
+    home_root_t.dontaudit_getattr();
+
+    hwclock_t.domtrans();
+
+    hwdata_t.read();
+
+    ifconfig_t.domtrans();
+
+    init_t.initctl.getattr();
+
+    inotifyfs_t.list();
+
+    iptables_t.domtrans();
+
+    kernel.request_module_load();
+    kernel.insert_modules();
+
+    kernel_t.userspace_entrypoint();
+    kernel_t.send_general_signals();
+    kernel_t.search_keys();
+
+    kmod_t.domtrans();
+
+    lost_found_t.dontaudit_getattr();
+
+    lvm_t.domtrans();
+
+    mdadm_t.domtrans();
+    mdadm_t.runtime.read();
+
+    mnt_t.list();
+
+    mount_t.domtrans();
+
+    modules_conf_t.read();
+
+    // read modules.inputmap:
+    modules_dep_t.read();
+
+    modules_object_t.mmap_read();
+
+    net_conf_t.manage();
+    etc_t.filetrans(udev_t, net_conf_t, file);
+
+    nss.get_passwd_entry();
+
+    openct_t.domtrans();
+    openct_t.runtime<common_file>.read();
+
+    pam_console_t.domtrans();
+
+    pam_var_console_t.read();
+
+    pcscd_t.domtrans();
+    pcscd_t.runtime<common_file>.read();
+
+    proc_t.read();
+    proc_t.kcore.getattr();
+    proc_t.net.read();
+    proc_t.mdstat.read();
+
+    selinux.file_contexts_setfscreate();
+
+    setfiles_t.domtrans();
+
+    sysctl_t.dev.read(); sysctl_t.list();
+    sysctl_t.kernel.read(); sysctl_t.list();
+    sysctl_t.kernel.modprobe.read(); sysctl_t.kernel.list(); sysctl_t.list();
+    sysctl_t.kernel.hotplug.rw(); sysctl_t.kernel.list(); sysctl_t.list();
+    sysctl_t.net.rw(); sysctl_t.list(); proc_t.list();
+    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.rw();
+
+    system_dbusd_t.client();
+    system_dbusd_t.own_default_service();
+
+    tmpfs_t.manage();
+    tmpfs_t<common_file>.manage();
+
+    tracefs_t.list();
+
+    udev_helper_exec_t.exec();
+
+    unlabeled_t<dir>.dontaudit_list();
+
+    usbfs_t.list();
+
+    usr_t.read();
+
+    var_lock_t.read();
+
+    vbetool_t.domtrans();
+
+    // for systemd-udevd when starting xen domu
+    virt_etc_t.read();
+    virt_etc_rw_t.read();
+
+    wtmp_t.read();
+    wtmp_t.dontaudit_write();
+
+    xdm_t.runtime.read();
+
+    if (distro_debian) {
+        // for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=851933
+        default_t.read();
+
+        runtime_t.filetrans(udev_t, udev_runtime_t, dir, "xen-hotplug");
+
+        optional {
+            // for /usr/lib/avahi/avahi-daemon-check-dns.sh
+            sysctl_t.vm.read();
+            //avahi_initrc_domtrans(udev_t)
+            avahi_t.runtime<common_file>.manage();
+            avahi_t.runtime<common_dir>.create();
+            runtime_t.filetrans(udev_t, avahi_t.runtime, dir, "avahi-daemon");
+        }
+
+        optional {
+            consolesetup_conf_t.exec();
+            consolesetup_runtime_t.manage();
+            runtime_t.filetrans(udev_t, consolesetup_runtime_t, dir, "console-setup");
+        }
+    }
+
+    if (distro_gentoo) {
+        // during boot, init scripts use /dev/.rcsysinit
+        // existence to determine if we are in early booting
+        init_script_t.state.getattr();
+    }
+
+    if (distro_redhat) {
+        devpts_t.list();
+
+        // for arping used for static IP addresses on PCMCIA ethernet
+        netutils_t.domtrans();
+
+        tmpfs_t<symlink>.manage();
+        tmpfs_t<common_named_socket>.manage();
+        tmpfs_t<common_block_device>.manage(); tmpfs_t.rw();
+        tmpfs_t<common_character_device>.manage(); tmpfs_t.rw();
+        tmpfs_t<common_block_device>.relabel(); tmpfs_t.list();
+        tmpfs_t<common_character_device>.relabel(); tmpfs_t.list();
+
+        unconfined.domain();
+    }
+
+    optional {
+        cupsd_config_t.domtrans();
+        hplip_t.domtrans();
+    }
+
+    optional {
+        proc_t.xen.rw();
+
+        xend_t.log.manage();
+
+        xenfs_t.manage();
+
+        xen_image_t.read(); xend_t.state.list();
+    }
+
+//if (enable_mcs) {
+//range_transition udev_t initrc_exec_t:process s0;
+//}
+
+//if (enable_mls) {
+//range_transition udev_t initrc_exec_t:process s0 - s15:c0.c1023;
+//}
+
+// typeattribute udev_t mlsfileread;
+// typeattribute udev_t mlsfilewrite;
+// typeattribute udev_t mlsfileupgrade;
+// typeattribute udev_t mlsfiledowngrade;
+// typeattribute udev_t mlsprocwrite;
+// typeattribute udev_t can_change_object_identity;
+// typeattribute udev_t privfd;
+// typeattribute udev_runtime_t daemonpidfile;
+//var_run_t.filetrans(initrc_t, udev_runtime_t, dir, "udev");
+}
+
+resource udev_helper_exec_t inherits executable {
+    /// udev helper tools.
+    // TODO: probably should phase this out since udev
+    // can exec all executables (!?)
+    file_context("/etc/dev\.d/.+", file);
+    file_context("/etc/hotplug\.d/default/udev.*", file);
+    file_context("/etc/udev/scripts/.+", file);
+    file_context("/usr/share/virtualbox/VBoxCreateUSBNode\.sh", file);
+}
+
+domain udevadm_t inherits app_domain {
+    /// udev CLI configuration tool.
+    //
+    // Policy
+    //
+
+    allow(this, self, capability, dac_read_search);
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+
+    etc_t.read();
+
+    file_context_t.mmap_read(); default_context_t.list(); selinux_config_t.list();
+
+    fs_t.getattr_superblock();
+
+    init_t.ps();
+    init_t.runtime.list(); runtime_t.list(); var_t.list();
+
+    proc_t.read();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    sysfs_t.rw();
+
+    udev_t.unix_stream_connect();
+    udev_t.exec.entrypoint();
+    udev_t.runtime.delete();
+    udev_t.runtime.read();
+    udev_t.runtime.watch();
+
+    urandom_device_t.read();
+
+    usr_t.read();
+}

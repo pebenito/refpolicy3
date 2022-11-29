@@ -1,0 +1,105 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//
+// Virtuals
+//
+
+virtual domain login_domain inherits common_domain {
+    /// Virtual for domains that perform user logins.
+
+    // pam_keyring
+    allow(this, self, capability, ipc_lock);
+    allow(this, self, process, setkeycreate);
+    allow(this, self, key, manage_key_perms);
+
+    audit.set_loginuid();
+    audit.set_tty_auditing();
+
+    auth_cache_t.manage();
+    var_t.filetrans(this, auth_cache_t, dir);
+
+    auth.use_pam();
+    auth.use_pam_selinux();
+
+    autofs_t.list();
+
+    //domain_subj_id_change_exemption($1)
+    //domain_role_change_exemption($1)
+    //domain_obj_id_change_exemption($1)
+    // Needed for pam_selinux_permit to cleanup properly
+    domain.ps();
+    domain.send_kill_signals();
+
+    etc_t.read();
+
+    //mls_file_read_all_levels($1)
+    //mls_file_write_all_levels($1)
+    //mls_file_upgrade($1)
+    //mls_file_downgrade($1)
+    //mls_process_set_level($1)
+    //mls_fd_share_all_levels($1)
+
+    // needed for afs - https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=253321
+    proc_t.afs.rw();
+
+    var_auth_t.manage(); var_lib_t.list(); var_t.list();
+
+//    init_rw_utmp($1)
+//
+//    userdom_search_user_runtime($1)
+//    userdom_read_user_tmpfs_files($1)
+//
+//    tunable_policy(`allow_polyinstantiation',`
+//        files_polyinstantiate_all($1)
+//    ')
+//
+//    optional_policy(`
+//        systemd_read_logind_state($1)
+//        systemd_write_inherited_logind_sessions_pipes($1)
+//        systemd_use_passwd_agent_fds($1)
+//    ')
+}
+
+virtual domain local_login_domain inherits login_domain {
+    /// Virtual for local login programs.
+    /// This enables additional authentication methods, such
+    /// as fingerprint readers.
+
+    // for fingerprint readers
+    event_device_t.rw();
+
+    usb_device_t.rw();
+}
+
+virtual domain bin_login_domain inherits login_domain {
+    /// Virtual for login domains using /bin/login
+
+    // TODO: delete this.exec as it is unused
+
+    associate(login_exec_t);
+
+    fn domtrans(domain source, role src_role=source.roles) {
+        login_exec_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        type_transition(source, login_exec_t, process, this);
+        role_associate(src_role, this.roles);
+    }
+
+    fn setexec_domtrans(domain source, role src_role=source.roles) {
+        allow(source, source, process, [setexec]);
+        login_exec_t.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        role_associate(src_role, this.roles);
+    }
+}
+
+//
+// Concrete types
+//
+
+resource login_exec_t inherits entrypoint {
+    /// The /bin/login program.
+
+    file_context("/usr/bin/login", file);
+    file_context("/usr/kerberos/sbin/login\.krb5", file);
+}

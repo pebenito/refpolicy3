@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_hw_t inherits systemd_app_domain {
+    /// Hardware database management
+
+    //
+    // Resources
+    //
+    @alias(systemd_hw_exec_t)
+    extend exec  {
+        file_context("/usr/bin/systemd-hwdb", file);
+    }
+
+    @alias(systemd_hwdb_t)
+    resource db inherits common_file {
+        file_context("/etc/udev/hwdb\.bin", file);
+    }
+
+    //
+    // Policy
+    //
+
+    this.db.manage();
+    this.db.relabel();
+    etc_t.filetrans(this, this.db, file);
+
+    cgroup_t.list();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    init_t.runtime.list();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    runtime_t.list(); var_t.list();
+}

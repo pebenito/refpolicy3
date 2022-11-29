@@ -1,0 +1,86 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain ldconfig_t inherits system_app_domain {
+    /// Configure dynamic library linker cache.
+
+    //
+    // Resources
+    //
+
+    @alias(ldconfig_exec_t)
+    extend exec {
+        file_context("/usr/bin/ldconfig", file);
+        file_context("/usr/sbin/ldconfig", file);
+    }
+
+    @alias(ldconfig_cache_t)
+    resource cache inherits common_file {
+        file_context("/var/cache/ldconfig(/.*)?", any);
+    }
+
+    @alias(ldconfig_tmp_t)
+    extend tmp {}
+
+    //
+    // Policy
+    //
+
+    allow(this, self, capability, [ dac_override sys_chroot ]);
+
+    this.cache.mmap_manage();
+
+     bin_t.list();
+
+    etc_t.read();
+    // for when /etc/ld.so.cache is mislabeled:
+    etc_t.delete();
+
+    fs_t.getattr_superblock();
+
+    ld_so_cache_t.manage();
+    etc_t.filetrans(this, ld_so_cache_t, file);
+
+    lib_t.manage();
+    lib_t<symlink>.manage();
+
+    proc_t.read();
+
+    syslog.send_messages();
+
+    usr_t.read();
+
+    var_lib_t.list(); var_t.list();
+
+    if (distro_gentoo) {
+        // leaked fds from portage
+        var_t.dontaudit_rw();
+
+        optional {
+            portage_t.tmp.dontaudit_rw();
+        }
+    }
+
+    optional {
+        // dontaudit access to /usr/lib/apache, normal programs cannot read these libs anyway
+        httpd_modules_t.dontaudit_read();
+    }
+
+    optional {
+        // When you install a kernel the postinstall builds a initrd image in tmp
+        // and executes ldconfig on it. If you dont allow this kernel installs
+        // blow up.
+        rpm_script_tmp_t.manage();
+    }
+
+// TODO: these should be handled passing through fds and stdin/out
+// through domtrans() calls.
+//
+//    optional {
+//        allow ldconfig_t apt_t:fifo_file rw_fifo_file_perms;
+//        allow ldconfig_t apt_t:fd use;
+//        allow ldconfig_t apt_devpts_t:chr_file { rw_chr_file_perms };
+//    }
+//    optional {
+//        allow ldconfig_t puppet_tmp_t:file rw_file_perms;
+//    }
+}

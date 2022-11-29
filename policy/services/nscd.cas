@@ -1,0 +1,153 @@
+// SPDX-License-Identifier: GPL-2.0
+
+// TODO: define nscd class and perms
+
+tunable nscd_use_shm {
+    /// Determine whether confined applications can use nscd shared memory.
+    default false;
+}
+
+domain nscd_t inherits daemon {
+    /// Name service cache daemon
+
+    //
+    // Resources
+    //
+    @alias(nscd_exec_t)
+    extend exec {
+        file_context("/usr/bin/nscd", file);
+        file_context("/usr/sbin/nscd", file);
+    }
+
+    @alias(nscd_initrc_exec_t)
+    extend initrc_exec {
+        file_context("/etc/rc\.d/init\.d/nscd", file);
+    }
+
+    @alias(nscd_log_t)
+    extend log {
+        file_context("/var/log/nscd\.log.*", file);
+    }
+
+    @alias(nscd_runtime_t)
+    extend runtime {
+        file_context("/var/cache/nscd(/.*)?", any);
+        file_context("/var/db/nscd(/.*)?", any);
+        file_context("/run/nscd(/.*)?", any);
+        file_context("/run/nscd\.pid", file);
+        file_context("/run/\.nscd_socket", socket);
+    }
+
+    @alias(nscd_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/nscd.service", file);
+        file_context("/usr/lib/systemd/system/nscd.socket", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ kill setgid setuid ]);
+    dontaudit(this, self, capability, sys_tty_config);
+    allow(this, self, process, [ setcap setsched ]);
+    allow(this, self, nscd, [ admin getstat ]);
+
+    audit.send_messages();
+
+    autofs_t.list();
+
+    bin_t.list();
+
+    domain<dir>.list();  // can this upgrade to .ps()?
+
+    etc_t.list();
+
+    etc_runtime_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    inotifyfs_t.list();
+
+    nss.get_hosts_entry();
+    nss.get_passwd_entry();
+
+    proc_t.net.read(); proc_t.list();
+
+    random_device_t.read();
+
+    selinux.get_fs_mountpoint();
+    selinux.get_access_decisions();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    usr_t.list();
+
+    urandom_device_t.read();
+
+    optional {
+        accountsd_t.dontaudit_rw_inherited_pipes();
+    }
+
+    optional {
+        if (samba_domain_controller) {
+            samba_log_t.append();
+            smbd_t.dontaudit_inherit_file_descriptors();
+        }
+
+        samba_etc_t.read(); etc_t.list();
+        samba_var_t.read(); var_lib_t.list(); var_t.list();
+    }
+
+    optional {
+        system_cronjob_t.tmp.read();
+    }
+
+    optional {
+        xend_t.dontaudit_rw_inherited_stream_sockets();
+        xend_t.log.append();
+        xend_t.log.dontaudit_write();
+    }
+
+// typeattribute nscd_runtime_t daemonpidfile;
+// var_run_t.filetrans(initrc_t, nscd_runtime_t, dir, "nscd");
+
+    //
+    // Functions
+    //
+    fn lookup(domain source) {
+        /// Perform a name services lookup.
+
+        allow(source, this, nscd, [ getpwd getgrp gethost ]);
+        this.unix_stream_connect(source);
+
+        this.runtime<file>.dontaudit_read();
+
+        if (nscd_use_shm) {
+            allow(source, this, nscd, [ shmempwd shmemgrp shmemhost ]);
+            this.inherit_file_descriptors();
+        } else {
+            dontaudit(source, this, nscd, [ getserv shmempwd shmemgrp shmemhost shmemserv ]);
+            this.dontaudit_inherit_file_descriptors();
+
+            this.ps(source);
+        }
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to nscd.
+
+        allow(source, this, nscd, [ getpwd getgrp gethost getstat admin shmempwd shmemgrp shmemhost getserv shmemserv ]);
+
+        this.unix_stream_connect(source);
+        this.inherit_file_descriptors(source);
+        this.ps(source);
+
+        this.runtime<file>.dontaudit_read(source);
+    }
+}

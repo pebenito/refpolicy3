@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: GPL-2.0
+
+tunable nfs_export_all_ro {
+    /// Export all non-security files with read-only access.
+    default false;
+}
+
+tunable nfs_export_all_rw {
+    /// Export all non-security files with read-write access.
+    default false;
+}
+
+//
+// Extends
+//
+extend kernel_t {
+    fs_t.getattr_superblock();
+
+    gssproxy_t.unix_stream_connect();
+
+    // nfs kernel server needs kernel UDP access. It is less risky and painful
+    // to just give it everything.
+    network.udp_server();
+
+    nfsd_t.rw_inherited_tcp_sockets();
+    nfsd_t.rw_inherited_udp_sockets();
+
+    shadow_t.dontaudit_getattr();
+
+    public_content_t.read();
+
+    public_content_rw_t.manage();
+
+    if (nfs_export_all_ro) {
+        noxattr_filesystem.getattr_superblock();
+        noxattr_filesystem<common_file>.read();
+
+        file_type<common_file>.read(); delete(security_file<file_type>.read());
+    }
+
+    if (nfs_export_all_rw) {
+        noxattr_filesystem.getattr_superblock();
+        noxattr_filesystem<common_file>.read();
+
+        file_type<common_file>.manage(); delete(security_file<file_type>.manage());
+    }
+}
+
+

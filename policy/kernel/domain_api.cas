@@ -1,0 +1,861 @@
+// SPDX-License-Identifier: GPL-2.0
+
+// Key permission sets
+let rw_key_perms = [ read write view ];
+let manage_key_perms = [ create link read search setattr view write ];
+
+// Signal permission sets
+let signal_perms = [ sigchld sigkill sigstop signull signal ];
+
+// SysV message queue permission sets
+let read_msgq_perms = [ associate getattr read unix_read ];
+let write_msgq_perms = [ associate getattr enqueue unix_write write ];
+let rw_msgq_perms = [ associate getattr read unix_read enqueue unix_write write ];
+let manage_msgq_perms = [ associate getattr read unix_read enqueue unix_write write create destroy setattr ];
+
+// SysV semaphore permission sets
+let read_sem_perms = [ associate getattr read unix_read ];
+let rw_sem_perms = [ associate getattr read unix_read unix_write write ];
+let manage_sem_perms = [ associate getattr read unix_read unix_write write create destroy setattr ];
+
+// SysV shared memory permission sets
+let read_shm_perms = [ associate getattr read unix_read ];
+let rw_shm_perms = [ associate getattr read unix_read lock unix_write write ];
+let manage_shm_perms = [ associate getattr read unix_read lock unix_write write create destroy setattr ];
+
+// Process permission sets
+let admin_process_perms = [signal_perms ptrace getsched setsched getattr getcap];
+
+//
+// extend builtin domain class with common functions
+//
+@hint(class=capability, hint="See man 7 capabilities to understand the access the permissions allow.")
+@hint(class=capability2, hint="See man 7 capabilities to understand the access the permissions allow.")
+@hint(class=capability, perm=[chown fowner fsetid dac_read_search dac_override], hint="Denials for this capability may be a side effect of files with wrong ownership or wrong standard Linux permissions.")
+@hint(class=capability, perm=net_admin, hint="This is highly privileged since it can modify the firewall, in addition to network interfaces.")
+@hint(class=capability, perm=sys_admin, hint="This is has a very large amount of access; avoid use if possible.")
+@hint(class=capability, perm=sys_module, hint="This allows loading kernel modules. It is best to avoid this if possible and use domains meant for kernel loading, such as kmod_t.")
+@hint(class=capability, perm=sys_rawio, hint="This is has dangerous access to IO devices; avoid use if possible.")
+@hint(class=process, perm=dyntransition, hint="This indicates the process is attempting to change its context but cannot transition to the target context.")
+@hint(class=process, perm=execmem, hint="Executable memory is typically used in JIT compiling, such as the Java JVM.  However, it is dangerous, as it opens a vector for arbitrary code execution.")
+@hint(class=process, perm=execstack, hint="Executable stack memory is dangerous, as it opens a vector for arbitrary code execution.")
+@hint(class=process, perm=execheap, hint="Executable heap is dangerous, as it opens a vector for arbitrary code execution.")
+@hint(class=process, perm=[execmem execstack execheap], hint="See https://www.akkadia.org/drepper/selinux-mem.html for more information.")
+@hint(class=process, perm=setcurrent, hint="This indicates the process is attempting to change its context.")
+// TODO add builtin back in when its a keyword
+extend domain {
+    /// The built-in domain virtual.
+    /// With few exceptions, common_domain should be inherited instead.
+
+    //
+    // Signals
+    //
+
+    @alias(signal)
+    fn send_general_signals(domain source) {
+        /// Send general signals.
+        allow(source, this, process, [signal]);
+    }
+
+    @alias(dontaudit_signal)
+    fn dontaudit_send_general_signals(domain source) {
+        /// Do not audit denials for sending general signals.
+        dontaudit(source, this, process, [signal]);
+    }
+
+    @alias(sigstop)
+    fn send_stop_signals(domain source) {
+        /// Send a stop signal (SIGSTOP).
+        allow(source, this, process, [sigstop]);
+    }
+
+    @alias(dontaudit_sigstop)
+    fn dontaudit_send_stop_signals(domain source) {
+        /// Do not audit denials for sending a stop signal (SIGSTOP).
+        dontaudit(source, this, process, [sigstop]);
+    }
+
+    @alias(sigterm)
+    fn send_termination_signals(domain source) {
+        /// Send a stop termination signal (SIGTERM).
+        allow(source, this, process, [sigterm]);
+    }
+
+    @alias(dontaudit_sigterm)
+    fn dontaudit_send_termination_signals(domain source) {
+        /// Do not audit denials for sending a termination signal (SIGTERM).
+        dontaudit(source, this, process, [sigterm]);
+    }
+
+    @alias(sigkill)
+    fn send_kill_signals(domain source) {
+        /// Send a kill signal (SIGKILL).
+        allow(source, this, process, [sigkill]);
+    }
+
+    @alias(dontaudit_sigkill)
+    fn dontaudit_send_kill_signals(domain source) {
+        /// Do not audit denials for sending a kill signal (SIGKILL).
+        dontaudit(source, this, process, [sigkill]);
+    }
+
+    @alias(sigchld)
+    fn send_child_terminated_signals(domain source) {
+        /// Send a child terminated signal (SIGCHLD).
+        allow(source, this, process, [sigchld]);
+    }
+
+    @alias(dontaudit_sigchld)
+    fn dontaudit_send_child_terminated_signals(domain source) {
+        /// Do not audit denials for sending a child terminated signal (SIGCHLD).
+        dontaudit(source, this, process, [sigchld]);
+    }
+
+    @alias(signull)
+    fn check_existence(domain source) {
+        /// Check process existence.
+        /// This is done by kill(pid, 0);
+        allow(source, this, process, [signull]);
+    }
+
+    @alias(dontaudit_signull)
+    fn dontaudit_check_existence(domain source) {
+        /// Do not audit denials for checking process existence.
+        dontaudit(source, this, process, [signull]);
+    }
+
+    //
+    // Process state (/proc/pid/*)
+    //
+
+    fn ps(domain source) {
+        /// Read the process state.
+        /// Access /proc/pid information.
+        allow(source, this, dir, list_dir_perms);
+        allow(source, this, lnk_file, read_lnk_file_perms);
+        allow(source, this, file, read_file_perms);
+        allow(source, this, process, getattr);
+        proc_t.list(source);
+    }
+
+    fn dontaudit_ps(domain source) {
+        /// Do not audit denials for reading the process state.
+        dontaudit(source, this, dir, list_dir_perms);
+        dontaudit(source, this, lnk_file, read_lnk_file_perms);
+        dontaudit(source, this, file, read_file_perms);
+        dontaudit(source, this, process, getattr);
+        proc_t.dontaudit_list(source);
+    }
+
+    //
+    // Scheduling
+    //
+
+    @alias(getsched)
+    fn get_scheduler(domain source) {
+        /// Get scheduler parameters.
+        allow(source, this, process, getsched);
+    }
+
+    @alias(dontaudit_getsched)
+    fn dontaudit_get_scheduler(domain source) {
+        /// Do not audit denials for getting scheduler parameters.
+        dontaudit(source, this, process, getsched);
+    }
+
+    @alias(setsched)
+    fn set_scheduler(domain source) {
+        /// Set scheduler parameters.
+        allow(source, this, process, setsched);
+    }
+
+    @alias(dontaudit_setsched)
+    fn dontaudit_set_scheduler(domain source) {
+        /// Do not audit denials for setting scheduler parameters.
+        dontaudit(source, this, process, setsched);
+    }
+
+    //
+    // Resource limits
+    //
+
+    @alias(getrlimit)
+    fn get_resource_limits(domain source) {
+        /// Get resource limits.
+        allow(source, this, process, getrlimit);
+    }
+
+    @alias(dontaudit_getrlimit)
+    fn dontaudit_get_resource_limits(domain source) {
+        /// Do not audit denials for getting resource limits.
+        dontaudit(source, this, process, getrlimit);
+    }
+
+    @alias(setrlimit)
+    fn set_resource_limits(domain source) {
+        /// Set resource limits.
+        allow(source, this, process, setrlimit);
+    }
+
+    @alias(dontaudit_setrlimit)
+    fn dontaudit_set_resource_limits(domain source) {
+        /// Do not audit denials for setting resource limits.
+        dontaudit(source, this, process, setrlimit);
+    }
+
+    //
+    // Process group
+    //
+
+    @alias(getpgid)
+    fn get_process_group(domain source) {
+        /// Get the process group.
+        allow(source, this, process, getpgid);
+    }
+
+    @alias(dontaudit_getpgid)
+    fn dontaudit_get_process_group(domain source) {
+        /// Do not audit denials for getting the process group.
+        dontaudit(source, this, process, getpgid);
+    }
+
+    @alias(setpgid)
+    fn set_process_group(domain source) {
+        /// Set the process group.
+        allow(source, this, process, setpgid);
+    }
+
+    @alias(dontaudit_setpgid)
+    fn dontaudit_set_process_group(domain source) {
+        /// Do not audit denials for setting the process group.
+        dontaudit(source, this, process, setpgid);
+    }
+
+    //
+    // Session ID
+    //
+
+    @alias(getsession)
+    fn get_session_id(domain source) {
+        /// Get the session ID.
+        allow(source, this, process, getsession);
+    }
+
+    @alias(dontaudit_getsession)
+    fn dontaudit_get_session_id(domain source) {
+        /// Do not audit denials for getting the session ID.
+        dontaudit(source, this, process, getsession);
+    }
+
+    //
+    // Debug
+    //
+    @alias(ptrace)
+    fn debug(domain source) {
+        /// Debug (ptrace) the process.
+        allow(source, this, process, ptrace);
+        allow(this, source, process, sigchld);
+    }
+
+    @alias(dontaudit_ptrace)
+    fn dontaudit_debug(domain source) {
+        /// Do not audit denials for debugging the process.
+        dontaudit(source, this, process, ptrace);
+    }
+
+    //
+    // Linux capabilities
+    //
+    @alias(getcap, capget)
+    fn get_capabilities(domain source) {
+        /// Get linux capabilities.
+        /// Privileges such as CAP_DAC_READ_SEARCH or CAP_CHOWN.
+        allow(source, this, process, getcap);
+    }
+
+    @alias(dontaudit_getcap, dontaudit_capget)
+    fn dontaudit_get_capabilities(domain source) {
+        /// Get linux capabilities.
+        /// Privileges such as CAP_DAC_READ_SEARCH or CAP_CHOWN.
+        dontaudi(source, this, process, getcap);
+    }
+
+    @alias(setcap, capset)
+    fn set_capabilities(domain source) {
+        /// Set linux capabilities.
+        /// Privileges such as CAP_DAC_READ_SEARCH or CAP_CHOWN.
+        allow(source, this, process, setcap);
+    }
+
+    @alias(dontaudit_setcap, dontaudit_capset)
+    fn dontaudit_set_capabilities(domain source) {
+        /// Set linux capabilities.
+        /// Privileges such as CAP_DAC_READ_SEARCH or CAP_CHOWN.
+        dontaudit(source, this, process, setcap);
+    }
+
+    //
+    // Share state.
+    //
+    fn share_unsafe_state(domain source) {
+        /// Share unsafe state.
+        /// This happens with the clone() system call's CLONE_FS option.
+        allow(source, this, process, share);
+    }
+
+    fn dontaudit_share_unsafe_state(domain source) {
+        /// Do not audit denials for sharing unsafe state.
+        /// This happens with the clone() system call's CLONE_FS option.
+        allow(source, this, process, share);
+    }
+
+    //
+    // File descriptors
+    //
+    @alias(use_fds)
+    fn inherit_file_descriptors(domain source) {
+        /// Inherit file descriptors.
+        allow(source, this, fd, use);
+    }
+
+    @alias(dontaudit_use_fds)
+    fn dontaudit_inherit_file_descriptors(domain source) {
+        /// Do not audit denials for inheriting file descriptors.
+        /// This is commonly used to suppress file descriptor leakage.
+        /// When this is denied, SELinux reopens the file descriptor
+        /// but the descriptor refers to /dev/null instead of the
+        /// original object.
+        dontaudit(source, this, fd, use);
+    }
+
+    //
+    // Keys
+    //
+    fn view_keys(domain source) {
+        /// View keys.
+        allow(source, this, key, view);
+    }
+
+    fn dontaudit_view_keys(domain source) {
+        /// Do not audit denials for viewing keys.
+        dontaudit(source, this, key, view);
+    }
+
+    fn read_keys(domain source) {
+        /// Read keys.
+        allow(source, this, key, read);
+    }
+
+    fn dontaudit_read_keys(domain source) {
+        /// Do not audit denials for reading keys.
+        dontaudit(source, this, key, read);
+    }
+
+    fn write_keys(domain source) {
+        /// Write keys.
+        allow(source, this, key, write);
+    }
+
+    fn dontaudit_write_keys(domain source) {
+        /// Do not audit denials for writing keys.
+        dontaudit(source, this, key, write);
+    }
+
+    fn search_keys(domain source) {
+        /// Search keys.
+        allow(source, this, key, search);
+    }
+
+    fn dontaudit_search_keys(domain source) {
+        /// Do not audit denials for searching keys.
+        dontaudit(source, this, key, search);
+    }
+
+    fn link_keys(domain source) {
+        /// Link keys.
+        allow(source, this, key, link);
+    }
+
+    fn dontaudit_link_keys(domain source) {
+        /// Do not audit denials for linking keys.
+        dontaudit(source, this, key, link);
+    }
+
+    fn setattr_keys(domain source) {
+        /// Set the attributes of keys.
+        allow(source, this, key, setattr);
+    }
+
+    fn dontaudit_setattr_keys(domain source) {
+        /// Do not audit denials for setting the attributes of keys.
+        dontaudit(source, this, key, setattr);
+    }
+
+    fn rw_keys(domain source) {
+        /// Read and write keys.
+        allow(source, this, key, rw_key_perms);
+    }
+
+    fn dontaudit_rw_keys(domain source) {
+        /// Do not audit denials for reading and writing keys.
+        dontaudit(source, this, key, rw_key_perms);
+    }
+
+    fn create_keys(domain source) {
+        /// Create keys.
+        allow(source, this, key, create);
+    }
+
+    fn dontaudit_create_keys(domain source) {
+        /// Do not audit denials for creating keys.
+        dontaudit(source, this, key, create);
+    }
+
+    fn manage_keys(domain source) {
+        /// Create, read, write, and link keys.
+        allow(source, this, key, manage_key_perms);
+    }
+
+    fn dontaudit_manage_keys(domain source) {
+        /// Do not audit denials for creating, reading, writing, and linking keys.
+        dontaudit(source, this, key, manage_key_perms);
+    }
+
+    //
+    // SysV Message Queues
+    //
+    // Note: it is possible to do a type_transition to change
+    // the label of the message based on the label of the queue.
+    fn send_sysv_messages(domain source) {
+        /// Send messages to SysV message queues.
+        allow(source, this, msg, send);
+        allow(source, this, msgq, write_msgq_perms);
+    }
+
+    fn dontaudit_send_sysv_messages(domain source) {
+        /// Do not audit denials for sending a messages to SysV message queues.
+        dontaudit(source, this, msg, send);
+        dontaudit(source, this, msgq, write_msgq_perms);
+    }
+
+    fn receive_sysv_messages(domain source) {
+        /// Receive messages from SysV message queues.
+        allow(source, this, msg, receive);
+        allow(source, this, msgq, read_msgq_perms);
+    }
+
+    fn dontaudit_receive_sysv_messages(domain source) {
+        /// Do not audit denials for receiving messages from SysV message queues.
+        dontaudit(source, this, msg, receive);
+        dontaudit(source, this, msgq, read_msgq_perms);
+    }
+
+    fn sendrecv_sysv_messages(domain source) {
+        /// Send and receive messages from SysV message queues.
+        this.send_sysv_messages(source);
+        this.receive_sysv_messages(source);
+    }
+
+    fn dontaudit_sendrecv_sysv_messages(domain source) {
+        /// Do not audit denials for sending and receiving messages from SysV message queues.
+        this.dontaudit_send_sysv_messages(source);
+        this.dontaudit_receive_sysv_messages(source);
+    }
+
+    //
+    // SysV Semaphores
+    //
+    @alias(read_sysv_sem)
+    fn read_sysv_semaphores(domain source) {
+        /// Read SysV semaphores.
+        allow(source, this, sem, read_sem_perms);
+    }
+
+    @alias(dontaudit_read_sysv_sem)
+    fn dontaudit_read_sysv_semaphores(domain source) {
+        /// Do not audit denials for reading SysV semaphores.
+        dontaudit(source, this, sem, read_sem_perms);
+    }
+
+    @alias(rw_sysv_sem)
+    fn rw_sysv_semaphores(domain source) {
+        /// Read and write SysV semaphores.
+        allow(source, this, sem, rw_sem_perms);
+    }
+
+    @alias(dontaudit_rw_sysv_sem)
+    fn dontaudit_rw_sysv_semaphores(domain source) {
+        /// Do not audit denials for reading and writing SysV semaphores.
+        dontaudit(source, this, sem, rw_sem_perms);
+    }
+
+    @alias(manage_sysv_sem)
+    fn manage_sysv_semaphores(domain source) {
+        /// Create, read, write, and delete SysV semaphores.
+        allow(source, this, sem, manage_sem_perms);
+    }
+
+    @alias(dontaudit_manage_sysv_sem)
+    fn dontaudit_manage_sysv_semaphores(domain source) {
+        /// Do not audit denials for creating, reading, writing, and deleting SysV semaphores.
+        dontaudit(source, this, sem, manage_sem_perms);
+    }
+
+    //
+    // SysV Shared Memory
+    //
+    @alias(read_sysv_shm)
+    fn read_sysv_shared_memory(domain source) {
+        /// Read SysV shared memory.
+        allow(source, this, shm, read_shm_perms);
+    }
+
+    @alias(dontaudit_read_sysv_shm)
+    fn dontaudit_read_sysv_shared_memory(domain source) {
+        /// Do not audit denials for reading SysV shared memory.
+        dontaudit(source, this, shm, read_shm_perms);
+    }
+
+    @alias(rw_sysv_shm)
+    fn rw_sysv_shared_memory(domain source) {
+        /// Read and write SysV shared_memory.
+        allow(source, this, shm, rw_shm_perms);
+    }
+
+    @alias(dontaudit_rw_sysv_shm)
+    fn dontaudit_rw_sysv_shared_memory(domain source) {
+        /// Do not audit denials for reading and writing SysV shared memory.
+        dontaudit(source, this, shm, rw_shm_perms);
+    }
+
+    @alias(manage_sysv_shm)
+    fn manage_sysv_shared_memory(domain source) {
+        /// Create, read, write, and delete SysV shared_memory.
+        allow(source, this, shm, manage_shm_perms);
+    }
+
+    @alias(dontaudit_manage_sysv_shm)
+    fn dontaudit_manage_sysv_shared_memory(domain source) {
+        /// Do not audit denials for creating, reading, writing, and deleting SysV shared memory.
+        dontaudit(source, this, shm, manage_shm_perms);
+    }
+
+    //
+    // Unnamed pipes
+    //
+
+    fn read_inherited_pipes(domain source) {
+        /// Read pipes inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, fifo_file, read_inherited_fifo_file_perms);
+    }
+
+    fn dontaudit_read_inherited_pipes(domain source) {
+        /// Do not audit denials for reading pipes inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, fifo_file, read_inherited_fifo_file_perms);
+    }
+
+    fn write_inherited_pipes(domain source) {
+        /// Write pipes inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, fifo_file, write_inherited_fifo_file_perms);
+    }
+
+    fn dontaudit_write_inherited_pipes(domain source) {
+        /// Do not audit denials for writing pipes inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, fifo_file, write_inherited_fifo_file_perms);
+    }
+
+    fn rw_inherited_pipes(domain source) {
+        /// Read and write pipes inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, fifo_file, rw_inherited_fifo_file_perms);
+    }
+
+    fn dontaudit_rw_inherited_pipes(domain source) {
+        /// Do not audit denials for reading and writing pipes inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, fifo_file, rw_inherited_fifo_file_perms);
+    }
+
+
+    //
+    // BPF
+    //
+    fn run_bpf(domain source) {
+        /// Run BPF programs loaded by this domain.
+        allow(source, this, bpf, prog_run);
+    }
+
+    fn dontaudit_run_bpf(domain source) {
+        /// Do not audit denials for running BPF programs loaded by this domain.
+        dontaudit(source, this, bpf, prog_run);
+    }
+
+    //
+    // SCTP Sockets
+    //
+    fn read_inherited_sctp_sockets(domain source) {
+        /// Read SCTP sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, sctp_socket, read_inherited_socket_perms);
+    }
+
+    fn dontaudit_read_inherited_sctp_sockets(domain source) {
+        /// Do not audit denials for reading SCTP sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, sctp_socket, read_inherited_socket_perms);
+    }
+
+    fn write_inherited_sctp_sockets(domain source) {
+        /// Write SCTP sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, sctp_socket, write_inherited_socket_perms);
+    }
+
+    fn dontaudit_write_inherited_sctp_socketss(domain source) {
+        /// Do not audit denials for writing SCTP sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, sctp_socket, write_inherited_socket_perms);
+    }
+
+    fn rw_inherited_sctp_sockets(domain source) {
+        /// Read and write SCTP sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, sctp_socket, rw_inherited_socket_perms);
+    }
+
+    fn dontaudit_rw_inherited_sctp_sockets(domain source) {
+        /// Do not audit denials for reading and writing SCTP sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, sctp_socket, rw_inherited_socket_perms);
+    }
+
+    //
+    // TCP Sockets
+    //
+    fn read_inherited_tcp_sockets(domain source) {
+        /// Read TCP sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, tcp_socket, read_inherited_socket_perms);
+    }
+
+    fn dontaudit_read_inherited_tcp_sockets(domain source) {
+        /// Do not audit denials for reading TCP sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, tcp_socket, read_inherited_socket_perms);
+    }
+
+    fn write_inherited_tcp_sockets(domain source) {
+        /// Write TCP sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, tcp_socket, write_inherited_socket_perms);
+    }
+
+    fn dontaudit_write_inherited_tcp_socketss(domain source) {
+        /// Do not audit denials for writing TCP sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, tcp_socket, write_inherited_socket_perms);
+    }
+
+    fn rw_inherited_tcp_sockets(domain source) {
+        /// Read and write TCP sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, tcp_socket, rw_inherited_socket_perms);
+    }
+
+    fn dontaudit_rw_inherited_tcp_sockets(domain source) {
+        /// Do not audit denials for reading and writing TCP sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, tcp_socket, rw_inherited_socket_perms);
+    }
+
+    //
+    // UDP Sockets
+    //
+    fn read_inherited_udp_sockets(domain source) {
+        /// Read UDP sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, udp_socket, read_inherited_socket_perms);
+    }
+
+    fn dontaudit_read_inherited_udp_sockets(domain source) {
+        /// Do not audit denials for reading UDP sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, udp_socket, read_inherited_socket_perms);
+    }
+
+    fn write_inherited_udp_sockets(domain source) {
+        /// Write UDP sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, udp_socket, write_inherited_socket_perms);
+    }
+
+    fn dontaudit_write_inherited_udp_socketss(domain source) {
+        /// Do not audit denials for writing UDP sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, udp_socket, write_inherited_socket_perms);
+    }
+
+    fn rw_inherited_udp_sockets(domain source) {
+        /// Read and write UDP sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, udp_socket, rw_inherited_socket_perms);
+    }
+
+    fn dontaudit_rw_inherited_udp_sockets(domain source) {
+        /// Do not audit denials for reading and writing UDP sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, udp_socket, rw_inherited_socket_perms);
+    }
+
+    //
+    // UNIX Stream Sockets
+    //
+    fn read_inherited_stream_sockets(domain source) {
+        /// Read unix stream sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, unix_stream_socket, read_inherited_socket_perms);
+    }
+
+    fn dontaudit_read_inherited_stream_sockets(domain source) {
+        /// Do not audit denials for reading unix stream sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, unix_stream_socket, read_inherited_socket_perms);
+    }
+
+    fn write_inherited_stream_sockets(domain source) {
+        /// Write unix stream sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, unix_stream_socket, write_inherited_socket_perms);
+    }
+
+    fn dontaudit_write_inherited_stream_sockets(domain source) {
+        /// Do not audit denials for writing unix stream sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, unix_stream_socket, write_inherited_socket_perms);
+    }
+
+    fn rw_inherited_stream_sockets(domain source) {
+        /// Read and write unix stream sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, unix_stream_socket, rw_inherited_socket_perms);
+    }
+
+    fn dontaudit_rw_inherited_stream_sockets(domain source) {
+        /// Do not audit denials for reading and writing unix stream sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, unix_stream_socket, rw_inherited_socket_perms);
+    }
+
+    fn abstract_stream_connect(domain source) {
+        /// Connect to this domain using an abstract unix stream socket.
+        allow(source, this, unix_stream_socket, connectto);
+    }
+
+    fn dontaudit_abstract_stream_connect(domain source) {
+        /// Do not audit denials for connecting to this domain using an abstract unix stream socket.
+        dontaudit(source, this, unix_stream_socket, connectto);
+    }
+
+    //
+    // UNIX Datagram Sockets
+    //
+    fn read_inherited_datagram_sockets(domain source) {
+        /// Read unix datagram sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, unix_dgram_socket, read_inherited_socket_perms);
+    }
+
+    fn dontaudit_read_inherited_datagram_sockets(domain source) {
+        /// Do not audit denials for reading unix datagram sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, unix_dgram_socket, read_inherited_socket_perms);
+    }
+
+    fn write_inherited_datagram_sockets(domain source) {
+        /// Write unix datagram sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, unix_dgram_socket, write_inherited_socket_perms);
+    }
+
+    fn dontaudit_write_inherited_datagram_socketss(domain source) {
+        /// Do not audit denials for writing unix datagram sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, unix_dgram_socket, write_inherited_socket_perms);
+    }
+
+    fn rw_inherited_datagram_sockets(domain source) {
+        /// Read and write unix datagram sockets inherited from this domain.
+        allow(source, this, fd, use);
+        allow(source, this, unix_dgram_socket, rw_inherited_socket_perms);
+    }
+
+    fn dontaudit_rw_inherited_datagram_sockets(domain source) {
+        /// Do not audit denials for reading and writing unix datagram sockets inherited from this domain.
+        dontaudit(source, this, fd, use);
+        dontaudit(source, this, unix_dgram_socket, rw_inherited_socket_perms);
+    }
+
+    fn abstract_datagram_send(domain source) {
+        /// Connect to this domain using an abstract unix stream socket.
+        allow(source, this, unix_dgram_socket, sendto);
+    }
+
+    fn dontaudit_abstract_datagram_send(domain source) {
+        /// Do not audit denials for connecting to this domain using an abstract unix stream socket.
+        dontaudit(source, this, unix_dgram_socket, sendto);
+    }
+
+    //
+    // Note: additional functions may be added by userspace object managers
+    //
+
+    fn unconfined(domain source) {
+        /// Unconfined access to this domain.
+
+        // unconfined access to bpf
+        allow(source, this, bpf, [ map_create map_read map_write prog_load prog_run ]);
+
+        // Use/sendto/connectto sockets created by any domain.
+        allow(source, this, [ socket_class_set socket key_socket ], [ create_stream_socket_perms lock relabelto name_bind map sendto recvfrom relabelfrom ]);
+        allow(source, this, rawip_socket, node_bind);
+        allow(source, this, sctp_socket, node_bind);
+        allow(source, this, icmp_socket, node_bind);
+        allow(source, this, udp_socket, node_bind);
+        allow(source, this, tcp_socket, [ node_bind name_connect ]);
+        allow(source, this, tun_socket, attach_queue);
+        allow(source, this, unix_stream_socket, connectto);
+        allow(source, this, netlink_audit_socket, [ nlmsg_write nlmsg_relay nlmsg_readpriv nlmsg_read nlmsg_tty_audit ]);
+        allow(source, this, netlink_route_socket, [ nlmsg_write nlmsg_read ]);
+        allow(source, this, netlink_tcpdiag_socket, [ nlmsg_write nlmsg_read ]);
+        allow(source, this, netlink_xfrm_socket, [ nlmsg_write nlmsg_read ]);
+
+        // Use descriptors and pipes created by any domain.
+        allow(source, this, fd, use);
+        allow(source, this, fifo_file, rw_fifo_file_perms);
+
+        // Act upon any other process.
+        allow(source, this, process, [fork signal_perms ptrace getsched setsched getsession getpgid setpgid getcap setcap share getattr setexec setfscreate noatsecure siginh setrlimit rlimitinh setcurrent setkeycreate setsockcreate getrlimit ]);
+
+        // Create/access any System V IPC objects.
+        allow(source, this, sem, manage_sem_perms);
+        allow(source, this, msgq, manage_msgq_perms);
+        allow(source, this, shm, manage_shm_perms);
+        allow(source, this, msg, [ send receive ]);
+
+        // For /proc/pid
+        allow(source, this, dir, rw_dir_perms);
+        allow(source, this, file, manage_file_perms);
+        allow(source, this, lnk_file, read_lnk_file_perms);
+
+        // act on all domains keys
+        allow(source, this, key, manage_key_perms);
+
+        // receive from all domains over labeled networking
+        allow(source, this, peer, recvfrom);
+    }
+}
+

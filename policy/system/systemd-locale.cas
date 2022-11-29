@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_locale_t inherits systemd_app_domain {
+    /// Set system locale on boot.
+
+    // TODO: reevaluate the usefulness of this domain.
+
+    //
+    // Resources
+    //
+    @alias(systemd_locale_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-localed", file);
+    }
+
+    //
+    // Policy
+    //
+    etc_t.read();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    system_dbusd_t.client();
+    system_dbusd_t.own_default_service();
+}

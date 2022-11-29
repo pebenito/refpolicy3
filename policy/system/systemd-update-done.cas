@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_update_done_t inherits systemd_app_domain {
+    /// Mark /etc and /var updated.
+
+    //
+    // Resources
+    //
+    @alias(systemd_update_done_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-update-done", file);
+    }
+
+    @alias(systemd_update_run_t)
+    resource runtime inherits runtimefile {
+        /// Runtime files in /run and /var/run.
+        file_context("/etc/\.updated", file);
+        file_context("/var/\.updated", file);
+    }
+
+
+    //
+    // Policy
+    //
+    this.runtime.manage();
+    etc_t.filetrans(this, this.runtime, file);
+    var_t.filetrans(this, this.runtime, file);
+
+    cgroup_t.list(systemd_update_done_t);
+
+    file_type<filesystem>.getattr_superblock(systemd_update_done_t);
+
+    filesystem.getattr_superblock(systemd_update_done_t);
+
+    sysctl_t.kernel.read(systemd_update_done_t); sysctl_t.list(systemd_update_done_t);
+
+    sysfs_t.list(systemd_update_done_t);
+}

@@ -1,0 +1,528 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain checkpolicy_t inherits app_domain {
+    /// SELinux monolithic policy compiler.
+
+    //
+    // Resources
+    //
+    @alias(checkpolicy_exec_t)
+    extend exec  {
+        file_context("/usr/bin/checkpolicy", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, dac_override);
+
+    fs_t.getattr_superblock();
+
+    // only allow read of policy source files
+    policy_src_t.read();
+
+    // able to create and modify binary policy files
+    selinux_policy_t.manage(); selinux_config_t.list(); etc_t.list();
+    // allow test policies to be created in src directories
+    policy_src_t.add_entry_filetrans(this, selinux_policy_t, file);
+}
+
+resource default_context_t inherits common_file {
+    /// The type applied to /etc/selinux/*/contexts/*
+    file_context("/etc/selinux/([^/]*/)?contexts(/.*)?", any);
+    file_context("/root/\.default_contexts", file);
+}
+
+resource file_context_t inherits common_file {
+    /// type applied to /etc/selinux/*/contexts/files
+    file_context("/etc/selinux/([^/]*/)?contexts/files(/.*)?", any);
+}
+
+domain load_policy_t inherits app_domain {
+    /// SELinux policy loading tool.
+
+    //
+    // Resources
+    //
+    @alias(load_policy_exec_t)
+    extend exec  {
+        file_context("/usr/bin/load_policy", file);
+        file_context("/usr/sbin/load_policy", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, dac_override);
+
+    console_device_t.rw();
+
+    // for mcs.conf
+    etc_t.read();
+
+    etc_runtime_t.read();
+
+    fs_t.getattr_superblock();
+
+    portage_t.dontaudit_inherit_file_descriptors();
+
+    selinux.load_policy();
+    selinux.set_all_booleans();
+
+    // only allow read of policy config files
+    selinux_policy_t.mmap_read();
+
+    urandom_device_t.read();
+
+//typeattribute load_policy_t mlsfileread;
+}
+
+domain newrole_t inherits user_app_domain {
+    /// SELinux role change tool.
+
+    //
+    // Resources
+    //
+    @alias(newrole_exec_t)
+    extend exec  {
+        file_context("/usr/bin/newrole", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ dac_override fowner setgid setuid ]);
+    dontaudit(this, self, capability, net_admin);
+    allow(this, self, process, [ setcap setexec ]);
+
+    audit.send_messages();
+
+    auth.use_pam();
+
+    autofs_t.list();
+
+    bin_t.list();
+
+    default_context_t.read();
+
+    etc_t.read();
+
+    fs_t.getattr_superblock();
+
+    nss.get_passwd_entry();
+
+    proc_t.read();
+
+    pty.rw();
+    pty.relabel();
+
+    selinux.get_relabel_contexts();
+    selinux.validate_contexts();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    tty.rw();
+    tty.relabel();
+
+    tty_device_t.getattr();
+    tty_device_t.dontaudit_rw();
+
+    // for some PAM modules and for cwd
+    user_home_t.dontaudit_list();
+
+    user_home_dir_t.list(); home_root_t.list();
+
+    if (allow_polyinstantiation) {
+        polyinstantiated.setup_poly();
+    }
+
+    // if secure mode is enabled, then newrole
+    // can only transition to unprivileged users
+    if(secure_mode) {
+        unpriv_userdomain.shell_setexec_domtrans();
+    } else {
+        userdomain.shell_setexec_domtrans();
+    }
+
+// for when the user types "exec newrole" at the command line:
+//allow newrole_t privfd:process sigchld;
+//typeattribute newrole_t mlsfileread;
+//typeattribute newrole_t mlsfilewrite;
+//typeattribute newrole_t mlsfileupgrade;
+//typeattribute newrole_t mlsfiledowngrade;
+//typeattribute newrole_t mlsprocsetsl;
+//typeattribute newrole_t mlsfdshare;
+//typeattribute newrole_t can_change_process_role;
+//typeattribute newrole_t can_change_object_identity;
+//typeattribute newrole_t privfd;
+}
+
+resource policy_src_t inherits common_file {
+    /// SELinux policy source files.
+}
+
+domain restorecond_t inherits daemon, setfiles_t {
+    /// Daemon for initializing contexts on new files.
+
+    //
+    // Resources
+    //
+    @alias(restorecond_exec_t)
+    extend exec  {
+        file_context("/usr/bin/restorecond", file);
+        file_context("/usr/sbin/restorecond", file);
+    }
+
+    @alias(restorecond_run_t)
+    extend runtime {
+        file_context("/run/restorecond\.pid", file);
+    }
+
+    @alias(restorecond_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/restorecond.*\.service", file);
+    }
+
+    //
+    // Policy
+    //
+
+    // restorecond cannot relabel security files.
+    delete(security_file<common_dir>.relabel());
+    delete(security_file<common_file>.relabel());
+    delete(security_file<symlink>.relabel());
+    delete(security_file<common_pipe>.relabel());
+    delete(security_file<common_named_socket>.relabel());
+    // this is only relabelfrom since there should be no
+    // device nodes with file types.
+    delete(security_file<common_block_device>.relabelfrom());
+    delete(security_file<common_character_device>.relabelfrom());
+
+    // Watch the filesystem except for security directories.
+    file_type<common_dir>.watch(); delete(security_file<common_dir>.watch());
+
+// Delete these perms inherited from setfiles:
+//typeattribute setfiles_t mlsfileread;
+//typeattribute setfiles_t mlsfilewrite;
+//typeattribute setfiles_t mlsfileupgrade;
+//typeattribute setfiles_t mlsfiledowngrade;
+}
+
+domain run_init_t inherits user_app_domain {
+    /// Run init scripts with the proper SELinux context.
+
+    //
+    // Resources
+    //
+    @alias(run_init_exec_t)
+    extend exec  {
+        file_context("/usr/bin/run_init", file);
+        file_context("/usr/sbin/run_init", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, setuid);
+    // often the administrator runs such programs from a directory that is owned
+    // by a different user or has restrictive SE permissions, do not want to audit
+    // the failed access to the current directory
+    dontaudit(this, self, capability, [ dac_override dac_read_search ]);
+
+    audit.send_messages();
+
+    auth.use_pam();
+
+    bin_t.exec();
+
+    default_context_t.read();
+
+    etc_t.read();
+
+    file_type<common_dir>.dontaudit_list();
+
+    fs_t.getattr_superblock();
+
+    libs.libselinux_linked();
+
+    init_script_t.setexec_domtrans();
+
+    shell_exec_t.exec();
+
+    svc_start_t.domtrans();
+
+    if (!direct_sysadm_daemon) {
+        if (distro_gentoo) {
+            // Gentoo integrated run_init:
+            init_script_exec_t.entrypoint();
+            rc_exec_t.exec();
+        }
+    }
+
+//if (enable_mcs) {
+//    range_transition run_init_t initrc_exec_t:process s0;
+//}
+//if (enable_mls) {
+//    range_transition run_init_t initrc_exec_t:process s0 - s15:c0.c1023;
+//}
+//allow run_init_roles system_r;
+//typeattribute run_init_t privrangetrans;
+//typeattribute run_init_t can_system_change;
+}
+
+resource selinux_config_t inherits common_file {
+    /// The type applied to /etc/selinux/config.
+    file_context("/etc/selinux(/.*)?", any);
+    file_context("/etc/selinux/([^/]*/)?setrans\.conf", file, system_u:object_r:selinux_config_t:mls_systemhigh);
+    file_context("/etc/selinux/([^/]*/)?seusers", file, system_u:object_r:selinux_config_t:mls_systemhigh);
+    file_context("/etc/selinux/([^/]*/)?users(/.*)?", file, system_u:object_r:selinux_config_t:mls_systemhigh);
+}
+
+@alias(policy_config_t)
+resource selinux_policy_t inherits security_file {
+    /// The type of /etc/selinux/*/policy/* policy configuration.
+    file_context("/etc/selinux/([^/]*/)?policy(/.*)?", any, system_u:object_r:selinux_policy_t:mls_systemhigh);
+}
+
+domain semanage_t inherits user_app_domain {
+    /// SELinux management tools.
+
+    //
+    // Resources
+    //
+    @alias(semanage_exec_t)
+    extend exec {
+        file_context("/usr/bin/setsebool", file);
+        file_context("/usr/bin/semanage", file);
+        file_context("/usr/bin/semodule", file);
+        file_context("/usr/sbin/setsebool", file);
+        file_context("/usr/sbin/semanage", file);
+        file_context("/usr/sbin/semodule", file);
+        file_context("/usr/lib/selinux/semanage_migrate_store", file);
+        file_context("/usr/libexec/selinux/semanage_migrate_store", file);
+    }
+
+    @alias(semanage_read_lock_t)
+    resource read_lock inherits common_file {
+        file_context("/etc/selinux/([^/]*/)?modules/semanage\.read\.LOCK", file);
+        file_context("/var/lib/selinux/[^/]+/semanage\.read\.LOCK", file);
+    }
+
+    @alias(semanage_store_t)
+    resource store inherits security_file {
+        file_context("/etc/selinux/([^/]*/)?modules(/.*)?", any);
+        file_context("/var/lib/selinux(/.*)?", any);
+    }
+
+    @alias(semanage_tmp_t)
+    resource tmp inherits tmpfile {
+        /// Temporary files in /tmp and /var/tmp.
+    }
+
+    @alias(semanage_trans_lock_t)
+    resource trans_lock inherits common_file {
+        file_context("/etc/selinux/([^/]*/)?modules/semanage\.trans\.LOCK", file); // semanage_trans_lock_t
+        file_context("/var/lib/selinux/[^/]+/semanage\.trans\.LOCK", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, dac_override);
+
+    this.read_lock.rw();
+
+    this.store.mmap_manage();
+    selinux_config_t.filetrans(this, this.store, dir, "modules");
+
+    this.tmp.mmap_exec();
+
+    this.trans_lock.rw();
+
+    audit.send_messages();
+
+    bin_t.exec();
+
+    // netfilter_contexts:
+    default_context_t.manage();
+
+    etc_t.read();
+
+    etc_runtime_t.read();
+
+    file_context_t.mmap_manage();
+
+    load_policy_t.domtrans();
+
+    policy_src_t.list();
+
+    proc_t.read();
+    proc_t.dontaudit_getattr_superblock();
+
+    // Running genhomedircon requires this for finding all users
+    nss.get_passwd_entry();
+
+    selinux.validate_contexts();
+    selinux.get_enforce_mode();
+    // for setsebool:
+    selinux.set_all_booleans();
+
+    selinux_config_t.manage();
+
+    selinux_policy_t.manage();
+
+    setfiles_t.domtrans();
+
+    shell_exec_t.exec();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    syslog.send_messages();
+
+    urandom_device_t.read();
+
+    // Handle pp files created in homedir and /tmp
+    user_home_dir_t<common_file>.mmap_read(); user_home_dir_t.list(); home_root_t.list();
+
+    user_tmp_t<common_file>.mmap_read(); user_runtime_t.list(); user_runtime_root_t.list(); runtime_t.list(); var_t.list();
+
+    usr_t.mmap_read();
+
+    if (distro_debian) {
+        var_lib_t<common_file>.read();
+    }
+
+//typeattribute semanage_t mlsfilewrite;
+//typeattribute semanage_t mlsfileread;
+//typeattribute semanage_t privfd;
+}
+
+domain setfiles_t inherits system_app_domain {
+    /// description_text
+
+    //
+    // Resources
+    //
+    @alias(setfiles_exec_t)
+    extend exec  {
+        file_context("/usr/bin/restorecon", file);
+        file_context("/usr/bin/setfiles.*", file);
+        file_context("/usr/sbin/restorecon", file);
+        file_context("/usr/sbin/setfiles.*", file);
+    }
+
+    //
+    // Policy
+    //
+
+    allow(this, self, capability, [ dac_override dac_read_search fowner ]);
+    dontaudit(this, self, capability, sys_tty_config);
+
+    debugfs_t.getattr_superblock();
+
+    default_context_t.read();
+
+    file_type<common_dir>.relabel();
+    file_type<common_file>.relabel();
+    file_type<symlink>.relabel();
+    file_type<common_pipe>.relabel();
+    file_type<common_named_socket>.relabel();
+    // this is only relabelfrom since there should be no
+    // device nodes with file types.
+    file_type<common_block_device>.relabelfrom();
+    file_type<common_character_device>.relabelfrom();
+
+    filesystem.getattr_superblock();
+
+    kernel_t.rw_inherited_pipes();
+
+    noxattr_filesystem.relabelfrom();
+    noxattr_filesystem<common_dir>.relabelfrom();
+    noxattr_filesystem<symlink>.relabelfrom();
+    noxattr_filesystem<common_pipe>.relabelfrom();
+    noxattr_filesystem<common_named_socket>.relabelfrom();
+    noxattr_filesystem<common_block_device>.relabelfrom();
+    noxattr_filesystem<common_character_device>.relabelfrom();
+
+    nss.get_passwd_entry();
+
+    pseudo_filesystem.list();
+
+    pstore_t<common_dir>.getattr();
+
+    proc_t.read();
+    proc_type.dontaudit_getattr(setfiles_t);
+
+    selinux.file_contexts_setfscreate();
+
+    sysctl_t.kernel.read(setfiles_t); sysctl_t.list(setfiles_t);
+    sysctl_entry.dontaudit_list(setfiles_t);
+
+    syslog.send_messages();
+
+    unlabeled_t<dir>.list();
+    unlabeled_t<dir>.relabelfrom();
+    unlabeled_t<file>.relabelfrom();
+    unlabeled_t<symlink>.relabelfrom();
+    unlabeled_t<pipe>.relabelfrom();
+    unlabeled_t<named_socket>.relabelfrom();
+    unlabeled_t<block_device>.relabelfrom();
+    unlabeled_t<character_device>.relabelfrom();
+
+//typeattribute setfiles_t can_change_object_identity;
+//typeattribute setfiles_t mlsfileread;
+//typeattribute setfiles_t mlsfilewrite;
+//typeattribute setfiles_t mlsfileupgrade;
+//typeattribute setfiles_t mlsfiledowngrade;
+}
+
+//
+// Modules
+//
+module checkpolicy {
+    domain checkpolicy_t;
+    resource policy_src_t;
+}
+
+module load_policy {
+    domain load_policy_t;
+}
+
+module newrole {
+    domain newrole_t;
+}
+
+module restorecond {
+    domain restorecond_t;
+}
+
+module run_init {
+    domain run_init_t;
+}
+
+module selinuxutil_base {
+    resource default_context_t;
+    resource file_context_t;
+    resource selinux_config_t;
+    resource selinux_policy_t;
+}
+
+module selinuxutil {
+    module checkpolicy;
+    module selinuxutil_base;
+    module load_policy;
+    module newrole;
+    module restorecond;
+    module run_init;
+    module semanage;
+    module setfiles;
+}
+
+}
+module semanage {
+    domain semanage;
+}
+
+module setfiles {
+    domain setfiles_t;
+}

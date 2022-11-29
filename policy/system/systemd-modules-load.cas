@@ -1,0 +1,39 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_modules_load_t inherits systemd_app_domain {
+    /// Load kernel modules on boot.
+
+    //
+    // Resources
+    //
+    @alias(systemd_modules_load_exec_t)
+    extend exec  {
+       file_context("/usr/lib/systemd/systemd-modules-load", file);
+    }
+
+    //
+    // Policy
+    //
+    boot_t.list();
+
+    cgroup_t.getattr_superblock();
+
+    etc_t.read();
+
+    fs_t.getattr_superblock();
+
+    kernel.insert_modules();
+    kernel.request_module_load();
+
+    modules_conf_t.read();
+
+    modules_dep_t.read();
+
+    modules_object_t.mmap_read();
+
+    proc_t.dontaudit_getattr_superblock();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.read();
+}

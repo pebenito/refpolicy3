@@ -1,0 +1,122 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain unconfined_t inherits userdomain {
+    /// The unconfined user domain.
+
+    //
+    // Resources
+    //
+    @alias(unconfined_exec_t)
+    extend exec  {
+        file_context("/usr/bin/vncserver", file);
+    }
+
+    //
+    // Policy
+    //
+    auditctl_t.domtrans();
+
+    bootloader_t.domtrans();
+
+    checkpc_t.domtrans();
+
+    dhcpc_t.domtrans();
+
+    innd_t.domtrans();
+
+    kmod_t.domtrans();
+
+    ldconfig_t.domtrans();
+
+    lvm_t.domtrans();
+
+    mono_t.domtrans();
+
+    ndc_t.domtrans();
+
+    nfsd_t.domtrans();
+
+    oddjob_mkhomedir_t.domtrans();
+
+    portmap_helper_t.domtrans();
+
+    postfix_map_t.domtrans();
+
+    postfix_master_t.domtrans();
+
+    prelink_t.domtrans();
+
+    root_t.filetrans(unconfined_t, etc_runtime_t, file);
+
+    rpm_t.domtrans();
+
+    samba_net_t.domtrans();
+
+    semanage_t.domtrans();
+
+    setfiles_t.domtrans();
+
+    sysadm_passwd_t.domtrans();
+
+    systemd_t.runtime.filetrans(unconfined_t, systemd_passwd_runtime_t, dir, "ask-password-block");
+    systemd_t.runtime.filetrans(unconfined_t, systemd_passwd_runtime_t, dir, "ask-password");
+
+    tzdata_t.domtrans();
+
+    unconfined.domain();
+
+    unconfined_execmem_t.domtrans();
+
+    unconfined_mount_t.domtrans();
+
+    user_home_dir_t.filetrans(unconfined_t, user_home_t, { dir file lnk_file fifo_file sock_file }, );
+
+    vpnc_t.domtrans();
+
+    webalizer_t.domtrans();
+
+    winbind_helper_t.domtrans();
+
+    wine_t.domtrans();
+
+    optional {
+        gcc_config_t.domtrans();
+
+        portage_t.domtrans();
+
+        portage_fetch_t.domtrans();
+    }
+}
+
+domain unconfined_execmem_t inherits unconfined_t {
+    /// The unconfined user domain with exectuable memory and stack.
+
+    //
+    // Resources
+    //
+    @alias(unconfined_execmem_exec_t)
+    extend exec {
+        file_context("/usr/bin/gnatbind", file);
+        file_context("/usr/bin/gnatls", file);
+        file_context("/usr/bin/gnatmake", file);
+        file_context("/usr/bin/valgrind", file);
+        file_context("/usr/lib/ia32el/ia32x_loader", file);
+        file_context("/usr/libexec/gcc(/.*)?/gnat1", file);
+        file_context("/usr/local/RealPlayer/realplay\.bin", file);
+
+        if (distro_debian) {
+            file_context("/usr/bin/gcj-dbtool-4\.1", file);
+            file_context("/usr/bin/gij-4\.1", file);
+            file_context("/usr/lib/openoffice/program/soffice\.bin", file);
+        }
+
+        if (distro_gentoo) {
+            file_context("/usr/lib/openoffice/program/[^/]+\.bin", file);
+        }
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, process, [ execmem execstack ]);
+}

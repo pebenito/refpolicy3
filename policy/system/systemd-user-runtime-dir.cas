@@ -1,0 +1,61 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_user_runtime_dir_t inherits systemd_app_domain {
+    /// User runtime directory (/run/user/<uid>) management.
+
+    //
+    // Resources
+    //
+    @alias(systemd_user_runtime_dir_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-user-runtime-dir", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ fowner chown sys_admin dac_read_search dac_override ]);
+
+    cgroup_t.read();
+    cgroup_t.getattr_superblock();
+
+    etc_t.read();
+
+    fs_t.getattr_superblock();
+
+    proc_t.dontaudit_getattr_superblock();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    system_dbusd_t.client();
+
+    systemd_logind_t.dbus_send();
+
+    systemd_user_runtime_t<common_dir>.manage();
+    systemd_user_runtime_t<common_file>.manage();
+
+    tmpfs_t.mount();
+    tmpfs_t.getattr_superblock();
+    tmpfs_t.list();
+    tmpfs_t.unmount();
+    tmpfs_t.relabelfrom();
+
+    user_runtime_t<dir>.mounton();
+    user_runtime_t<dir>.relabelto();
+    user_runtime_t<dir>.manage();
+    user_runtime_root_t.filetrans(this, user_runtime_t, dir); runtime_t.list(); var_t.list();
+
+    user_runtime_content_type<common_dir>.delete();
+    user_runtime_content_type<common_file>.delete();
+    user_runtime_content_type<symlink>.delete();
+    user_runtime_content_type<common_pipe>.delete();
+    user_runtime_content_type<common_named_socket>.delete();
+    user_runtime_content_type<common_character_device>.delete();
+    user_runtime_content_type<common_block_device>.delete();
+
+    user_runtime_root_t.list();
+
+    user_tmp_t<common_dir>.manage(); tmp_t.list();
+
+//typeattribute systemd_user_runtime_dir_t can_change_object_identity;
+}

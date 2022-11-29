@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0
+
+// how to handle this nicely with MLS vs MCS?
+// TODO add back in once user syntax is finalized
+// user staff_u roles staff_r, admin_userdomain, mls_default <MLS_low> mls_clearance <MLS_high> {};
+
+// TODO add back in once roles are supported
+// role staff_r {};
+
+domain staff_t inherits user_t {
+    /// Unprivileged user domain for administrators.
+
+    // TODO: role changing permissions
+}

@@ -1,0 +1,57 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain hostname inherits system_app_domain {
+    /// Command line tool to get and set the system hostname.
+
+    @alias(hostname_exec_t)
+    extend exec {
+        file_context("/usr/bin/hostname", file);
+    }
+
+    // sys_admin : for setting the hostname
+    allow(this, self, capability, sys_admin);
+    dontaudit(this, self, capability, sys_tty_config);
+
+    autofs_t.list();
+
+    console_device_t.dontaudit_rw();
+
+    // Early devtmpfs, before udev relabel
+    device_t<common_character_device>.dontaudit_rw();
+
+    etc_t.read();
+
+    fs_t.getattr_superblock();
+
+    nss.get_hosts_entry();
+
+    proc_t.list();
+
+    pty.rw_inherited();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    tmpfs_t<common_character_device>.dontaudit_rw();
+
+    tty.rw_inherited();
+
+    // for when /usr is not mounted:
+    dontaudit(hostname_t, unlabeled_t, dir, list_dir_perms);
+
+    usr_t.list();
+
+    var_t.dontaudit_list();
+
+    optional {
+        dhcpc_t.dontaudit_rw_inherited_udp_sockets();
+        dhcpc_t.dontaudit_rw_inherited_stream_sockets();
+    }
+
+    optional {
+        xend_t.log.append(); var_log_t.list(); var_t.list();
+        xend_t.log.dontaudit_write();
+        xend_t.dontaudit_inherit_file_descriptors();
+    }
+}

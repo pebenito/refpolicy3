@@ -1,0 +1,1841 @@
+// SPDX-License-Identifier: GPL-2.0
+
+// Loose means mmap, watch, or execmod are more broadly allowed
+tunable files_loose_mmap {
+    default false;
+}
+
+tunable files_loose_watch {
+    default false;
+}
+
+tunable files_loose_execmod {
+    // this is similar to the old allow_execmod, but broader
+    default false;
+}
+
+//
+// General object class sets
+//
+
+// All directory and file classes
+let dir_file_class_set = [ dir file_class_set ];
+
+// All non-directory file classes.
+let file_class_set = [ devfile_class_set notdevfile_class_set ];
+
+// Non-device file classes.
+let notdevfile_class_set = [ fifo_file file lnk_file sock_file ];
+
+// Non-device file classes.
+let dir_notdevfile_class_set = [ dir notdevfile_class_set ];
+
+//
+// Low-level regular file API
+//
+let getattr_file_perms = [ getattr ];
+let setattr_file_perms = [ setattr ];
+let read_inherited_file_perms = [ getattr read lock ioctl ];
+let read_file_perms = [ getattr open read lock ioctl ];
+let mmap_read_inherited_file_perms = [ getattr map read ioctl ];
+let mmap_read_file_perms = [ getattr open map read ioctl ];
+let mmap_exec_inherited_file_perms = [ getattr map read execute ioctl ];
+let mmap_exec_file_perms = [ getattr open map read execute ioctl ];
+let textrel_mmap_exec_inherited_file_perms = [ getattr map read execute execmod ioctl ];
+let exec_file_perms = [ getattr open map read execute ioctl execute_no_trans ];
+let append_inherited_file_perms = [ getattr append lock ioctl ];
+let append_file_perms = [ getattr open append lock ioctl ];
+let write_inherited_file_perms = [ getattr write append lock ioctl ];
+let write_file_perms = [ getattr open write append lock ioctl ];
+let rw_inherited_file_perms = [ getattr read write append ioctl lock ];
+let rw_file_perms = [ open rw_inherited_file_perms ];
+let mmap_rw_inherited_file_perms = [ getattr map read write ioctl ];
+let mmap_rw_file_perms = [ getattr open map read write ioctl ];
+let mmap_rwx_inherited_file_perms = [ getattr map read write ioctl ];
+let mmap_rwx_file_perms = [ getattr open map read write ioctl ];
+let create_file_perms = [ getattr setattr create open append write ];
+let rename_file_perms = [ getattr rename ];
+let delete_file_perms = [ getattr unlink ];
+let manage_file_perms = [ create open getattr setattr read write append rename link unlink ioctl lock ];
+let mmap_manage_file_perms = [ create open getattr setattr read write append rename link unlink ioctl lock map ];
+let relabelfrom_file_perms = [ getattr relabelfrom ];
+let relabelto_file_perms = [ getattr relabelto ];
+let relabel_file_perms = [ getattr relabelfrom relabelto ];
+let admin_file_perms = [ manage_file_perms relabel_file_perms ];
+let mmap_admin_file_perms = [ mmap_manage_file_perms relabel_file_perms ];
+let unconfined_file_perms = [ manage_file_perms relabel_file_perms exec_file_perms quotaon mounton audit_access watch ];
+
+api file_api {
+    /// The low-level API for regular files (file object class).
+
+    @alias(stat)
+    fn getattr(domain source) {
+        /// Get the attributes of this file.
+        allow(source, this, file, getattr_file_perms);
+    }
+
+    @alias(dontaudit_stat)
+    fn dontaudit_getattr(domain source) {
+        /// Do not audit denials for getting the attributes of this file.
+        dontaudit(source, this, file, getattr_file_perms);
+    }
+
+    @alias(chown, chmod)
+    fn setattr(domain source) {
+        /// Set the attributes of this file.
+        allow(source, this, file, setattr_file_perms);
+    }
+
+    @alias(dontaudit_chown, dontaudit_chmod)
+    fn dontaudit_setattr(domain source) {
+        /// Do not audit denials for setting the attributes of this file.
+        dontaudit(source, this, file, setattr_file_perms);
+    }
+
+    fn read_inherited(domain source) {
+        /// Read this file only if it is inherited.
+        /// The file cannot be directly opened.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        allow(source, this, file, read_inherited_file_perms);
+
+        if (files_loose_mmap) {
+            allow(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_read_inherited(domain source) {
+        /// Do not audit denials for reading this file only if it is inherited.
+        /// Denials for opening the file will still be audited.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        dontaudit(source, this, file, read_inherited_file_perms);
+
+        if (files_loose_mmap) {
+            dontaudit(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn mmap_read_inherited(domain source) {
+        /// mmmap() as read-only this file only if it is inherited.
+        /// The file cannot be directly opened.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, mmap_read_inherited_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_read_inherited(domain source) {
+        /// Do not audit denials for mmap() read-only this file only if it is inherited.
+        /// Denials for opening the file will still be audited.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, mmap_read_inherited_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn mmap_exec_inherited(domain source) {
+        /// mmmap() this file as read-only and executable only if it is inherited.
+        /// This is typically for shared libraries (.so files).
+        /// This function is sensitive to files_loose_execmod and files_loose_watch tunables.
+
+        allow(source, this, file, mmap_exec_inherited_file_perms);
+
+        if (files_loose_execmod) {
+            allow(source, this, file, execmod);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_exec_inherited(domain source) {
+        /// Do not audit denials for mmmap() this file as read-only and executable only if it is inherited.
+        /// This function is sensitive to files_loose_execmod and files_loose_watch tunables.
+
+        dontaudit(source, this, file, mmap_exec_inherited_file_perms);
+
+        if (files_loose_execmod) {
+            dontaudit(source, this, file, execmod);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn textrel_mmap_exec_inherited(domain source) {
+        /// mmmap() this file as read-only and executable with text relocation only if it is inherited.
+        /// This is for shared libraries (.so files) with text relocations.  It is better to fix
+        /// the library to remove text relocations. Alternatively, textrel_shlib_t is the standard
+        /// type for system libraries with text relocations.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, textrel_mmap_exec_inherited_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_textrel_mmap_exec_inherited(domain source) {
+        /// Do not audit denials for mmmap() this file as read-only and executable with text relocation only if it is inherited.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, textrel_mmap_exec_inherited_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn read(domain source) {
+        /// Read this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        allow(source, this, file, read_file_perms);
+
+        if (files_loose_mmap) {
+            allow(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_read(domain source) {
+        /// Do not audit denials for reading this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        dontaudit(source, this, file, read_file_perms);
+
+        if (files_loose_mmap) {
+            dontaudit(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn mmap_read(domain source) {
+        /// mmap() this file as read-only.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, mmap_read_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_read(domain source) {
+        /// Do not audit denials for mmap() read-only.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, mmap_read_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn mmap_exec(domain source) {
+        /// mmmap() this file as read-only and executable.
+        /// This function is sensitive to files_loose_execmod and files_loose_watch tunables.
+
+        allow(source, this, file, mmap_exec_file_perms);
+
+        if (files_loose_execmod) {
+            allow(source, this, file, execmod);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_exec(domain source) {
+        /// Do not audit denials for mmmap() this file as read-only and executable.
+        /// This function is sensitive to files_loose_execmod and files_loose_watch tunables.
+
+        dontaudit(source, this, file, mmap_exec_file_perms);
+
+        if (files_loose_execmod) {
+            dontaudit(source, this, file, execmod);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn textrel_mmap_exec(domain source) {
+        /// mmmap() this file as read-only and executable with text relocation.
+        /// This is for shared libraries (.so files) with text relocations.  It is better to fix
+        /// the library to remove text relocations. Alternatively, textrel_shlib_t is the standard
+        /// type for system libraries with text relocations.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, textrel_mmap_exec_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_textrel_mmap_exec_inherited(domain source) {
+        /// Do not audit denials for mmmap() this file as read-only and executable with text relocation only if it is inherited.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, textrel_mmap_exec_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+
+    fn exec(domain source) {
+        /// Execute this file.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, exec_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_exec(domain source) {
+        /// Do not audit denials for executing this file.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, exec_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn append_inherited(domain source) {
+        /// Append this file only if it is inherited.
+        /// The file cannot be directly opened.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        allow(source, this, file, append_inherited_file_perms);
+
+        if (files_loose_mmap) {
+            allow(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontuadit_append_inherited(domain source) {
+        /// Do not audit denials for appending this file only if it is inherited.
+        /// Denials for opening the file will still be audited.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        dontaudit(source, this, file, append_inherited_file_perms);
+
+        if (files_loose_mmap) {
+            dontaudit(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn append(domain source) {
+        /// Append this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        allow(source, this, file, append_file_perms);
+
+        if (files_loose_mmap) {
+            allow(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_append(domain source) {
+        /// Do not audit denials for appending this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        dontaudit(source, this, file, append_file_perms);
+
+        if (files_loose_mmap) {
+            dontaudit(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn write_inherited(domain source) {
+        /// Write this file only if it is inherited.
+        /// The file cannot be directly opened.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        allow(source, this, file, write_inherited_file_perms);
+
+        if (files_loose_mmap) {
+            allow(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_write_inherited(domain source) {
+        /// Do not audit denials for writing this file only if it is inherited.
+        /// Denials for opening the file will still be audited.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        dontaudit(source, this, file, write_inherited_file_perms);
+
+        if (files_loose_mmap) {
+            dontaudit(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn mmap_write_inherited(domain source) {
+        /// mmmap() as write-only this file only if it is inherited.
+        /// The file cannot be directly opened.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, mmap_write_inherited_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_write_inherited(domain source) {
+        /// Do not audit denials for mmap() write-only this file only if it is inherited.
+        /// Denials for opening the file will still be audited.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, mmap_write_inherited_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn write(domain source) {
+        /// Write this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        allow(source, this, file, write_file_perms);
+
+        if (files_loose_mmap) {
+            allow(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_write(domain source) {
+        /// Do not audit denials for writing this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        dontaudit(source, this, file, write_file_perms);
+
+        if (files_loose_mmap) {
+            dontaudit(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn mmap_write(domain source) {
+        /// mmmap() this file as write-only.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, mmap_write_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_write(domain source) {
+        /// Do not audit denials for mmap() write-only.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, mmap_write_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn rw_inherited(domain source) {
+        /// Read and write this file only if it is inherited.
+        /// The file cannot be directly opened.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        allow(source, this, file, rw_inherited_file_perms);
+
+        if (files_loose_mmap) {
+            allow(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_rw_inherited(domain source) {
+        /// Do not audit denials for reading and writing this file only if it is inherited.
+        /// Denials for opening the file will still be audited.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        dontaudit(source, this, file, rw_inherited_file_perms);
+
+        if (files_loose_mmap) {
+            dontaudit(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+
+    }
+
+    fn mmap_rw_inherited(domain source) {
+        /// mmmap() this file as read and write.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, mmap_rw_inherited_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_rw_inherited(domain source) {
+        /// Do not audit denials for mmap() read and write.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, mmap_rw_inherited_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn mmap_rwx_inherited(domain source) {
+        /// mmap() this file as read, write, and executable only if it is inherited.
+        /// This is a significant security concern as this makes it easy for comopromised domains
+        /// to execute arbitrary code.  Ideally, the code should be reworked to remove this
+        /// usage.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, mmap_rwx_inherited_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_rwx_inherited(domain source) {
+        /// Do not audit denials for mmap() this file as read, write, and executable only if it is inherited.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, mmap_rwx_inherited_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn rw(domain source) {
+        /// Read and write this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        allow(source, this, file, rw_file_perms);
+
+        if (files_loose_mmap) {
+            allow(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_rw(domain source) {
+        /// Do not audit denials for reading and writing this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        dontaudit(source, this, file, rw_file_perms);
+
+        if (files_loose_mmap) {
+            dontaudit(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn mmap_rw(domain source) {
+        /// mmmap() as read and write this file.
+        /// The file cannot be directly opened.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, mmap_rw_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_rw(domain source) {
+        /// Do not audit denials for mmap() read and write this file.
+        /// Denials for opening the file will still be audited.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, mmap_rw_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn mmap_rwx(domain source) {
+        /// mmap() this file as read, write, and executable.
+        /// This is a significant security concern as this makes it easy for comopromised domains
+        /// to execute arbitrary code.  Ideally, the code should be reworked to remove this
+        /// usage.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, mmap_rwx_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_rwx(domain source) {
+        /// Do not audit denials for mmap() this file as read, write, and executable.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, mmap_rwx_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn create(domain source) {
+        /// Create this file.
+        allow(source, this, file, create_file_perms);
+    }
+
+    fn dontaudit_create(domain source) {
+        /// Do not audit denials for creating this file.
+        dontaudit(source, this, file, create_file_perms);
+    }
+
+    fn rename(domain source) {
+        /// Rename this file.
+        allow(source, this, file, rename_file_perms);
+    }
+
+    fn dontaudit_rename(domain source) {
+        /// Do not audit denials for renaming this file.
+        dontaudit(source, this, file, rename_file_perms);
+    }
+
+    @alias(unlink)
+    fn delete(domain source) {
+        /// Delete this file.
+        allow(source, this, file, delete_file_perms);
+    }
+
+    @alias(dontaudit_unlink)
+    fn dontaudit_delete(domain source) {
+        /// Do not audit denials for deleting this file.
+        dontaudit(source, this, file, delete_file_perms);
+    }
+
+    fn manage(domain source) {
+        /// Create, read, write, and delete this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        allow(source, this, file, manage_file_perms);
+
+        if (files_loose_mmap) {
+            allow(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_manage(domain source) {
+        /// Do not audit denials for creating, reading, writing, and deleting this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        dontaudit(source, this, file, manage_file_perms);
+
+        if (files_loose_mmap) {
+            dontaudit(source, this, file, map);
+        }
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn mmap_manage(domain source) {
+        /// Create, read, write, mmap(), and delete this file.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, mmap_manage_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_mmap_manage(domain source) {
+        /// Do not audit denials for creating, reading, writing, mmap(), and deleting this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+
+        dontaudit(source, this, file, mmap_manage_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn relabelfrom(domain source) {
+        /// Change file labels from this type.
+        allow(source, this, file, relabelfrom_file_perms);
+    }
+
+    fn dontaudit_relabelfrom(domain source) {
+        /// Do not audit denials for changing file labels from this type.
+        dontaudit(source, this, file, relabelfrom_file_perms);
+    }
+
+    fn relabelto(domain source) {
+        /// Change file labels to this type.
+        allow(source, this, file, relabelto_file_perms);
+    }
+
+    fn dontaudit_relabelto(domain source) {
+        /// Do not audit denials for changing file labels to this type.
+        dontaudit(source, this, file, relabelto_file_perms);
+    }
+
+    fn relabel(domain source) {
+        /// Change file labels to this type and from this type.
+        allow(source, this, file, relabel_file_perms);
+    }
+
+    fn dontaudit_relabel(domain source) {
+        /// Do not audit denials for changing file labels to this type and from this type.
+        dontaudit(source, this, file, relabel_file_perms);
+    }
+
+    fn mounton(domain source) {
+        /// Mount on this file.
+        allow(source, this, file, [getattr mounton]);
+    }
+
+    fn dontaudit_mounton(domain source) {
+        /// Do not audit denials for mounting on this file.
+        dontaudit(source, this, file, [getattr mounton]);
+    }
+
+    fn watch(domain source) {
+        /// Watch this file using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        allow(source, this, file, [getattr watch]);
+    }
+
+    fn dontaudit_watch(domain source) {
+        /// Do not audit denials for watching this file using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        dontaudit(source, this, file, [getattr watch]);
+    }
+
+    // FSNOTIFY_OBJ_TYPE_VFSMOUNT
+    fn watch_mount(domain source) {
+        /// Watch this file's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        allow(source, this, file, [getattr watch_mount]);
+    }
+
+    fn dontaudit_watch_mount(domain source) {
+        /// Do not audit denials for watching this file's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        dontaudit(source, this, file, [getattr watch_mount]);
+    }
+
+    fn watch_superblock(domain source) {
+        /// Watch this file's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        allow(source, this, file, [getattr watch_sb]);
+    }
+
+    fn dontaudit_watch_superblock(domain source) {
+        /// Do not audit denials for watching this file's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        dontaudit(source, this, file, [getattr watch_sb]);
+    }
+
+    fn watch_with_perms(domain source) {
+        /// Watch this file with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        allow(source, this, file, [getattr watch_with_perm]);
+    }
+
+    fn dontaudit_watch_with_perms(domain source) {
+        /// Do not audit denials for watching this file with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        dontaudit(source, this, file, [getattr watch_with_perm]);
+    }
+
+    fn watch_reads(domain source) {
+        /// Watch this file's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        allow(source, this, file, [getattr watch_reads]);
+    }
+
+    fn dontaudit_watch_reads(domain source) {
+        /// Do not audit denials for watching this file's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        dontaudit(source, this, file, [getattr watch_reads]);
+    }
+
+    @alias(quotaon)
+    fn store_quotas(domain source) {
+        /// Store quota information in this file.
+        allow(source, this, file, [getattr quotaon]);
+    }
+
+    @alias(dontaudit_quotaon)
+    fn dontaudit_store_quotas(domain source) {
+        /// Do not audit denials for storing quota information in this file.
+        dontaudit(source, this, file, [getattr quotaon]);
+    }
+
+    fn audit_access(domain source) {
+        /// Enable audits on this file for access() use.
+        allow(source, this, file, audit_access);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access (all permissions) on this file.
+        /// This function is sensitive to files_loose_execmod.
+        allow(source, this, file, unconfined_file_perms);
+
+        if (files_loose_execmod) {
+            allow(source, this, file, [execmod]);
+        }
+    }
+}
+
+
+//
+// Low-level directory API
+//
+let getattr_dir_perms = [ getattr ];
+let setattr_dir_perms = [ setattr ];
+let search_dir_perms = [ getattr search ];
+let list_inherited_dir_perms = [ getattr search read lock ioctl ];
+let list_dir_perms = [ getattr search open read lock ioctl ];
+let add_entry_inherited_dir_perms = [ getattr search lock ioctl write add_name ];
+let add_entry_dir_perms = [ getattr search open lock ioctl write add_name ];
+let delete_entry_inherited_dir_perms = [ getattr search lock ioctl write remove_name ];
+let delete_entry_dir_perms = [ getattr search open lock ioctl write remove_name ];
+let write_inherited_dir_perms = [ getattr search lock ioctl write ];
+let write_dir_perms = [ getattr search open lock ioctl write ];
+let rw_inherited_dir_perms = [ read getattr lock search ioctl add_name remove_name write ];
+let rw_dir_perms = [ open read getattr lock search ioctl add_name remove_name write ];
+let create_dir_perms = [ getattr setattr create ];
+let rename_dir_perms = [ getattr rename ];
+let reparent_dir_perms = [ getattr reparent ];
+let delete_dir_perms = [ getattr rmdir ];
+let manage_dir_perms = [ create open getattr setattr read write link unlink rename search add_name remove_name reparent rmdir lock ioctl ];
+let mounton_dir_perms = [ getattr mounton];
+let relabelfrom_dir_perms = [ getattr relabelfrom ];
+let relabelto_dir_perms = [ getattr relabelto ];
+let relabel_dir_perms = [ getattr relabelfrom relabelto ];
+let admin_dir_perms = [ manage_dir_perms relabel_dir_perms ];
+let unconfined_dir_perms = [ manage_dir_perms relabel_dir_perms append map execute quotaon mounton add_name remove_name reparent search rmdir audit_access execmod watch ];
+
+api dir_api {
+    /// The low-level API for directories (dir object class).
+
+    @alias(stat)
+    fn getattr(domain source) {
+        /// Get the attributes of this directory.
+        allow(source, this, dir, getattr_dir_perms);
+    }
+
+    @alias(dontaudit_stat)
+    fn dontaudit_getattr(domain source) {
+        /// Do not audit denials for getting the attributes of this directory.
+        dontaudit_allow(source, this, dir, getattr_dir_perms);
+    }
+
+    @alias(chown, chmod)
+    fn setattr(domain source) {
+        /// Set the attributes of this directory.
+        allow(source, this, dir, setattr_dir_perms);
+    }
+
+    @alias(dontaudit_chown, dontaudit_chmod)
+    fn dontaudit_setattr(domain source) {
+        /// Do not audit denials for setting the attributes of this directory.
+        dontaudit(source, this, dir, setattr_dir_perms);
+    }
+
+    // No search function. If you want that, you need
+    // to delete the read permission in the concrete types.
+
+    @alias(read_inherited)
+    fn list_inherited(domain source) {
+        /// List (read) the contents of this directory only if it is inherited.
+        /// The directory cannot be directly opened.
+        allow(source, this, dir, list_inherited_dir_perms);
+    }
+
+    @alias(dontaudit_read_inherited)
+    fn dontaudit_list_inherited(domain source) {
+        /// Do not audit denials for listing (reading) the contents of this directory only if it is inherited.
+        /// Denials for opening the directory will still be audited.
+        dontaudit(source, this, dir, list_inherited_dir_perms);
+    }
+
+    @alias(read)
+    fn list(domain source) {
+        /// List (read) the contents of this directory.
+        allow(source, this, dir, list_dir_perms);
+    }
+
+    @alias(dontaudit_read)
+    fn dontaudit_list(domain source) {
+        /// Do not audit denials for listing (reading) the contents of this directory.
+        dontaudit(source, this, dir, list_dir_perms);
+    }
+
+    @alias(append_inherited)
+    fn add_entry_inherited(domain source) {
+        /// Add entries to this directory only if it is inherited.
+        allow(self, this, dir, add_entry_inherited_dir_perms);
+    }
+
+    @alias(dontaudit_append_inherited)
+    fn dontaudit_add_entry_inherited(domain source) {
+        /// Do not audit denials for adding entries to this directory only if it is inherited.
+        dontaudit(self, this, dir, add_entry_inherited_dir_perms);
+    }
+
+    @alias(append)
+    fn add_entry(domain source) {
+        /// Add entries to this directory.
+        allow(self, this, dir, add_entry_dir_perms);
+    }
+
+    @alias(dontaudit_append)
+    fn dontaudit_add_entry(domain source) {
+        /// Do not audit denials for adding entries to this directory.
+        dontaudit(self, this, dir, add_entry_dir_perms);
+    }
+
+    fn delete_entry_inherited(domain source) {
+        /// Delete entries from this directory only if it is inherited.
+        allow(self, this, dir, delete_entry_inherited_dir_perms);
+    }
+
+    fn dontaudit_delete_entry_inherited(domain source) {
+        /// Do not audit denials for deleting entries from this directory only if it is inherited.
+        dontaudit(self, this, dir, delete_entry_inherited_dir_perms);
+    }
+
+    fn delete_entry(domain source) {
+        /// Delete entries from this directory.
+        allow(self, this, dir, delete_entry_dir_perms);
+    }
+
+    fn dontaudit_delete_entry(domain source) {
+        /// Do not audit denials for deleting entries from this directory.
+        dontaudit(self, this, dir, delete_entry_dir_perms);
+    }
+
+    fn write_inherited(domain source) {
+        /// Write this directory only if it is inherited.
+        /// This function typically is only useful if the code is checking to see if this directory
+        /// is writable.  The add_entry_inherited(), delete_entry_inherited(), or rw_inherited()
+        /// functions are better choices in most cases.
+        allow(self, this, dir, write_inherited_dir_perms);
+    }
+
+    fn dontaudit_write_inherited(domain source) {
+        /// Do not audit denials for writing this directory only if it is inherited.
+        dontaudit(self, this, dir, write_inherited_dir_perms);
+    }
+
+    fn write(domain source) {
+        /// Write this directory.
+        /// This function typically is only useful if the code is checking to see if this directory
+        /// is writable.  The add_entry(), delete_entry(), or rw() functions are better choices
+        /// in most cases.
+        allow(source, this, dir, write_dir_perms);
+    }
+
+    fn dontaudit_write(domain source) {
+        /// Do not audit denials for writing this directory.
+        dontaudit(source, this, dir, write_dir_perms);
+    }
+
+    fn rw_inherited(domain source) {
+        /// Add and delete entries from this directory only if it is inherited.
+        allow(source, this, dir, rw_inherited_dir_perms);
+    }
+
+    fn dontaudit_rw_inherited(domain source) {
+        /// Do not audit denials for adding and deleting entries from this directory only if it is inherited.
+        dontaudit(source, this, dir, rw_inherited_dir_perms);
+    }
+
+    fn rw(domain source) {
+        /// Add and delete entries from this directory.
+        allow(source, this, dir, rw_dir_perms);
+    }
+
+    fn dontaudit_rw(domain source) {
+        /// Do not audit denials for adding and deleting entries from this directory.
+        dontaudit(source, this, dir, rw_dir_perms);
+    }
+
+    fn create(domain source) {
+        /// Create this directory.
+        allow(source, this, dir, create_dir_perms);
+    }
+
+    fn dontaudit_create(domain source) {
+        /// Do not audit denials for creating this directory.
+        dontaudit(source, this, dir, create_dir_perms);
+    }
+
+    fn rename(domain source) {
+        /// Rename this directory.
+        allow(source, this, dir, rename_dir_perms);
+    }
+
+    fn dontaudit_rename(domain source) {
+        /// Do not audit denials for renaming this directory.
+        dontaudit(source, this, dir, rename_dir_perms);
+    }
+
+    fn reparent(domain source) {
+        /// Reparent this directory.
+        allow(source, this, dir, reparent_dir_perms);
+    }
+
+    fn dontaudit_reparent(domain source) {
+        /// Do not audit denials for reparenting this directory.
+        dontaudit(source, this, dir, reparent_dir_perms);
+    }
+
+    @alias(unlink)
+    fn delete(domain source) {
+        /// Delete this directory.
+        allow(source, this, dir, delete_dir_perms);
+    }
+
+    @alias(dontaudit_unlink)
+    fn dontaudit_delete(domain source) {
+        /// Do not audit denials for deleting this directory.
+        dontaudit(source, this, dir, delete_dir_perms);
+    }
+
+    fn manage(domain source) {
+        /// Create, add entries, remove entries, and delete this directory.
+        allow(source, this, dir, manage_dir_perms);
+    }
+
+    fn dontaudit_manage(domain source) {
+        /// Do not audit denials for creating, adding entries, removing entries, and deleting this directory.
+        dontaudit(source, this, dir, manage_dir_perms);
+    }
+
+    fn relabelfrom(domain source) {
+        /// Change directory labels from this type.
+        allow(source, this, dir, relabelfrom_dir_perms);
+    }
+
+    fn dontaudit_relabelfrom(domain source) {
+        /// Do not audit denials for changing directory labels from this type.
+        dontaudit(source, this, dir, relabelfrom_dir_perms);
+    }
+
+    fn relabelto(domain source) {
+        /// Change directory labels to this type.
+        allow(source, this, dir, relabelto_dir_perms);
+    }
+
+    fn dontaudit_relabelto(domain source) {
+        /// Do not audit denials for changing directory labels to this type.
+        dontaudit(source, this, dir, relabelto_dir_perms);
+    }
+
+    fn relabel(domain source) {
+        /// Change directory labels to this type and from this type.
+        allow(source, this, dir, relabel_dir_perms);
+    }
+
+    fn dontaudit_relabel(domain source) {
+        /// Do not audit denials for changing directory labels to this type and from this type.
+        dontaudit(source, this, dir, relabel_dir_perms);
+    }
+
+    fn mounton(domain source) {
+        /// Mount on this directory.
+        allow(source, this, dir, mounton_dir_perms);
+    }
+
+    fn dontaudit_mounton(domain source) {
+        /// Do not audit denials for mounting on this directory.
+        dontaudit(source, this, dir, mounton_dir_perms);
+    }
+
+    fn audit_access(domain source) {
+        /// Enable audits on this directory for access() use.
+        allow(source, this, dir, audit_access);
+    }
+
+    fn add_entry_filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+        /// Create a file-like object in this directory with a private type.
+        /// This does not allow deletions from the directory.
+        allow(source, this, dir, add_entry_dir_perms);
+        resource_transition(default, source, this, obj_classes, name);
+    }
+
+    fn filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+        /// Create a file-like object in this directory with a private type.
+        allow(source, this, dir, rw_dir_perms);
+        resource_transition(default, source, this, obj_classes, name);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access (all permissions) on this directory.
+        allow(source, this, dir, unconfined_dir_perms);
+    }
+}
+
+//
+// Low-level symlink API
+//
+let getattr_lnk_file_perms = [ getattr ];
+let setattr_lnk_file_perms = [ setattr ];
+let read_lnk_file_perms = [ getattr read ];
+let append_lnk_file_perms = [ getattr append lock ioctl ];
+let write_lnk_file_perms = [ getattr append write lock ioctl ];
+let rw_lnk_file_perms = [ getattr read write lock ioctl ];
+let create_lnk_file_perms = [ create getattr setattr ];
+let rename_lnk_file_perms = [ getattr rename ];
+let delete_lnk_file_perms = [ getattr unlink ];
+let manage_lnk_file_perms = [ create read write getattr setattr link unlink rename ioctl lock ];
+let relabelfrom_lnk_file_perms = [ getattr relabelfrom ];
+let relabelto_lnk_file_perms = [ getattr relabelto ];
+let relabel_lnk_file_perms = [ getattr relabelfrom relabelto ];
+let admin_lnk_file_perms = [ manage_lnk_file_perms relabel_lnk_file_perms ];
+let unconfined_lnk_file_perms = [ manage_lnk_file_perms relabel_lnk_file_perms append map execute quotaon mounton open audit_access execmod watch ];
+
+api symlink_api {
+    /// The low-level API for symbolic links (symlinks, lnk_file object class).
+
+    @alias(stat)
+    fn getattr(domain source) {
+        /// Get the attributes of this symbolic link.
+        allow(source, this, lnk_file, getattr_lnk_file_perms);
+    }
+
+    @alias(dontaudit_stat)
+    fn dontaudit_getattr(domain source) {
+        /// Do not audit denials for getting the attributes of this symbolic link.
+        dontaudit(source, this, lnk_file, getattr_lnk_file_perms);
+    }
+
+    @alias(chown, chmod)
+    fn setattr(domain source) {
+        /// Set the attributes of this symbolic link.
+        allow(source, this, lnk_file, setattr_lnk_file_perms);
+    }
+
+    @alias(dontaudit_chown, dontaudit_chmod)
+    fn dontaudit_setattr(domain source) {
+        /// Do not audit denials for setting the attributes of this symbolic link.
+        dontaudit(source, this, lnk_file, setattr_lnk_file_perms);
+    }
+
+    @alias(read_inherited)
+    fn read(domain source) {
+        /// Read this symbolic link.
+        allow(source, this, lnk_file, read_lnk_file_perms);
+    }
+
+    @alias(dontaudit_read_inherited)
+    fn dontaudit_read(domain source) {
+        /// Do not audit denials for reading this symbolic link.
+        dontaudit(source, this, lnk_file, read_lnk_file_perms);
+    }
+
+    @alias(append_inherited, append, write_inherited)
+    fn write(domain source) {
+        /// Write this symbolic link.
+        allow(source, this, lnk_file, write_lnk_file_perms);
+    }
+
+    @alias(dontaudit_append_inherited, dontaudit_append, dontaudit_write_inherited)
+    fn dontaudit_write(domain source) {
+        /// Do not audit denials for writing this symbolic link.
+        dontaudit(source, this, lnk_file, write_lnk_file_perms);
+    }
+
+    @alias(rw_inherited)
+    fn rw(domain source) {
+        /// Read and write this symbolic link.
+        allow(source, this, lnk_file, rw_lnk_file_perms);
+    }
+
+    @alias(dontaudit_rw_inherited)
+    fn dontaudit_rw(domain source) {
+        /// Do not audit denials for reading and writing this symbolic link.
+        dontaudit(source, this, lnk_file, rw_lnk_file_perms);
+    }
+
+    fn create(domain source) {
+        /// Create this symbolic link.
+        allow(source, this, lnk_file, create_lnk_file_perms);
+    }
+
+    fn dontaudit_create(domain source) {
+        /// Do not audit denials for creating this symbolic link.
+        dontaudit(source, this, lnk_file, create_lnk_file_perms);
+    }
+
+    fn rename(domain source) {
+        /// Rename this symbolic link.
+        allow(source, this, lnk_file, rename_lnk_file_perms);
+    }
+
+    fn dontaudit_rename(domain source) {
+        /// Do not audit denials for renaming this symbolic link.
+        dontaudit(source, this, lnk_file, rename_lnk_file_perms);
+    }
+
+    @alias(unlink)
+    fn delete(domain source) {
+        /// Delete this symbolic link.
+        allow(source, this, lnk_file, delete_lnk_file_perms);
+    }
+
+    @alias(dontaudit_unlink)
+    fn dontaudit_delete(domain source) {
+        /// Do not audit denials for deleting this symbolic link.
+        dontaudit(source, this, lnk_file, delete_lnk_file_perms);
+    }
+
+    fn manage(domain source) {
+        /// Create, read, write, and delete this symbolic link.
+        allow(source, this, lnk_file, manage_lnk_file_perms);
+    }
+
+    fn dontaudit_manage(domain source) {
+        /// Do not audit denials for creating, reading, writing, and deleting this symbolic link.
+        dontaudit(source, this, lnk_file, manage_lnk_file_perms);
+    }
+
+    fn relabelfrom(domain source) {
+        /// Change symbolic link labels from this type.
+        allow(source, this, lnk_file, relabelfrom_lnk_file_perms);
+    }
+
+    fn dontaudit_relabelfrom(domain source) {
+        /// Do not audit denials for changing symbolic link labels from this type.
+        dontaudit(source, this, lnk_file, relabelfrom_lnk_file_perms);
+    }
+
+    fn relabelto(domain source) {
+        /// Change symbolic link labels to this type.
+        allow(source, this, lnk_file, relabelto_lnk_file_perms);
+    }
+
+    fn dontaudit_relabelto(domain source) {
+        /// Do not audit denials for changing symbolic link labels to this type.
+        dontaudit(source, this, lnk_file, relabelto_lnk_file_perms);
+    }
+
+    fn relabel(domain source) {
+        /// Change symbolic link labels to this type and from this type.
+        allow(source, this, lnk_file, relabel_lnk_file_perms);
+    }
+
+    fn dontaudit_relabel(domain source) {
+        /// Do not audit denials for changing symbolic link labels to this type and from this type.
+        dontaudit(source, this, lnk_file, relabel_lnk_file_perms);
+    }
+
+    fn audit_access(domain source) {
+        /// Enable audits on this symbolic link for access() use.
+        allow(source, this, lnk_file, audit_access);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access (all permissions) on this symbolic link.
+        allow(source, this, lnk_file, unconfined_lnk_file_perms);
+    }
+}
+
+//
+// Low-level pipe (FIFO) API
+//
+let getattr_fifo_file_perms = [ getattr ];
+let setattr_fifo_file_perms = [ setattr ];
+let read_inherited_fifo_file_perms = [ getattr read lock ioctl ];
+let read_fifo_file_perms = [ getattr open read lock ioctl ];
+let write_inherited_fifo_file_perms = [ getattr write append lock ioctl ];
+let write_fifo_file_perms = [ getattr open write append lock ioctl ];
+let rw_inherited_fifo_file_perms = [ getattr read write append ioctl lock ];
+let rw_fifo_file_perms = [ open rw_inherited_fifo_file_perms ];
+let create_fifo_file_perms = [ getattr setattr create open ];
+let rename_fifo_file_perms = [ getattr rename ];
+let delete_fifo_file_perms = [ getattr unlink ];
+let manage_fifo_file_perms = [ create open getattr setattr read write append rename link unlink ioctl lock ];
+let relabelfrom_fifo_file_perms = [ getattr relabelfrom ];
+let relabelto_fifo_file_perms = [ getattr relabelto ];
+let relabel_fifo_file_perms = [ getattr relabelfrom relabelto ];
+let admin_fifo_file_perms = [ manage_fifo_file_perms relabel_fifo_file_perms ];
+let unconfined_fifo_file_perms = [ manage_fifo_file_perms relabel_fifo_file_perms map execute quotaon mounton audit_access execmod watch ];
+
+api pipe_api {
+    /// The low-level API for pipes (FIFOs, fifo_file object class).
+
+    @alias(stat)
+    fn getattr(domain source) {
+        /// Get the attributes of this pipe.
+        allow(source, this, fifo_file, getattr_fifo_file_perms);
+    }
+
+    @alias(dontaudit_stat)
+    fn dontuadit_getattr(domain source) {
+        /// Do not audit denials for getting the attributes of this pipe.
+        dontaudit(source, this, fifo_file, getattr_fifo_file_perms);
+    }
+
+    @alias(chown, chmod)
+    fn setattr(domain source) {
+        /// Set the attributes of this pipe.
+        allow(source, this, fifo_file, setattr_fifo_file_perms);
+    }
+
+    @alias(dontaudit_chown, dontaudit_chmod)
+    fn dontaudit_setattr(domain source) {
+        /// Do not audit denials for setting the attributes of this pipe.
+        dontaudit(source, this, fifo_file, setattr_fifo_file_perms);
+    }
+
+    fn read_inherited(domain source) {
+        /// Read this pipe only if it is inherited.
+        /// The pipe cannot be directly opened.
+        allow(source, this, fifo_file, read_inherited_fifo_file_perms)
+    }
+
+    fn dontaudit_read_inherited(domain source) {
+        /// Read this pipe only if it is inherited.
+        /// Denials for opening the pipe will still be audited.
+        dontaudit(source, this, fifo_file, read_inherited_fifo_file_perms)
+    }
+
+    fn read(domain source) {
+        /// Read this pipe.
+        allow(source, this, fifo_file, read_fifo_file_perms);
+    }
+
+    fn dontaudit_read(domain source) {
+        /// Do not audit denials for reading this pipe.
+        dontaudit(source, this, fifo_file, read_fifo_file_perms);
+    }
+
+    @alias(append_inherited)
+    fn write_inherited(domain source) {
+        /// Write this pipe only if it is inherited.
+        /// The pipe cannot be directly opened.
+        allow(source, this, fifo_file, write_inherited_fifo_file_perms);
+    }
+
+    @alias(dontaudit_append_inherited)
+    fn dontaudit_write_inherited(domain source) {
+        /// Do not audit denials for writing this pipe only if it is inherited.
+        /// Denials for opening the pipe will still be audited.
+        dontaudit(source, this, fifo_file, write_inherited_fifo_file_perms);
+    }
+
+    @alias(append)
+    fn write(domain source) {
+        /// Write this pipe.
+        allow(source, this, fifo_file, write_fifo_file_perms);
+    }
+
+    @alias(dontaudit_append)
+    fn dontaudit_write(domain source) {
+        /// Do not audit denials for writing this pipe.
+        dontaudit(source, this, fifo_file, write_fifo_file_perms);
+    }
+
+    fn rw_inherited(domain source) {
+        /// Do not audit denials for reading and writing this pipe only if it is inherited.
+        allow(source, this, fifo_file, rw_inherited_fifo_file_perms);
+    }
+
+    fn dontaudit_rw_inherited(domain source) {
+        /// Do not audit denials for reading and writing this pipe only if it is inherited.
+        /// Denials for opening the pipe will still be audited.
+        dontaudit(source, this, fifo_file, rw_inherited_fifo_file_perms);
+    }
+
+    fn rw(domain source) {
+        /// Read and write this pipe.
+        allow(source, this, fifo_file, rw_fifo_file_perms);
+    }
+
+    fn dontaudit_rw(domain source) {
+        /// Do not audit denials for reading and writing this pipe.
+        dontaudit(source, this, fifo_file, rw_fifo_file_perms);
+    }
+
+    fn create(domain source) {
+        /// Create this pipe.
+        allow(source, this, fifo_file, create_fifo_file_perms);
+    }
+
+    fn dontaudit_create(domain source) {
+        /// Do not audit denials for creating this pipe.
+        dontaudit(source, this, fifo_file, create_fifo_file_perms);
+    }
+
+    fn rename(domain source) {
+        /// Rename this pipe.
+        allow(source, this, fifo_file, rename_fifo_file_perms);
+    }
+
+    fn dontaudit_rename(domain source) {
+        /// Do not audit denials for renaming this pipe.
+        dontaudit(source, this, fifo_file, rename_fifo_file_perms);
+    }
+
+    @alias(unlink)
+    fn delete(domain source) {
+        /// Delete this pipe.
+        allow(source, this, fifo_file, delete_fifo_file_perms);
+    }
+
+    @alias(dontaudit_unlink)
+    fn dontaudit_delete(domain source) {
+        /// Do not audit denials for deleting this pipe.
+        dontaudit(source, this, fifo_file, delete_fifo_file_perms);
+    }
+
+    fn manage(domain source) {
+        /// Create, read, write, and delete this pipe.
+        allow(source, this, fifo_file, manage_fifo_file_perms);
+    }
+
+    fn dontaudit_manage(domain source) {
+        /// Do not audit denials for creating, reading, writing, and deleting this pipe.
+        dontaudit(source, this, fifo_file, manage_fifo_file_perms);
+    }
+
+    fn relabelfrom(domain source) {
+        /// Change pipe labels from this type.
+        allow(source, this, fifo_file, relabelfrom_fifo_file_perms);
+    }
+
+    fn dontaudit_relabelfrom(domain source) {
+        /// Do not audit denials for changing pipe labels from this type.
+        dontaudit(source, this, fifo_file, relabelfrom_fifo_file_perms);
+    }
+
+    fn relabelto(domain source) {
+        /// Change pipe labels to this type.
+        allow(source, this, fifo_file, relabelto_fifo_file_perms);
+    }
+
+    fn dontaudit_relabelto(domain source) {
+        /// Do not audit denials for changing pipe labels to this type.
+        dontaudit(source, this, fifo_file, relabelto_fifo_file_perms);
+    }
+
+    fn relabel(domain source) {
+        /// Change pipe labels to this type and from this type.
+        allow(source, this, fifo_file, relabel_fifo_file_perms);
+    }
+
+    fn dontaudit_relabel(domain source) {
+        /// Do not audit denials for changing pipe labels to this type and from this type.
+        dontaudit(source, this, fifo_file, relabel_fifo_file_perms);
+    }
+
+    fn audit_access(domain source) {
+        /// Enable audits on this pipe for access() use.
+        allow(source, this, fifo_file, audit_access);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access (all permissions) on this pipe.
+        allow(source, this, fifo_file, unconfined_fifo_file_perms);
+    }
+}
+
+//
+// Low-level named socket API
+//
+let getattr_sock_file_perms = [ getattr ];
+let setattr_sock_file_perms = [ setattr ];
+let read_sock_file_perms = [ getattr open read ];
+let write_sock_file_perms = [ getattr write open append ];
+let rw_sock_file_perms = [ getattr open read write append ];
+let create_sock_file_perms = [ getattr setattr create open ];
+let rename_sock_file_perms = [ getattr rename ];
+let delete_sock_file_perms = [ getattr unlink ];
+let manage_sock_file_perms = [ create open getattr setattr read write rename link unlink ioctl lock append ];
+let relabelfrom_sock_file_perms = [ getattr relabelfrom ];
+let relabelto_sock_file_perms = [ getattr relabelto ];
+let relabel_sock_file_perms = [ getattr relabelfrom relabelto ];
+let admin_sock_file_perms = [ manage_sock_file_perms relabel_sock_file_perms ];
+let unconfined_sock_file_perms = [ manage_sock_file_perms relabel_sock_file_perms map execute quotaon mounton audit_access execmod watch ];
+
+api named_socket_api {
+    /// The low-level API for named UNIX sockets (sock_file object class).
+
+    @alias(stat)
+    fn getattr(domain source) {
+        /// Get the attributes of this named UNIX socket.
+        allow(source, this, sock_file, getattr_sock_file_perms);
+    }
+
+    @alias(dontaudit_stat)
+    fn dontaudit_getattr(domain source) {
+        /// Do not audit denials for getting the attributes of this named UNIX socket.
+        dontaudit(source, this, sock_file, getattr_sock_file_perms);
+    }
+
+    @alias(chown, chmod)
+    fn setattr(domain source) {
+        /// Set the attributes of this named UNIX socket.
+        allow(source, this, sock_file, setattr_sock_file_perms);
+    }
+
+    @alias(dontaudit_chown, dontaudit_chmod)
+    fn dontaudit_setattr(domain source) {
+        /// Do not audit denials for setting the attributes of this named UNIX socket.
+        dontaudit(source, this, sock_file, setattr_sock_file_perms);
+    }
+
+    @alias(read_inherited)
+    fn read(domain source) {
+        /// Read this named UNIX socket.
+        allow(source, this, sock_file, read_sock_file_perms);
+    }
+
+    @alias(dontaudit_read_inherited)
+    fn dontaudit_read(domain source) {
+        /// Do not audit denials for reading this named UNIX socket.
+        dontaudit(source, this, sock_file, read_sock_file_perms);
+    }
+
+    @alias(append_inherited, append, write_inherited)
+    fn write(domain source) {
+        /// Write this named UNIX socket.
+        allow(source, this, sock_file, write_sock_file_perms);
+    }
+
+    @alias(dontaudit_append_inherited, dontaudit_append, dontaudit_write_inherited)
+    fn dontaudit_write(domain source) {
+        /// Do not audit denials for writing this named UNIX socket.
+        dontaudit(source, this, sock_file, write_sock_file_perms);
+    }
+
+    @alias(rw_inherited)
+    fn rw(domain source) {
+        /// Read and write this named UNIX socket.
+        allow(source, this, sock_file, rw_sock_file_perms);
+    }
+
+    @alias(dontaudit_rw_inherited)
+    fn dontaudit_rw(domain source) {
+        /// Do not audit denials for reading and writing this named UNIX socket.
+        dontaudit(source, this, sock_file, rw_sock_file_perms);
+    }
+
+    fn create(domain source) {
+        /// Create this named UNIX socket.
+        allow(source, this, sock_file, create_sock_file_perms);
+    }
+
+    fn dontaudit_create(domain source) {
+        /// Do not audit denials for creating this named UNIX socket.
+        dontaudit(source, this, sock_file, create_sock_file_perms);
+    }
+
+    fn rename(domain source) {
+        /// Rename this named UNIX socket.
+        allow(source, this, sock_file, rename_sock_file_perms);
+    }
+
+    fn dontaudit_rename(domain source) {
+        /// Do not audit denials for renaming this named UNIX socket.
+        dontaudit(source, this, sock_file, rename_sock_file_perms);
+    }
+
+    @alias(unlink)
+    fn delete(domain source) {
+        /// Delete this named UNIX socket.
+        allow(source, this, sock_file, delete_sock_file_perms);
+    }
+
+    @alias(dontaudit_unlink)
+    fn dontaudit_delete(domain source) {
+        /// Do not audit denials for deleting this named UNIX socket.
+        dontaudit(source, this, sock_file, delete_sock_file_perms);
+    }
+
+    fn manage(domain source) {
+        /// Create, read, write, and delete this named UNIX socket.
+        allow(source, this, sock_file, manage_sock_file_perms);
+    }
+
+    fn dontaudit_manage(domain source) {
+        /// Do not audit denials for creating, reading, writing, and deleting this named UNIX socket.
+        dontaudit(source, this, sock_file, manage_sock_file_perms);
+    }
+
+    fn relabelfrom(domain source) {
+        /// Change named UNIX socket labels from this type.
+        allow(source, this, sock_file, relabelfrom_sock_file_perms);
+    }
+
+    fn dontaudit_relabelfrom(domain source) {
+        /// Do not audit denials for changing named UNIX socket labels from this type.
+        dontaudit(source, this, sock_file, relabelfrom_sock_file_perms);
+    }
+
+    fn relabelto(domain source) {
+        /// Change named UNIX socket labels to this type.
+        allow(source, this, sock_file, relabelto_sock_file_perms);
+    }
+
+    fn dontaudit_relabelto(domain source) {
+        /// Do not audit denials for changing named UNIX socket labels to this type.
+        dontaudit(source, this, sock_file, relabelto_sock_file_perms);
+    }
+
+    fn relabel(domain source) {
+        /// Change named UNIX socket labels to this type and from this type.
+        allow(source, this, sock_file, relabel_sock_file_perms);
+    }
+
+    fn dontaudit_relabel(domain source) {
+        /// Do not audit denials for changing named UNIX socket labels to this type and from this type.
+        dontaudit(source, this, sock_file, relabel_sock_file_perms);
+    }
+
+    fn audit_access(domain source) {
+        /// Enable audits on this named UNIX socket for access() use.
+        allow(source, this, sock_file, audit_access);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access (all permissions) on this named UNIX socket.
+        allow(source, this, sock_file, unconfined_sock_file_perms);
+    }
+}
+
+//
+// Low-level file virtuals
+//
+// Most likely you should inherit the higher level common_* virtuals in
+// the next section.
+//
+
+virtual resource any_file_type {
+    /// Virtual for all file-like objects, including device nodes.
+    /// This is equivalent to refpolicy2 file_type+device_node
+    // All file-like virtuals must implement the below member functions.
+
+    virtual fn getattr(domain source) {}
+
+    virtual fn dontaudit_getattr(domain source) {}
+
+    virtual fn setattr(domain source) {}
+
+    virtual fn dontaudit_setattr(domain source) {}
+
+    virtual fn read_inherited(domain source) {}
+
+    virtual fn dontaudit_read_inherited(domain source) {}
+
+    virtual fn read(domain source) {}
+
+    virtual fn dontaudit_read(domain source) {}
+
+    virtual fn append_inherited(domain source) {}
+
+    virtual fn dontaudit_append_inherited(domain source) {}
+
+    virtual fn append(domain source) {}
+
+    virtual fn dontaudit_append(domain source) {}
+
+    virtual fn write_inherited(domain source) {}
+
+    virtual fn dontaudit_write_inherited(domain source) {}
+
+    virtual fn write(domain source) {}
+
+    virtual fn dontaudit_write(domain source) {}
+
+    virtual fn rw_inherited(domain source) {}
+
+    virtual fn dontaudit_rw_inherited(domain source) {}
+
+    virtual fn rw(domain source) {}
+
+    virtual fn dontaudit_rw(domain source) {}
+
+    virtual fn create(domain source) {}
+
+    virtual fn dontaudit_create(domain source) {}
+
+    virtual fn rename(domain source) {}
+
+    virtual fn dontaudit_rename(domain source) {}
+
+    virtual fn delete(domain source) {}
+
+    virtual fn dontaudit_delete(domain source) {}
+
+    virtual fn manage(domain source) {}
+
+    virtual fn dontaudit_manage(domain source) {}
+
+    virtual fn relabelfrom(domain source) {}
+
+    virtual fn dontaudit_relabelfrom(domain source) {}
+
+    virtual fn relabelto(domain source) {}
+
+    virtual fn dontaudit_relabelto(domain source) {}
+
+    virtual fn relabel(domain source) {}
+
+    virtual fn dontaudit_relabel(domain source) {}
+
+    virtual fn unconfined(domain source) {}
+}
+
+@hint(class=[blk_file chr_file], hint="This indicates a mislabeled device. This label is not for devices.")
+virtual resource file_type inherits any_file_type {
+    /// Virtual for all file-like objects, excluding device nodes.
+    /// This is equvalent to refpolicy2 file_type
+
+    allow(this, this, filesystem, associate);
+
+    fs_t.associate();
+    noxattrfs.associate();
+    tmp_t<filesystem>.associate();
+    tmpfs_t.associate();
+    ramfs_t.associate();
+    hugetlbfs_t.associate();
+
+    fn admin(domain source) {
+        /// Create, read, write, delete, and relabel this object.
+        allow(source, this, file, admin_file_perms);
+        allow(source, this, dir, admin_dir_perms);
+        allow(source, this, lnk_file, admin_lnk_file_perms);
+        allow(source, this, fifo_file, admin_fifo_file_perms);
+        allow(source, this, sock_file, admin_sock_file_perms);
+    }
+
+    fn mmap_admin(domain source) {
+        /// Create, read, write, delete, relabel, and mmap this object.
+        allow(source, this, file, mmap_admin_file_perms);
+        allow(source, this, dir, admin_dir_perms);
+        allow(source, this, lnk_file, admin_lnk_file_perms);
+        allow(source, this, fifo_file, admin_fifo_file_perms);
+        allow(source, this, sock_file, admin_sock_file_perms);
+    }
+}
+
+@hint(class=file, perm=execmod, hint="This means the library has text relocations. In most cases the file's type should be changed to textrel_shlib_t.")
+virtual resource file inherits file_type, file_api {
+    /// Low-level virtual for regular files (file object class).
+    /// In most cases, it is better to inherit common_file or a sub-virtual of it.
+}
+
+virtual resource dir inherits file_type, dir_api {
+    /// Low-level virtual for directories (dir object class).
+    /// In most cases, it is better to inherit common_file or a sub-virtual of it.
+}
+
+virtual resource symlink inherits file_type, symlink_api {
+    /// Low-level virtual for symbolic links (symlinks, lnk_file object class).
+    /// In most cases, it is better to inherit one of the common_* virtuals or a sub-virtual of them.
+}
+
+virtual resource pipe inherits file_type, pipe_api {
+    /// Low-level virtual for pipes (FIFOs, fifo_file object class).
+    /// In most cases, it is better to inherit common_pipe or a sub-virtual of it.
+}
+
+virtual resource named_socket inherits file_type, named_socket_api {
+    /// Low-level virtual for named UNIX sockets (sock_file object class).
+    /// In most cases, it is better to inherit common_named_socket or a sub-virtual of it.
+}

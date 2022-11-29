@@ -1,0 +1,317 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain fsadm_t inherits system_app_domain {
+    /// Filesystem administration tools such as mkfs, fsck, and fdisk.
+
+    //
+    // Resources
+    //
+    @alias(fsadm_exec_t)
+    extend exec {
+        file_context("/usr/bin/addpart", file);
+        file_context("/usr/bin/badblocks", file);
+        file_context("/usr/bin/blkid", file);
+        file_context("/usr/bin/blockdev", file);
+        file_context("/usr/bin/cfdisk", file);
+        file_context("/usr/bin/clubufflush", file);
+        file_context("/usr/bin/delpart", file);
+        file_context("/usr/bin/dosfsck", file);
+        file_context("/usr/bin/dump", file);
+        file_context("/usr/bin/dumpe2fs", file);
+        file_context("/usr/bin/e2fsck", file);
+        file_context("/usr/bin/e4fsck", file);
+        file_context("/usr/bin/e2label", file);
+        file_context("/usr/bin/e2mmpstatus", file);
+        file_context("/usr/bin/efibootmgr", file);
+        file_context("/usr/bin/fatsort", file);
+        file_context("/usr/bin/fdisk", file);
+        file_context("/usr/bin/findfs", file);
+        file_context("/usr/bin/fsck.*", file);
+        file_context("/usr/bin/gdisk", file);
+        file_context("/usr/bin/hdparm", file);
+        file_context("/usr/bin/install-mbr", file);
+        file_context("/usr/bin/jfs_.*", file);
+        file_context("/usr/bin/losetup.*", file);
+        file_context("/usr/bin/lsraid", file);
+        file_context("/usr/bin/make_reiser4", file);
+        file_context("/usr/bin/mkdosfs", file);
+        file_context("/usr/bin/mke2fs", file);
+        file_context("/usr/bin/mke4fs", file);
+        file_context("/usr/bin/mkfs.*", file);
+        file_context("/usr/bin/mkraid", file);
+        file_context("/usr/bin/mkreiserfs", file);
+        file_context("/usr/bin/mkswap", file);
+        file_context("/usr/bin/parted", file);
+        file_context("/usr/bin/partition_uuid", file);
+        file_context("/usr/bin/partprobe", file);
+        file_context("/usr/bin/partx", file);
+        file_context("/usr/bin/raidautorun", file);
+        file_context("/usr/bin/raidstart", file);
+        file_context("/usr/bin/raw", file);
+        file_context("/usr/bin/reiserfs(ck|tune)", file);
+        file_context("/usr/bin/resize.*fs", file);
+        file_context("/usr/bin/scsi_info", file);
+        file_context("/usr/bin/scsi_unique_id", file);
+        file_context("/usr/bin/syslinux", file);
+        file_context("/usr/bin/sfdisk", file);
+        file_context("/usr/bin/smartctl", file);
+        file_context("/usr/bin/swapoff", file);
+        file_context("/usr/bin/swapon.*", file);
+        file_context("/usr/bin/tune2fs", file);
+        file_context("/usr/bin/zdb", file);
+        file_context("/usr/bin/zfs-auto-snapshot", file);
+        file_context("/usr/bin/zhack", file);
+        file_context("/usr/bin/zinject", file);
+        file_context("/usr/bin/zpios", file);
+        file_context("/usr/bin/zstreamdump", file);
+        file_context("/usr/bin/ztest", file);
+
+        file_context("/usr/sbin/addpart", file);
+        file_context("/usr/sbin/badblocks", file);
+        file_context("/usr/sbin/blkid", file);
+        file_context("/usr/sbin/blockdev", file);
+        file_context("/usr/sbin/cfdisk", file);
+        file_context("/usr/sbin/clubufflush", file);
+        file_context("/usr/sbin/delpart", file);
+        file_context("/usr/sbin/dosfsck", file);
+        file_context("/usr/sbin/dump", file);
+        file_context("/usr/sbin/dumpe2fs", file);
+        file_context("/usr/sbin/e2fsck", file);
+        file_context("/usr/sbin/e4fsck", file);
+        file_context("/usr/sbin/e2label", file);
+        file_context("/usr/sbin/e2mmpstatus", file);
+        file_context("/usr/sbin/efibootmgr", file);
+        file_context("/usr/sbin/fatsort", file);
+        file_context("/usr/sbin/fdisk", file);
+        file_context("/usr/sbin/findfs", file);
+        file_context("/usr/sbin/fsck.*", file);
+        file_context("/usr/sbin/gdisk", file);
+        file_context("/usr/sbin/hdparm", file);
+        file_context("/usr/sbin/install-mbr", file);
+        file_context("/usr/sbin/jfs_.*", file);
+        file_context("/usr/sbin/losetup.*", file);
+        file_context("/usr/sbin/lsraid", file);
+        file_context("/usr/sbin/make_reiser4", file);
+        file_context("/usr/sbin/mkdosfs", file);
+        file_context("/usr/sbin/mke2fs", file);
+        file_context("/usr/sbin/mke4fs", file);
+        file_context("/usr/sbin/mkfs.*", file);
+        file_context("/usr/sbin/mkraid", file);
+        file_context("/usr/sbin/mkreiserfs", file);
+        file_context("/usr/sbin/mkswap", file);
+        file_context("/usr/sbin/parted", file);
+        file_context("/usr/sbin/partprobe", file);
+        file_context("/usr/sbin/partx", file);
+        file_context("/usr/sbin/raidautorun", file);
+        file_context("/usr/sbin/raidstart", file);
+        file_context("/usr/sbin/reiserfs(ck|tune)", file);
+        file_context("/usr/sbin/resize.*fs", file);
+        file_context("/usr/sbin/scsi_info", file);
+        file_context("/usr/sbin/sfdisk", file);
+        file_context("/usr/sbin/smartctl", file);
+        file_context("/usr/sbin/swapoff", file);
+        file_context("/usr/sbin/swapon.*", file);
+        file_context("/usr/sbin/tune2fs", file);
+        file_context("/usr/sbin/zdb", file);
+        file_context("/usr/sbin/zhack", file);
+        file_context("/usr/sbin/zinject", file);
+        file_context("/usr/sbin/zpios", file);
+        file_context("/usr/sbin/zstreamdump", file);
+        file_context("/usr/sbin/ztest", file);
+    }
+
+    @alias(fsadm_log_t)
+    resource log inherits logfile {
+        file_context("/var/log/fsck(/.*)?", any);
+    }
+
+    @alias(fsadm_tmp_t)
+    extend tmp {}
+
+    @alias(fsadm_run_t)
+    resource runtime inherits runtimefile {
+        file_context("/run/blkid(/.*)?", any);
+        file_context("/run/fsck(/.*)?", any);
+    }
+
+    //
+    // Policy
+    //
+
+    // ipc_lock is for losetup
+    allow(this, self, capability, [ dac_override dac_read_search ipc_lock sys_admin sys_rawio sys_resource sys_tty_config ]);
+    allow(this, self, process, [ setsched setpgid setcap share setkeycreate setsockcreate ]);
+
+    this.log.manage();
+    this.log<dir>.setattr();
+    var_log_t.filetrans(fsadm_t, fsadm_log_t, file); var_t.list();
+
+    this.runtime.manage();
+    var_run_t.filetrans(fsadm_t, fsadm_run_t, dir); var_t.list();
+
+    autofs_t.list();
+
+    bin_t.exec();
+
+    boot_t.getattr();
+
+    console_device_t.rw();
+
+    device_node<character_device>.getattr();
+    device_node<block_device>.dontaudit_getattr();
+
+    device_t<block_device>.dontaudit_getattr();
+    device_t<file>.dontaudit_getattr();
+    // Recreate /dev/cdrom.
+    device_t<symlink>.manage(); device_t.rw();
+    // fdisk needs this for early boot
+    device_t<common_block_device>.manage();
+
+    // Write to /etc/mtab.
+    etc_runtime_t.manage();
+    etc_t.filetrans(fsadm_t, etc_runtime_t, file);
+
+    etc_t.read();
+
+    // for tune2fs
+    file_type<common_dir>.list();
+
+    // Mount filesystem and swap images
+    filesystem_image.rw();
+
+    fixed_disk_device_t.rw();
+    fixed_disk_device_t<common_character_device>.rw();
+
+    fs_t.getattr_superblock();
+    // remount file system to apply changes
+    fs_t.remount();
+
+    home_root_t.list();
+
+    init_t.initctl.dontaudit_getattr();
+
+    kmsg_device_t.write();
+
+    // for losetup
+    loop_control_device_t.rw();
+
+    lost_found_t.manage();
+    lost_found_t<pipe>.dontaudit_getattr();
+    lost_found_t<named_socket>.dontaudit_getattr();
+
+    // Access to /dev/mapper/control
+    lvm_control_t.rw();
+
+    // Recreate /mnt/cdrom.
+    mnt_t.manage();
+
+    // for /run/mount/utab
+    mount_t.runtime.getatr();
+    // for zfs/zpool
+    mount_t.exec.exec();
+
+    proc_t.read();
+    proc_t.kcore.getattr();
+    // mkreiserfs needs this
+    proc_t.getattr_superblock();
+
+    ramfs_t<common_pipe>.rw();
+
+    // mkreiserfs and other programs need this for UUID
+    random_device_t.read();
+
+    removable_device_t.rw();
+
+    scsi_generic_device_t.read();
+
+    selinux_config_t.read();
+
+    selinuxfs_t.getattr_superblock(); sysfs_t.getattr_superblock(); sysfs_t.list();
+
+    // RedHat bug #201164
+    shell_exec_t.exec();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    // for swapon
+    sysfs_t.rw();
+
+    syslog.send_messages();
+    // Allow console log change (updfstab)
+    syslog.change_console_log_level();
+
+    tmpfs_t<common_file>.rw();
+
+    // Access to /initrd devices
+    allow(fsadm_t, unlabeled_t, dir, manage_dir_perms);
+    allow(fsadm_t, unlabeled_t, blk_file rw_blk_file_perms);
+    allow(fsadm_t, unlabeled_t, file, read_file_perms);
+
+    urandom_device_t.read();
+
+    usr_t.read();
+
+    // Access to /initrd devices
+    usbfs_t.list();
+
+    if (distro_debian) {
+        tty_device_t.dontaudit_rw();
+    }
+
+    optional {
+        amanda_dumpdates_t.rw();
+
+        amanda_log_t.read(); var_log_t.list(); var_t.list();
+        amanda_log_t.append();
+    }
+
+    optional {
+        devicekit_t.runtime.read(); runtime_t.list(); var_t.list();
+
+        // TODO: this should be passed in through domtrans()
+        // allow fsadm_t devicekit_var_log_t:file { getattr_file_perms append };
+        // allow fsadm_t devicekit_power_t:fd use;
+    }
+
+    optional {
+        livecd_t.tmp.rw();
+    }
+
+    optional {
+        boot_t.list();
+
+        kernel_module_t.list();
+
+        modules_conf_t.read();
+        modules_dep_t.read();
+    }
+
+    optional {
+        // Xen causes losetup to run with a presumably accidentally inherited
+        // file handle for /run/xen-hotplug/block
+        udev_t.runtime.dontaudit_rw_inherited();
+    }
+
+    optional {
+        // for smartctl cron jobs
+        user_cron_spool_log_t.rw();
+
+        // TODO:
+        //fsadm_t.domtrans(system_cronjob_t);
+        //fsadm_t.domtrans(crond_t);
+    }
+
+    optional {
+        xend_t.log.append(); var_log_t.list(); var_t.list();
+        xend_t.log.dontaudit_write();
+
+        // Access Xen images
+        xend_var_lib_t.list(); var_lib_t.list(); var_t.list();
+    }
+
+// allow fsadm_t kernel_t:system module_request);
+// typeattribute fsadm_t mlsfileread;
+// typeattribute fsadm_t mlsfilewrite;
+// Should be passed in via domtrans:
+// init_script_t.rw_inherited_unix_stream_sockets();
+}

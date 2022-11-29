@@ -1,0 +1,156 @@
+// SPDX-License-Identifier: GPL-2.0
+
+virtual resource entrypoint inherits executable {
+    /// Virtual for domain entrypoint executables.
+
+    @associated_call
+    fn associate_entrypoint(domain source) {
+        this.mmap_exec(source);
+        allow(source, this, file, [entrypoint]);
+    }
+}
+
+virtual domain common_domain inherits network_peer {
+    /// Virtual for common domains.
+    /// In most cases, you want to use this virtual or a
+    /// subvirtual of this, rather than the built-in domain virtual.
+    /// Using the built-in domain virtual requires you to build from
+    /// no rules.
+
+    //
+    // Resources
+    //
+
+    resource exec inherits entrypoint {}
+
+    //
+    // Policy
+    //
+
+    allow(this, self, process, [ fork getsched getcap getattr getpgid ]);
+
+    // access /proc/self/*
+    allow(this, self, file, [create_file_perms rw_file_perms]);
+    allow(this, self, lnk_file, read_lnk_file_perms);
+    allow(this, self, dir, [list_dir_perms add_entry_dir_perms]);
+    proc_t.list();
+
+    // Use IPC within the same domain.
+    allow(this, self, process, signal_perms);
+    allow(this, self, fifo_file, manage_fifo_file_perms);
+    allow(this, self, sem, manage_sem_perms);
+    allow(this, self, shm, manage_shm_perms);
+    allow(this, self, msg, [ send receive ]);
+    allow(this, self, msgq, manage_msgq_perms);
+    allow(this, self, unix_stream_socket, [ manage_stream_socket_perms connectto ]);
+    allow(this, self, unix_dgram_socket, [ manage_socket_perms sendto ]);
+
+    // Manage own keys
+    allow(this, self, key, manage_key_perms);
+
+    // This check is in the general socket
+    // listen code, before protocol-specific
+    // listen function is called, so bad calls
+    // to listen on UDP sockets should be silenced
+    dontaudit(this, self, udp_socket, listen);
+
+    // Re-exec itself
+    this.exec.exec();
+
+    devtty_t.rw();
+
+    // glibc get_nprocs requires read access to /sys/devices/system/cpu/online
+    //dev_read_cpu_online(domain)
+
+    // Every domain gets the kernel key ring, so we should default
+    // to no one allowed to look at it.
+    kernel_t.dontaudit_search_key();
+    kernel_t.dontaudit_link_key();
+
+    ld_so_t.mmap_exec();
+
+    ld_so_cache_t.mmap_read();
+
+    lib_t.mmap_exec();
+
+    locale_t.mmap_read(); etc_t<symlink>.read(); usr_t.list();
+
+    null_device_t.rw();
+
+    root_t.list();
+
+    textrel_shlib_t.textrel_mmap_exec();
+
+    zero_device_t.rw();
+
+    if(global_ssp) {
+        // enable reading of urandom for all domains:
+        // this should be enabled when all programs
+        // are compiled with stack smashing protection.
+        urandom_device_t.read();
+    }
+
+// send init a sigchld and signull
+//optional_policy(`
+//    init_sigchld(domain)
+//    init_signull(domain)
+//')
+
+//optional_policy(`
+//    selinux_dontaudit_getattr_fs(domain)
+//    selinux_dontaudit_read_fs(domain)
+//')
+
+//optional_policy(`
+//    seutil_dontaudit_read_config(domain)
+//')
+//ifdef(`init_systemd',`
+//    optional_policy(`/
+//        shutdown_sigchld(domain)
+//    ')
+//')
+
+//optional_policy(`
+//    setrans_translate_context(domain)
+//')
+
+// xdm passes an open file descriptor to xsession-errors.log which is then audited by all confined domains.
+//optional_policy(`
+//    xserver_dontaudit_use_xdm_fds(domain)
+//    xserver_dontaudit_rw_xdm_pipes(domain)
+//')
+
+    //
+    // Domain transitions using type_transition
+    //
+
+    // domtrans == refpolicy2 run.  No more transition without either
+    // a role change or role associate.
+    fn domtrans(domain source, role src_role=source.roles) {
+        this.exec.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        type_transition(source, this.exec, process, this);
+        role_associate(src_role, this.roles);
+    }
+
+    //
+    // Domain transitions using setexeccon()
+    //
+
+    fn setexec_domtrans(domain source, role src_role=source.roles) {
+        allow(source, source, process, [setexec]);
+        this.exec.mmap_exec(source);
+        allow(source, this, process, [transition]);
+        role_associate(src_role, this.roles);
+    }
+
+    //
+    // Dynamic domain transition
+    //
+
+    fn dynamic_domtrans(domain source, role src_role=source.roles) {
+        allow(source, source, process, setcurrent);
+        allow(source, this, process, [dyntransition]);
+        role_associate(src_role, this.roles);
+    }
+}

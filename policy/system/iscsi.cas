@@ -1,0 +1,123 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain iscsid_t inherits daemon {
+    /// The Open-iSCSI daemon
+    // has systemd abstract socket activation
+
+    //
+    // Resources
+    //
+    @alias(iscsid_exec_t)
+    extend exec {
+        file_context("/usr/bin/iscsid", file, this);
+        file_context("/usr/bin/brcm_iscsiuio", file, this);
+        file_context("/usr/bin/iscsiuio", file, this);
+        file_context("/usr/sbin/iscsid", file, this);
+        file_context("/usr/sbin/brcm_iscsiuio", file, this);
+        file_context("/usr/sbin/iscsiuio", file, this);
+    }
+
+    @alias(iscsi_initrc_exec_t)
+    extend initrc_exec {
+        file_context("/etc/rc\.d/init\.d/((iscsi)|(iscsid))", file, this);
+    }
+
+    @alias(iscsi_lock_t)
+    resource lock inherits lockfile {
+        file_context("/var/lock/iscsi(/.*)?", any, this);
+    }
+
+    @alias(iscsi_log_t)
+    extend log {
+        file_context("/var/log/brcm-iscsi\.log.*", file, this);
+        file_context("/var/log/iscsiuio\.log.*", file, this);
+    }
+
+    @alias(iscsid_runtime_t)
+    extend runtime {
+        file_context("/run/iscsid\.pid", file, this);
+        file_context("/run/iscsiuio\.pid", file, this);
+    }
+
+    @alias(iscsi_var_lib_t)
+    resource var_lib inherits common_file {
+        file_context("/var/lib/iscsi(/.*)?", any, this);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ dac_override ipc_lock net_admin net_raw sys_admin sys_nice sys_resource ]);
+    dontaudit(this, self, capability, sys_ptrace);
+    allow(this, self, process, [ setrlimit setsched ]);
+    allow(this, self, netlink_iscsi_socket, manage_socket_perms);
+    allow(this, self, netlink_socket, manage_socket_perms);
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+    allow(this, self, netlink_route_socket, nlmsg_write);
+
+    this.lock.manage();
+    var_lock_t.filetrans(this, this.lock, [ dir file ]); var_t.list(iscsid_t);
+
+    this.log.create();
+    this.log.setattr();
+    var_log_t.filetrans(this, this.log, file); var_t.list(iscsid_t);
+    delete(allow(this, this.log, file, write));
+
+    this.var_lib.manage();
+
+    domain.dontaudit_read_state();
+
+    http_port_t.tcp_connect();
+
+    iscsi_port_t.tcp_connect();
+
+    isns_port_t.tcp_connect();
+
+    kernel_t.set_scheduler();
+
+    network.tcp_server();
+
+    proc_t.read();
+    proc_t.net.read();
+
+    sysctl_t.crypto.read(); sysctl_t.list();
+
+    sysfs_t.rw();
+
+    syslog.send_messages();
+
+    userio_device_t.rw();
+
+//    http_client_packet_t.sendrecv();
+//    iscsi_client_packet_t.sendrecv();
+//    isns_client_packet_t.sendrecv();
+// allow iscsid_t kernel_t:system module_request;
+
+    //optional {
+    //    tgtd_t.manage_semaphores();
+    //}
+
+    //
+    // Functions
+    //
+
+    fn admin(domain source) {
+        /// Administrate iscsd.
+        daemon::admin(source);
+
+        this.log.admin(source); var_log_t.list(source);
+        this.lock.admin(source); var_lock_t.list(source);
+        this.var_lib.admin(source); var_lib_t.list(source);
+        var_t.list(source);
+    }
+
+    fn unix_stream_connect(source domain) {
+        /// Connect to this daemon over a unix stream socket.
+        // TODO cannot verify socket is in /var/lib/iscsid/*
+        // this was in refpolicy2.
+        var_t.list(source);
+        var_lib_t.list(source);
+        this.var_lib<common_named_socket>.rw(source);
+        allow(source, this, unix_stream_socket, [getattr connectto]);
+    }
+}

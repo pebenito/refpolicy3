@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: GPL-2.0
+
+virtual resource app_executable inherits executable {
+    /// Virtual for application executables.
+}
+
+virtual domain app_domain inherits common_domain {
+    /// Virtual for application domains, both CLI and GUI.
+
+    resource tmp inherits tmpfile {
+        /// Temporary files for this application.
+    }
+
+    extend exec inherits app_executable {}
+
+    this.tmp.manage();
+    tmp_t.filetrans(this, this.tmp, [dir file]);
+
+    cron_t.send_child_terminated_signals();
+    cron_t.inherit_file_descriptors();
+
+    devpts_t.list();
+
+    newrole_t.send_child_terminated_signals();
+    newrole_t.inherit_file_descriptors();
+
+    sshd_t.send_child_terminated_signals();
+    sshd_t.rw_inherited_unix_stream_sockets();
+    sshd_t.rw_inherited_pipes();
+
+    sudo_domain.send_child_terminated_signals();
+
+    user_devpts_t.rw_inherited();
+
+    // stdout/stderror write to /tmp/.xses-*
+    user_tmp_t.write_inherited();
+
+    user_tty_device_t.rw_inherited();
+
+    xdm_t.write_inherited_pipes();
+
+    fn admin(domain source) {
+        /// Administrate this application.
+        allow(source, this, process, admin_process_perms);
+        this.ps(source);
+
+        this.tmp.admin(source);
+    }
+}

@@ -1,0 +1,69 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain setrans_t inherits daemon {
+    //
+    // Resources
+    //
+    @alias(setrans_exec_t)
+    extend exec {
+        file_context("/usr/bin/mcstransd", file);
+        file_context("/usr/sbin/mcstransd", file);
+    }
+
+    @alias(setrans_initrc_exec_t)
+    extend initrc_exec {
+        file_context("/etc/rc\.d/init\.d/mcstrans", file);
+    }
+
+    @alias(setrans_runtime_t)
+    extend runtime {
+        file_context("/run/setrans(/.*)?", system_u:object_r:setrans_runtime_t:mls_systemhigh);
+    }
+
+    @alias(setrans_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/mcstrans.*\.service", file);
+    }
+
+
+    //
+    // Policy
+    //
+    allow(setrans, self, capability, sys_resource);
+    allow(setrans, self, process, [setrlimit getcap setcap signal_perms ]);
+    allow(setrans, self, unix_stream_socket, manage_stream_socket_perms);
+    allow(setrans, self, unix_dgram_socket, manage_socket_perms);
+    allow(setrans, self, netlink_selinux_socket, manage_socket_perms;
+    allow(setrans, self, context, contains);
+
+    this.exec.exec(); usr_t.list(); bin_t.list();
+
+    // allow performing getpidcon() on all processes
+    domain.ps()
+    domain.get_session_id();
+
+    etc_runtime_t.read();
+
+    proc_t.read();
+
+    selinux.get_access_decisions();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    syslog.send_messages();
+}
+
+//if (distro_debian) {
+//        init_daemon_runtime_file(setrans_runtime_t, dir, "setrans")
+//}
+
+//if (enable_mls) {
+//        init_ranged_daemon_domain(setrans_t, setrans_exec_t, mls_systemhigh)
+//}
+
+//typeattribute setrans_t mlsfileread;
+//typeattribute setrans_t mlsfilewrite;
+//typeattribute setrans_t mlsnetrecvall;
+//typeattribute setrans_t mlsnetwrite;
+//typeattribute setrans_t mlsprocread;
+//typeattribute setrans_t mlsnetread;

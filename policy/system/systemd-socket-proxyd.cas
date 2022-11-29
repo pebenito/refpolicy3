@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: GPL-2.0
+
+tunable systemd_socket_proxyd_bind_any {
+    /// Allow systemd-socket-proxyd to bind any port.
+    /// If this is false, systemd-socket-proxyd can only bind to ports
+    /// labeled systemd_socket_proxyd_t.port.
+    default false;
+}
+
+tunable systemd_socket_proxyd_connect_any {
+    /// Allow systemd-socket-proxyd to connect to any port.
+    /// If this is false, systemd-socket-proxyd can only connect to ports
+    /// labeled systemd_socket_proxyd_t.port.
+    default false;
+}
+
+domain systemd_socket_proxyd_t inherits systemd_daemon {
+    /// Network socket proxy/forwarder.
+
+    //
+    // Resources
+    //
+    @alias(systemd_socket_proxyd_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-socket-proxyd", file);
+    }
+
+    @alias(systemd_socket_proxyd_port_t)
+    resource port inherits network_port {
+        /// Ports that systemd-socket-proxyd can bind and connect to.
+        /// By default this has no defined labeling. This must be configured
+        /// for the target systems, using semanage, for example.
+    }
+
+    @alias(systemd_socket_proxyd_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/systemd-socket-proxyd\.service", file);
+    }
+
+    //
+    // Policy
+    //
+    this.port.tcp_bind();
+    this.port.tcp_connect();
+
+    network.tcp_client();
+    network.tcp_server();
+
+    nss.get_hosts_entry();
+
+    if (systemd_socket_proxyd_bind_any) {
+        network_port.tcp_bind();
+    }
+
+    if (systemd_socket_proxyd_connect_any) {
+        network_port.tcp_connect();
+    }
+}

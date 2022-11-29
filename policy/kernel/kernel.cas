@@ -1,0 +1,195 @@
+// SPDX-License-Identifier: GPL-2.0
+
+// The concept here is that kernel_t will be the one to
+// own system_r, and the role will be passed down to the domains
+// that need it via domtrans interfaces.
+
+// TODO add back in once roles are supported
+// role system_r {
+    /// The role for non-interactive system processes.
+// };
+
+boolean secure_mode_insmod {
+    /// Enabling secure_mode_insmod will deny further kernel module insertion or removal.
+    default false;
+}
+
+domain kernel_t inherits network_peer {
+    /// Kernel threads.
+
+    role_associate(system_r, roles);
+
+    allow(this, self, capability, [chown dac_override dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice sys_resource sys_time sys_tty_config mknod lease audit_write audit_control setfcap ]);
+    allow(this, self, process, [transition signal_perms getsched setsched getsession getpgid setpgid getcap setcap share getattr noatsecure siginh rlimitinh dyntransition setkeycreate setsockcreate getrlimit ]);
+    allow(this, self, shm, create_shm_perms);
+    allow(this, self, sem, create_sem_perms);
+    allow(this, self, msg, [send receive]);
+    allow(this, self, msgq, create_msgq_perms);
+    allow(this, self, unix_dgram_socket, [create_socket_perms sendto]);
+    allow(this, self, unix_stream_socket, [create_stream_socket_perms connectto]);
+    allow(this, self, fifo_file, rw_fifo_file_perms);
+    allow(this, self, sock_file, read_sock_file_perms);
+    allow(this, self, fd, use);
+    allow(this, self, system, module_request);
+
+
+    // /proc/sys/kernel/modprobe is set to /bin/true if not using modules.
+    bin_t.exec();
+
+    console_device_t.rw();
+
+    debugfs_t.list();
+
+    // devtmpfs handling:
+    device_t.mounton();
+    device_t.create();
+    device_t.delete();
+    device_t.getattr_superblock();
+    device_t<block_device>.create();
+    device_t<block_device>.delete();
+    device_t<block_device>.setattr();
+    device_t<character_device>.create();
+    device_t<character_device>.delete();
+    device_t<character_device>.setattr();
+    device_t<character_device>.rw();
+
+    devpts_t.getattr_superblock();
+    devpts_t.rw(this)
+
+    domain.signal();
+    domain.ps();
+
+    etc_t.list();
+
+    etc_runtime_t.getattr();
+    etc_runtime_t.mounton();
+
+    // Mount root file system. Used when loading a policy
+    // from initrd, then mounting the root filesystem
+    filesystem.mount(kernel_t)
+    filesystem.unmount(kernel_t)
+
+    filesystem_image.read_inherited();
+
+    fsadm_t.inherit_file_descriptors();
+
+    home_root_t.list();
+
+    infiniband_parition_key.access();
+
+    infiniband_endport.manage();
+
+    init_t.send_child_terminated_signals();
+
+    ld_so_t.mmap_exec();
+
+    ld_so_cache_t.mmap_read();
+
+    lib_t.mmap_exec();
+
+//    mcs_process_set_categories(kernel_t)
+
+//    mls_process_read_all_levels(kernel_t)
+//    mls_process_write_all_levels(kernel_t)
+//    mls_file_write_all_levels(kernel_t)
+//    mls_file_read_all_levels(kernel_t)
+//    mls_rangetrans_source(kernel_t)
+//    mls_process_set_level(kernel_t)
+
+    mount_t.inherit_file_descriptors();
+
+    // Kernel-generated traffic e.g., ICMP replies and TCP resets
+    network_interface.sendrecv();
+    network_node.sendrecv();
+    network_packet.sendrecv();
+
+    netlabel_peer_t.recvfrom();
+
+    proc_t.mounton();
+    proc_t.read();
+    proc_t.net.read();
+    proc_t.mdstat.read();
+    proc_t.kcore.getattr();
+    proc_t.kmsg.write();
+
+    root_t.mounton();
+    root_t.getattr_superblock();
+    root_t.manage(this)
+    root_t<file>.delete();
+    root_t<file>.exec();
+    root_t<character_device>.delete();
+
+    selinux_policy_t.mmap_read();
+
+    selinux.load_policy();
+
+    setfiles_t.domtrans();
+
+    shell_exec_t.exec();
+
+    sysctl_t.kernel.read();
+    sysctl_t.ns_last_pid.read();
+
+    sysfs_t.read();
+    sysfs_t.mounton();
+    sysfs_t.getattr_superblock();
+
+    syslog.send_messages();
+
+    textrel_shlib_t.textrel_mmap_exec();
+
+    tmpfs_t.getattr_superblock();
+    tmpfs_t.manage();
+    tmpfs_t<dir>.manage();
+    tmpfs_t<named_socket>.manage();
+    tmpfs_t<symlink>.delete();
+
+    tty_device_t.setattr();
+    tty_device_t.delete();
+
+    unconfined.domain();
+
+    unlabeled_t<dir>.mounton();
+    // Kernel-generated traffic e.g., TCP resets on
+    // connections with invalidated labels:
+    unlabeled_t<network_packet>.send();
+    // Allow unlabeled network traffic:
+    unlabeled_t<network_packet>.forward_inout();
+    unlabeled_t<network_peer>.all_recvfrom();
+    // Unlabeled infiniband pkeys and endports:
+    unlabeled_t<infiniband_endport>.manage();
+    unlabeled_t<infiniband_parition_key>.access();
+
+    usbfs_t.list();
+
+    usr_t.read();
+
+    var_log_t.manage(); var_t.list();
+
+    optional {
+        dri_device_t.ioctl();
+
+        plymouthd_t.runtime.read();
+        plymouthd_t.runtime.delete();
+        plymouthd_t.spool.read();
+        plymouthd_t.state.rw();
+
+        ptmx_t.rw();
+
+        tty_device_t.rw();
+    }
+
+    //
+    // Labeling
+    //
+    initial_context(kernel, system_u:system_r:kernel_t:mls_systemhigh);
+
+    //
+    // Member functions
+    //
+
+    fn userspace_entrypoint(full_domain target) {
+        target.domtrans(this, this.roles);
+        target.dyn_domtrans(this, this.roles);
+    }
+}

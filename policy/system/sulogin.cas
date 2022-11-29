@@ -1,0 +1,69 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain sulogin_t inherits system_app_domain {
+// TBD. maybe handled by app_domain inherit.    typeattribute sulogin_t privfd;
+
+    @alias(sulogin_exec_t)
+    extend exec {
+        file_context("/usr/bin/sulogin", file);
+        file_context("/usr/bin/sushell", file);
+        file_context("/usr/sbin/sulogin", file);
+        file_context("/usr/sbin/sushell", file);
+    }
+
+    allow(this, self, capability, [ dac_read_search sys_admin sys_tty_config ]);
+    dontaudit(this, self, capability, dac_override);
+    allow(this, self, process, setexec);
+
+    autofs_t.list();
+
+    console_device_t.rw();
+
+    default_context_t.read();
+
+    etc_t.read();
+
+    init_t.get_process_group();
+
+    init_script_t.get_process_group();
+
+//allow sulogin_t kernel_t:unix_stream_socket connectto);
+
+    kernel_t.inherit_file_descriptors();
+
+    nss.get_passwd_entry(); // ?
+    nss.get_shadow_entry();
+
+    proc_t.read();
+
+    selinux_config_t.read();
+
+    sysadm_t.shell_domtrans();
+
+    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
+
+    syslog.send_messages();
+
+    tmpfs_t<common_character_device>.rw(); tmpfs_t.list();
+
+    tty_device_t.rw();
+
+    // because file systems are not mounted:
+    dontaudit(sulogin_t, unlabeled_t, dir, list_dir_perms);
+
+    user_home_dir_t.list(); home_root_t.list();
+
+    usr_t.list();
+
+    //allow sulogin_t unpriv_userdomain:fd use;
+
+    // by default, sulogin does not use pam...
+    // sulogin_pam might need to be defined otherwise
+//    if (sulogin_pam) {
+        auth.use_pam_selinux();
+//    }
+// TBD local_login_tmp_t polyparent for particular types
+// typeattribute sulogin_t can_change_object_identity;
+// typeattribute sulogin_t can_change_process_identity;
+// typeattribute sulogin_t can_change_process_role;
+}

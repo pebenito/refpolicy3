@@ -1,0 +1,53 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//
+// Groupings
+//
+virtual resource xdg_cache_type inherits user_home_content {
+    /// Virtual for XDG cache files.
+}
+
+virtual resource xdg_config_type inherits user_home_content {
+    /// Virtual for XDG configuration files.
+}
+
+virtual resource xdg_data_type inherits user_home_content {
+    /// Virtual for XDG data files.
+}
+
+
+//
+// Concrete types
+//
+resource xdg_cache_t inherits xdg_cache_type {
+    file_context("HOME_DIR/\.cache(/.*)?", any);
+}
+
+resource xdg_config_t inherits xdg_config_type {
+    file_context("HOME_DIR/\.config(/.*)?", any);
+}
+
+resource xdg_data_t inherits xdg_data_type {
+    file_context("HOME_DIR/\.local(/.*)?", any);
+}
+
+// Various user location types (see ~/.config/user-dirs.dirs)
+resource xdg_documents_t inherits user_home_content { // customizable
+    file_context("HOME_DIR/Documents(/.*)?", any);
+}
+
+resource xdg_downloads_t inherits user_home_content { // customizable
+    file_context("HOME_DIR/Downloads(/.*)?", any);
+}
+
+resource xdg_music_t inherits user_home_content { // customizable
+    file_context("HOME_DIR/Music(/.*)?", any);
+}
+
+resource xdg_pictures_t inherits user_home_content { // customizable
+    file_context("HOME_DIR/Pictures(/.*)?", any);
+}
+
+resource xdg_videos_t inherits user_home_content { // customizable
+    file_context("HOME_DIR/Videos(/.*)?", any);
+}

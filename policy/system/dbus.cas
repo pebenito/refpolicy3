@@ -1,0 +1,322 @@
+// SPDX-License-Identifier: GPL-2.0
+
+// TODO: define dbus object class
+
+//
+// Virtuals
+//
+virtual domain session_dbus inherits common_domain {
+    /// Dbus instance for user sessions.
+
+    dontaudit(this, self, capability, [ sys_ptrace sys_resource]);
+    allow(this, self, process, [ getattr sigkill signal ]);
+    dontaudit(this, self, process, [ ptrace setrlimit ]);
+    allow(this, self, dbus, [ send_msg acquire_svc ]);
+    allow(this, self, tcp_socket, manage_stream_socket_perms);
+
+    system_dbusd_t.conf.read();
+    system_dbusd_t.conf.watch();
+    system_dbusd_t.exec.entrypoint();
+
+    domain.ps();
+
+    filesystem.getattr_superblock();
+
+    inotifyfs_t.list();
+
+    noxattr_filesystem.dontaudit_list();
+
+    nss.get_passwd_entry();
+
+    pam_var_console_t.read();
+
+    proc_t.read();
+
+    selinux.userspace_object_manager();
+
+    session_dbusd_home_t.manage();
+    user_home_dir_t.filetrans(session_bus_type, session_dbusd_home_t, dir, ".dbus"); home_root_t.list();
+
+    session_dbusd_runtime_t.manage();
+    user_runtime_t.filetrans(session_bus_type, session_dbusd_runtime_t, [ dir file sock_file ]); user_runtime_root_t.list();
+
+    session_dbusd_tmp_t.manage();
+    tmp_t.filetrans(session_bus_type, session_dbusd_tmp_t, [ dir file ]);
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    syslog.send_messages();
+
+    systemd_logind_t.runtime<common_file>.read();
+
+    urandom_device_t.read();
+
+    usr_t.read();
+    usr_t<common_dir>.watch();
+
+    xdm_t.rw_inherited_pipes();
+
+    xsession_log_t.rw();
+
+//typeattribute session_dbusd_t ubac_constrained_type;
+//allow session_bus_type privfd:fd use;
+
+    //
+    // Functions
+    //
+
+    @associated_call
+    fn user_derived_domain(userdomain source) {
+        allow(source, this, unix_stream_socket, connectto);
+        allow(source, this, dbus, [ send_msg acquire_svc ];
+        allow(source, this, fd, use);
+
+        dontaudit(source, this, netlink_selinux_socket, rw_socket_perms);
+
+        session_dbusd_home_t.admin(source);
+        user_home_dir_t.filetrans(source, session_dbusd_home_t, dir, ".dbus")
+
+        session_dbusd_runtime_t.admin(source);
+
+        session_dbusd_tmp_t.admin(source);
+
+        this.domtrans(source);
+
+        this.ps(source);
+        allow(source, this, process, [ ptrace signal_perms ]);
+
+        allow(this, source, process, sigkill);
+
+        source.bin_domtrans(this);
+        source.shell_domtrans(this);
+
+        source.systemd_user.unix_stream_activated(this, session_dbusd_runtime_t);
+    }
+
+    fn domtrans(domain source, role src_role=source.roles) {
+        dbusd_exec_t.mmap_exec(source);
+        allow(source, this, process, transition);
+        type_transition(source, dbusd_exec_t, process, this);
+        role_associate(src_role, this.roles);
+    }
+}
+
+//
+// Concrete types
+//
+
+resource session_dbusd_home_t inherits common_file, user_home_content {
+    /// Home directory files for user dbus sessions.
+    file_context("HOME_DIR/\.dbus(/.*)?", any);
+// TBD session_dbusd_home_t polymember for particular types
+}
+
+resource session_dbusd_runtime_t inherits runtimefile, user_runtime_content, common_named_socket {
+    /// Runtime files for user dbus sessions.
+    file_context("/run/user/%{USERID}/bus", socket);
+    file_context("/run/user/%{USERID}/dbus-1(/.*)?", any);
+}
+
+resource session_dbusd_tmp_t inherits tmpfile {
+    /// Temporary files for user dbus sessions.
+//typeattribute session_dbusd_tmp_t ubac_constrained_type;
+}
+
+domain system_dbusd_t inherits daemon {
+    /// System dbus.
+
+    //
+    // Resources
+    //
+    @alias(dbusd_etc_t)
+    extend conf {
+        file_context("/etc/dbus-.*(/.*)?", any);
+    }
+
+    @alias(dbusd_exec_t)
+    extend exec {
+        file_context("/usr/bin/dbus-daemon(-1)?", file);
+        file_context("/usr/bin/dbus-broker-launch", file);
+        file_context("/usr/bin/dbus-broker", file);
+        file_context("/usr/lib/dbus-.*/dbus-daemon-launch-helper", file);
+        file_context("/usr/libexec/dbus-daemon-launch-helper", file);
+    }
+
+    @alias(system_dbusd_runtime_t)
+    extend runtime inherits mountpoint {
+        file_context("/run/dbus(/.*)?", any);
+        file_context("/run/messagebus\.pid", file);
+        file_context("/var/run/dbus/system_bus_socket", any);
+
+        if (distro_debian) {
+            file_context("/var/run/dbus(/.*)?", any);
+        }
+    }
+
+    @alias(system_dbusd_var_lib_t)
+    resource state inherits common_file {
+        file_context("/var/lib/dbus(/.*)?", any);
+
+        // allow populating of /var/lib/dbus by systemd-tmpfilesd
+        systemd_tmpfiles_t.manager_of(this);
+    }
+
+    @alias(system_dbusd_tmp_t)
+    extend tmp {}
+
+    @alias(system_dbusd_tmpfs_t)
+    extend tmpfs {}
+
+    @alias(dbusd_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/[^/]*dbus.*", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability { dac_override setgid setpcap setuid sys_resource };
+    // net_admin for changing buffer sizes
+    dontaudit(this, self, capability, [ net_admin sys_tty_config ]);
+    allow(this, self, process, [ setpgid setcap setrlimit ]);
+    allow(this, self, dbus, [ send_msg acquire_svc ]);
+
+    this.state.read();
+
+    cert_t.read();
+
+    console_device_t.dontaudit_rw();
+
+    domain.ps(system_dbusd_t)
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    // for powerdevil /usr/lib/x86_64-linux-gnu/libexec/kauth/*
+    lib_t.exec();
+
+    noxattr_filesystem.dontaudit_list();
+
+    nss.get_passwd_entry();
+
+    pam_var_console_t.read();
+
+    proc_t.read();
+
+    pseudo_filesystem.list();
+
+    selinux.userspace_object_manager();
+
+    shell_exec_t.exec(); bin_t.list();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    tpm2_abrmd_t.rw_inherited_pipes();
+
+    // read a file in ~/.local/share
+    user_home_t<common_file>.read(); user_home_dir_t.list(); home_root_t.list();
+
+    urandom_device_t.read();
+
+    usr_t.read();
+    usr_t<common_dir>.watch();
+
+    xdm_t.read_inherited_state_files();
+
+    if (dbus_pass_tuntap_fd) {
+        tun_tap_device_t.rw_inherited();
+    }
+
+    if (dbus_broker_system_bus) {
+        allow(system_dbusd_t, init_t, system, [ start status ]);
+
+        policykit_t.state.read();
+        policykit_t.startstop();
+        policykit_t.reload();
+
+        NetworkManager_t.startstop();
+
+        if (dbus_broker_run_transient_units) {
+            systemd_transient_unit_t.startstop();
+        }
+    }
+
+    optional {
+        // gdm3 causes system_dbusd_t to want this access
+        dri_device_t.mmap_rw();
+
+        event_device_t.rw();
+
+        // Recent versions of dbus are started as Type=notify
+        systemd_t.unix_datagram_send();
+    }
+
+    optional {
+        // for /run/systemd/users/*
+        systemd_logind_t.inhibit_shutdown();
+        systemd_logind_t.inhibit_logins();
+        systemd_logind_t.runtime<common_file>.read();
+
+        // for passing around terminal file handles for machinectl shell
+
+        systemd_machined_t.shell();
+    }
+
+//typeattribute system_dbusd_t mlsfduse;
+//typeattribute system_dbusd_t mlsrangetrans;
+//typeattribute system_dbusd_t mlsfileread;
+//typeattribute system_dbusd_t mlsnetwrite;
+//typeattribute system_dbusd_t mlsnetreadtoclr;
+//typeattribute system_dbusd_t mlsdbusrecv;
+//typeattribute system_dbusd_t initrc_transition_domain;
+//initrc_t.domtrans();
+
+    //
+    // Functions
+    //
+    fn client(domain source) {
+        /// Connect to the system dbus as a client.
+        allow(source, [ this self ], dbus, send_msg);
+        allow(this, source, dbus, send_msg);
+
+        this.unix_stream_connect(source); runtime_t.list(source);
+
+        this.conf.read(source); etc_t.list(source);
+
+        this.state.read(source); var_lib_t.list(source); var_t.list(source);
+    }
+
+    @alias(acquire_default_service)
+    fn own_default_service(domain source) {
+        /// Own dbus services with the default label (this)
+        allow(source, this, dbus, acquire_svc);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to dbus (system bus and user session buses).
+        domain.send_msg();
+        allow(source, [ system_dbusd_t session_dbus ], dbus, acquire_svc);
+    }
+}
+
+//
+// Extends
+//
+// TODO add builtin back in when its a keyword
+extend domain {
+    fn dbus_send(source domain) {
+        /// Send dbus messages to this domain.
+        allow(source, this, dbus, send_msg);
+
+        if (!dbus_broker_system_bus) {
+            // dbus-service checks send_msg on method returns.
+            // but dbus-broker does not.
+            allow(this, source, dbus, send_msg);
+        }
+    }
+}

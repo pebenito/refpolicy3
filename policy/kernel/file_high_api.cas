@@ -1,0 +1,1114 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//
+// Higher-level file APIs
+//
+
+//
+// Common file API
+//
+@derive(strategy=file_api)
+api common_file_api inherits dir_api, file_api, symlink_api {
+    /// API for common regular files (file object class).
+    /// This provides common access patterns for accessing files, including directory and symlink access.
+
+    @alias(stat)
+    fn getattr(domain source) {
+        /// Get the attributes of this file.
+        this.file_api::getattr(source);
+        this.dir_api::list(source);
+        this.symlink_api::read(source);
+    }
+
+    @alias(dontaudit_stat)
+    fn dontaudit_getattr(domain source) {
+        /// Do not audit denials for getting the attributes of this file.
+        file::dontaudit_getattr(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    @alias(chown, chmod)
+    fn setattr(domain source) {
+        /// Set the attributes of this file.
+        file::dontaudit_setattr(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    @alias(dontaudit_chown, dontaudit_chmod)
+    fn dontaudit_setattr(domain source) {
+        /// Do not audit denials for setting the attributes of this file.
+        file::dontaudit_setattr(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn list(domain source) {
+        /// List (read) the contents of this directory.
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_list(domain source) {
+        /// Do not audit denials for listing (reading) the contents of this directory.
+        dir::dontaudit_read(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn read(domain source) {
+        /// Read this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::read(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_read(domain source) {
+        /// Do not audit denials for reading this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::dontaudit_read(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn mmap_read(domain source) {
+        /// mmap() this file as read-only.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::mmap_read(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_mmap_read(domain source) {
+        /// Do not audit denials for mmap() read-only.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::dontaudit_mmap_read(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn mmap_exec(domain source) {
+        /// mmmap() this file as read-only and executable.
+        /// This function is sensitive to files_loose_execmod and files_loose_watch tunables.
+        file::mmap_exec(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_mmap_exec(domain source) {
+        /// Do not audit denials for mmmap() this file as read-only and executable.
+        /// This function is sensitive to files_loose_execmod and files_loose_watch tunables.
+        file::dontaudit_mmap_exec(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn textrel_mmap_exec(domain source) {
+        /// mmmap() this file as read-only and executable with text relocation.
+        /// This is for shared libraries (.so files) with text relocations.  It is better to fix
+        /// the library to remove text relocations. Alternatively, textrel_shlib_t is the standard
+        /// type for system libraries with text relocations.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::textrel_mmap_exec(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_textrel_mmap_exec(domain source) {
+        /// Do not audit denials for mmmap() this file as read-only and executable with text relocation only if it is inherited.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::dontaudit_textrel_mmap_exec(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn exec(domain source) {
+        /// Execute this file.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::exec(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_exec(domain source) {
+        /// Do not audit denials for executing this file.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::dontaudit_exec(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn append(domain source) {
+        /// Append this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::append(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_append(domain source) {
+        /// Do not audit denials for appending this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::dontaudit_append(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn write(domain source) {
+        /// Write this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::write(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_write(domain source) {
+        /// Do not audit denials for writing this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::dontaudit_write(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn mmap_write(domain source) {
+        /// mmmap() this file as write-only.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::mmap_write(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_mmap_write(domain source) {
+        /// Do not audit denials for mmap() write-only.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::dontaudit_mmap_write(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn rw(domain source) {
+        /// Read and write this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::rw(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_rw(domain source) {
+        /// Do not audit denials for reading and writing this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::dontaudit_rw(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn mmap_rw(domain source) {
+        /// mmmap() as read and write this file.
+        /// The file cannot be directly opened.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::mmap_rw(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_mmap_rw(domain source) {
+        /// Do not audit denials for mmap() read and write this file.
+        /// Denials for opening the file will still be audited.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::dontaudit_mmap_rw(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn mmap_rwx(domain source) {
+        /// mmap() this file as read, write, and executable.
+        /// This is a significant security concern as this makes it easy for comopromised domains
+        /// to execute arbitrary code.  Ideally, the code should be reworked to remove this
+        /// usage.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::mmap_rwx(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_mmap_rwx(domain source) {
+        /// Do not audit denials for mmap() this file as read, write, and executable.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::dontaudit_mmap_rwx(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn create(domain source) {
+        /// Create this file.
+        file::create(source);
+        dir::list(source);
+        dir::create(source);
+        dir::add_entry(source);
+        symlink::read(source);
+        symlink::create(source);
+    }
+
+    fn dontaudit_create(domain source) {
+        /// Do not audit denials for creating this file.
+        file::dontaudit_create(source);
+        dir::dontaudit_list(source);
+        dir::dontaudit_create(source);
+        dir::dontaudit_add_entry(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_create(source);
+    }
+
+    fn rename(domain source) {
+        /// Rename this file.
+        file::rename(source);
+        dir::list(source);
+        dir::rename(source);
+        symlink::read(source);
+        symlink::rename(source);
+    }
+
+    fn dontaudit_rename(domain source) {
+        /// Do not audit denials for renaming this file.
+        file::dontaudit_rename(source);
+        dir::dontaudit_list(source);
+        dir::dontaudit_rename(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_rename(source);
+    }
+
+    @alias(unlink)
+    fn delete(domain source) {
+        /// Delete this file.
+        file::delete(source);
+        dir::list(source);
+        dir::delete(source);
+        dir::delete_entry(source);
+        symlink::read(source);
+        symlink::delete(source);
+    }
+
+    @alias(dontaudit_unlink)
+    fn dontaudit_delete(domain source) {
+        /// Do not audit denials for deleting this file.
+        file::dontaudit_delete(source);
+        dir::dontaudit_list(source);
+        dir::dontaudit_delete(source);
+        dir::dontaudit_delete_entry(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_delete(source);
+    }
+
+    fn manage(domain source) {
+        /// Create, read, write, and delete this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::manage(source);
+        dir::manage(source);
+        symlink::manage(source);
+    }
+
+    fn dontaudit_manage(domain source) {
+        /// Do not audit denials for creating, reading, writing, and deleting this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::dontaudit_manage(source);
+        dir::dontaudit_manage(source);
+        symlink::dontaudit_manage(source);
+    }
+
+    fn mmap_manage(domain source) {
+        /// Create, read, write, mmap(), and delete this file.
+        /// This function is sensitive to the files_loose_watch tunable.
+        file::mmap_manage(source);
+        dir::manage(source);
+        symlink::manage(source);
+    }
+
+    fn dontaudit_mmap_manage(domain source) {
+        /// Do not audit denials for creating, reading, writing, mmap(), and deleting this file.
+        /// This function is sensitive to the files_loose_mmap and the files_loose_watch tunables.
+        file::dontaudit_mmap_manage(source);
+        dir::dontaudit_manage(source);
+        symlink::dontaudit_manage(source);
+    }
+
+    fn relabelfrom(domain source) {
+        /// Change file labels from this type.
+        file::relabelfrom(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabelfrom(domain source) {
+        /// Do not audit denials for changing file labels from this type.
+        file::dontaudit_relabelfrom(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn relabelto(domain source) {
+        /// Change file labels to this type.
+        file::relabelto(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabelto(domain source) {
+        /// Do not audit denials for changing file labels to this type.
+        file::dontaudit_relabelto(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn relabel(domain source) {
+        /// Change file labels to this type and from this type.
+        file::relabel(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabel(domain source) {
+        /// Do not audit denials for changing file labels to this type and from this type.
+        file::dontaudit_relabel(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn add_entry_filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+        /// Create a file-like object in this directory with a private type.
+        /// This does not allow deletions from the directory.
+        dir::add_entry_filetrans(source, default, obj_classes, name)
+        symlink::read(source);
+    }
+
+    fn filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+        /// Create a file-like object in this directory with a private type.
+        dir::filetrans(source, default, obj_classes, name)
+        symlink::read(source);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access (all permissions) on this file.
+        /// This function is sensitive to files_loose_execmod.
+        file::unconfined(source);
+        dir::unconfined(source);
+        symlink::unconfined(source);
+    }
+}
+
+//
+// Common Directory API
+//
+@derive(strategy=dir_api)
+api common_dir_api inherits dir_api, symlink_api {
+    /// API for common directories (dir object class).
+
+    @alias(stat)
+    fn getattr(domain source) {
+        /// Get the attributes of this directory.
+        dir::getattr(source);
+        symlink::read(source);
+    }
+
+    @alias(dontaudit_stat)
+    fn dontaudit_getattr(domain source) {
+        /// Do not audit denials for getting the attributes of this directory.
+        dir::dontaudit_getattr(source);
+        symlink::dontaudit_read(source);
+    }
+
+    @alias(chown, chmod)
+    fn setattr(domain source) {
+        /// Set the attributes of this directory.
+        dir::setattr(source);
+        symlink::read(source);
+    }
+
+    @alias(dontaudit_chown, dontaudit_chmod)
+    fn setattr(domain source) {
+        /// Do not audit denials for setting the attributes of this directory.
+        dir::dontaudit_setattr(source);
+        symlink::dontaudit_read(source);
+    }
+
+    @alias(read)
+    fn list(domain source) {
+        /// List (read) the contents of this directory.
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    @alias(dontaudit_read)
+    fn dontaudit_list(domain source) {
+        /// Do not audit denials for listing (reading) the contents of this directory.
+        dir::dontaudit_read(source);
+        symlink::dontaudit_read(source);
+    }
+
+    @alias(append)
+    fn add_entry(domain source) {
+        /// Add entries to this directory.
+        dir::add_entry(source);
+        symlink::read(source);
+    }
+
+    @alias(dontaudit_append)
+    fn dontaudit_add_entry(domain source) {
+        /// Do not audit denials for adding entries to this directory.
+        dir::dontaudit_add_entry(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn delete_entry(domain source) {
+        /// Delete entries from this directory.
+        dir::delete_entry(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_delete_entry(domain source) {
+        /// Do not audit denials for deleting entries from this directory.
+        dir::dontaudit_delete_entry(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn write(domain source) {
+        /// Write this directory.
+        /// This function typically is only useful if the code is checking to see if this directory
+        /// is writable.  The add_entry(), delete_entry(), or rw() functions are better choices
+        /// in most cases.
+        dir::write(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_write(domain source) {
+        /// Do not audit denials for writing this directory.
+        dir::dontaudit_write(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn rw(domain source) {
+        /// Add and delete entries from this directory.
+        dir::rw(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_rw(domain source) {
+        /// Do not audit denials for adding and deleting entries from this directory.
+        dir::dontaudit_rw(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn create(domain source) {
+        /// Create this directory.
+        dir::list(source);
+        dir::add_entry(source);
+        dir::create(source);
+        symlink::read(source);
+        symlink::create(source);
+    }
+
+    fn dontaudit_create(domain source) {
+        /// Do not audit denials for creating this directory.
+        dir::dontaudit_list(source);
+        dir::dontaudit_add_entry(source);
+        dir::dontaudit_create(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_create(source);
+    }
+
+    fn rename(domain source) {
+        /// Rename this directory.
+        dir::rename(source);
+        dir::rw(source);
+        symlink::read(source);
+        symlink::rename(source);
+    }
+
+    fn dontaudit_rename(domain source) {
+        /// Do not audit denials for renaming this directory.
+        dir::dontaudit_rename(source);
+        dir::dontaudit_rw(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_rename(source);
+    }
+
+    @alias(unlink)
+    fn delete(domain source) {
+        /// Delete this directory.
+        dir::delete(source);
+        dir::list(source);
+        dir::delete_entry(source);
+        symlink::read(source);
+        symlink::delete(source);
+    }
+
+    @alias(dontaudit_unlink)
+    fn dontaudit_delete(domain source) {
+        /// Do not audit denials for deleting this directory.
+        dir::dontaudit_delete(source);
+        dir::dontaudit_list(source);
+        dir::dontaudit_delete_entry(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_delete(source);
+    }
+
+    fn manage(domain source) {
+        /// Create, add entries, remove entries, and delete this directory.
+        dir::manage(source);
+        symlink::manage(source);
+    }
+
+    fn dontaudit_manage(domain source) {
+        /// Do not audit denials for creating, adding entries, removing entries, and deleting this directory.
+        dir::dontaudit_manage(source);
+        symlink::dontaudit_manage(source);
+    }
+
+    fn relabelfrom(domain source) {
+        /// Change directory labels from this type.
+        dir::relabelfrom(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabelfrom(domain source) {
+        /// Do not audit denials for changing directory labels from this type.
+        dir::dontaudit_relabelfrom(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn relabelto(domain source) {
+        /// Change directory labels to this type.
+        dir::relabelto(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabelto(domain source) {
+        /// Do not audit denials for changing directory labels to this type.
+        dir::dontaudit_relabelto(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn relabel(domain source) {
+        /// Change directory labels to this type and from this type.
+        dir::relabel(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabel(domain source) {
+        /// Do not audit denials for changing directory labels to this type and from this type.
+        dir::dontaudit_relabel(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn add_entry_filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+        /// Create a file-like object in this directory with a private type.
+        /// This does not allow deletions from the directory.
+        allow(source, this, dir, add_entry_dir_perms);
+        resource_transition(default, source, this, obj_classes, name);
+    }
+
+    fn filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+        /// Create a file-like object in this directory with a private type.
+        allow(source, this, dir, rw_dir_perms);
+        resource_transition(default, source, this, obj_classes, name);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access (all permissions) on this directory.
+        dir::unconfined(source);
+        symlink::unconfined(source);
+    }
+}
+
+@derive(strategy=common_pipe_api)
+api common_pipe_api inherits dir_api, pipe_api, symlink_api {
+    /// Virtual for pipes (FIFOs, fifo_file object class).
+
+    @alias(stat)
+    fn getattr(domain source) {
+        /// Get the attributes of this pipe.
+        pipe::getattr(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    @alias(dontaudit_stat)
+    fn dontaudit_getattr(domain source) {
+        /// Do not audit denials for getting the attributes of this pipe.
+        pipe::dontaudit_getattr(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    @alias(chown, chmod)
+    fn setattr(domain source) {
+        /// Set the attributes of this pipe.
+        pipe::setattr(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    @alias(dontaudit_chown, dontaudit_chmod)
+    fn dontaudit_setattr(domain source) {
+        /// Do not audit denials for setting the attributes of this pipe.
+        pipe::dontaudit_setattr(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn list(domain source) {
+        /// List (read) the contents of this directory.
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_list(domain source) {
+        /// Do not audit denials for listing (reading) the contents of this directory.
+        dir::dontaudit_read(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn read(domain source) {
+        /// Read this pipe.
+        pipe::read(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_read(domain source) {
+        /// Do not audit denials for reading this pipe.
+        pipe::dontaudit_read(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    @alias(append)
+    fn write(domain source) {
+        /// Write this pipe.
+        pipe::write(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    @alias(dontaudit_append)
+    fn dontaudit_write(domain source) {
+        /// Do not audit denials for writing this pipe.
+        pipe::dontaudit_write(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn rw(domain source) {
+        /// Read and write this pipe.
+        pipe::rw(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_rw(domain source) {
+        /// Do not audit denials for reading and writing this pipe.
+        pipe::dontaudit_rw(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn create(domain source) {
+        /// Create this pipe.
+        pipe::create(source);
+        dir::list(source);
+        dir::create(source);
+        dir::add_entry(source);
+        symlink::read(source);
+        symlink::create(source);
+    }
+
+    fn dontaudit_create(domain source) {
+        /// Do not audit denials for creating this pipe.
+        pipe::dontaudit_create(source);
+        dir::dontaudit_list(source);
+        dir::dontaudit_create(source);
+        dir::dontaudit_add_entry(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_create(source);
+    }
+
+    fn rename(domain source) {
+        /// Rename this pipe.
+        pipe::rename(source);
+        dir::rename(source);
+        dir::rw(source);
+        symlink::read(source);
+        symlink::rename(source);
+    }
+
+    fn dontaudit_rename(domain source) {
+        /// Do not audit denials for renaming this pipe.
+        pipe::dontaudit_rename(source);
+        dir::dontaudit_rename(source);
+        dir::dontaudit_rw(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_rename(source);
+    }
+
+    @alias(unlink)
+    fn delete(domain source) {
+        /// Delete this pipe.
+        pipe::delete(source);
+        dir::list(source);
+        dir::delete(source);
+        dir::delete_entry(source);
+        symlink::read(source);
+        symlink::delete(source);
+    }
+
+    @alias(dontaudit_unlink)
+    fn dontaudit_delete(domain source) {
+        /// Do not audit denials for deleting this pipe.
+        pipe::dontaudit_delete(source);
+        dir::dontaudit_list(source);
+        dir::dontaudit_delete(source);
+        dir::dontaudit_delete_entry(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_delete(source);
+    }
+
+    fn manage(domain source) {
+        /// Create, read, write, and delete this pipe.
+        pipe::manage(source);
+        dir::manage(source);
+        symlink::manage(source);
+    }
+
+    fn dontaudit_manage(domain source) {
+        /// Do not audit denials for creating, reading, writing, and deleting this pipe.
+        pipe::dontaudit_manage(source);
+        dir::dontaudit_manage(source);
+        symlink::dontaudit_manage(source);
+    }
+
+    fn relabelfrom(domain source) {
+        /// Change pipe labels from this type.
+        pipe::relabelfrom(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabelfrom(domain source) {
+        /// Do not audit denials for changing pipe labels from this type.
+        pipe::dontaudit_relabelfrom(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn relabelto(domain source) {
+        /// Change pipe labels to this type.
+        pipe::relabelto(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabelto(domain source) {
+        /// Do not audit denials for changing pipe labels to this type.
+        pipe::dontaudit_relabelto(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn relabel(domain source) {
+        /// Change pipe labels to this type and from this type.
+        pipe::relabel(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabel(domain source) {
+        /// Do not audit denials for changing pipe labels to this type and from this type.
+        pipe::dontaudit_relabel(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn add_entry_filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+        /// Create a file-like object in this directory with a private type.
+        /// This does not allow deletions from the directory.
+        allow(source, this, dir, add_entry_dir_perms);
+        resource_transition(default, source, this, obj_classes, name);
+    }
+
+    fn filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+        /// Create a file-like object in this directory with a private type.
+        allow(source, this, dir, rw_dir_perms);
+        resource_transition(default, source, this, obj_classes, name);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access (all permissions) on this pipe.
+        pipe::unconfined(source);
+        dir::unconfined(source);
+        symlink::unconfined(source);
+    }
+}
+
+@derive(strategy=common_named_socket_api)
+virtual resource common_named_socket inherits dir_api, symlink_api, named_socket_api {
+    /// API for common named UNIX sockets (sock_file object class).
+
+    @alias(stat)
+    fn getattr(domain source) {
+        /// Get the attributes of this named UNIX socket.
+        named_socket::getattr(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    @alias(dontaudit_stat)
+    fn dontaudit_getattr(domain source) {
+        /// Do not audit denials for getting the attributes of this named UNIX socket.
+        named_socket::dontaudit_getattr(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    @alias(chown, chmod)
+    fn setattr(domain source) {
+        /// Set the attributes of this named UNIX socket.
+        named_socket::setattr(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    @alias(dontaudit_chown, dontaudit_chmod)
+    fn dontaudit_setattr(domain source) {
+        /// Do not audit denials for setting the attributes of this named UNIX socket.
+        named_socket::dontaudit_setattr(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn list(domain source) {
+        /// List (read) the contents of this directory.
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_list(domain source) {
+        /// Do not audit denials for listing (reading) the contents of this directory.
+        dir::dontaudit_read(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn read(domain source) {
+        /// Read this named UNIX socket.
+        named_socket::read(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_read(domain source) {
+        /// Do not audit denials for reading this named UNIX socket.
+        named_socket::dontaudit_read(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    @alias(append)
+    fn write(domain source) {
+        /// Write this named UNIX socket.
+        named_socket::write(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    @alias(dontaudit_append)
+    fn dontaudit_write(domain source) {
+        /// Do not audit denials for writing this named UNIX socket.
+        named_socket::dontaudit_write(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn rw(domain source) {
+        /// Read and write this named UNIX socket.
+        named_socket::rw(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_rw(domain source) {
+        /// Do not audit denials for reading and writing this named UNIX socket.
+        named_socket::dontaudit_rw(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn create(domain source) {
+        /// Create this named UNIX socket.
+        named_socket::create(source);
+        dir::list(source);
+        dir::create(source);
+        dir::add_entry(source);
+        symlink::read(source);
+        symlink::create(source);
+    }
+
+    fn dontaudit_create(domain source) {
+        /// Do not audit denials for creating this named UNIX socket.
+        named_socket::dontaudit_create(source);
+        dir::dontaudit_list(source);
+        dir::dontaudit_create(source);
+        dir::dontaudit_add_entry(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_create(source);
+    }
+
+    fn rename(domain source) {
+        /// Rename this named UNIX socket.
+        named_socket::rename(source);
+        dir::rename(source);
+        dir::rw(source);
+        symlink::read(source);
+        symlink::rename(source);
+    }
+
+    fn dontaudit_rename(domain source) {
+        /// Do not audit denials for renaming this named UNIX socket.
+        named_socket::dontaudit_rename(source);
+        dir::dontaudit_rename(source);
+        dir::dontaudit_rw(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_rename(source);
+    }
+
+    @alias(unlink)
+    fn delete(domain source) {
+        /// Delete this named UNIX socket.
+        named_socket::delete(source);
+        dir::list(source);
+        dir::delete(source);
+        dir::delete_entry(source);
+        symlink::read(source);
+        symlink::delete(source);
+    }
+
+    @alias(dontaudit_unlink)
+    fn dontaudit_delete(domain source) {
+        /// Do not audit denials for deleting this named UNIX socket.
+        named_socket::dontaudit_delete(source);
+        dir::dontaudit_list(source);
+        dir::dontaudit_delete(source);
+        dir::dontaudit_delete_entry(source);
+        symlink::dontaudit_read(source);
+        symlink::dontaudit_delete(source);
+    }
+
+    fn manage(domain source) {
+        /// Create, read, write, and delete this named UNIX socket.
+        named_socket::manage(source);
+        dir::manage(source);
+        symlink::manage(source);
+    }
+
+    fn dontaudit_manage(domain source) {
+        /// Do not audit denials for creating, reading, writing, and deleting this named UNIX socket.
+        named_socket::dontaudit_manage(source);
+        dir::dontaudit_manage(source);
+        symlink::dontaudit_manage(source);
+    }
+
+    fn relabelfrom(domain source) {
+        /// Change named UNIX socket labels from this type.
+        named_socket::relabelfrom(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabelfrom(domain source) {
+        /// Do not audit denials for changing named UNIX socket labels from this type.
+        named_socket::dontaudit_relabelfrom(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn relabelto(domain source) {
+        /// Change named UNIX socket labels to this type.
+        named_socket::relabelto(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabelto(domain source) {
+        /// Do not audit denials for changing named UNIX socket labels to this type.
+        named_socket::dontaudit_relabelto(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn relabel(domain source) {
+        /// Change named UNIX socket labels to this type and from this type.
+        named_socket::relabel(source);
+        dir::list(source);
+        symlink::read(source);
+    }
+
+    fn dontaudit_relabel(domain source) {
+        /// Do not audit denials for changing named UNIX socket labels to this type and from this type.
+        named_socket::dontaudit_relabel(source);
+        dir::dontaudit_list(source);
+        symlink::dontaudit_read(source);
+    }
+
+    fn add_entry_filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+        /// Create a file-like object in this directory with a private type.
+        /// This does not allow deletions from the directory.
+        allow(source, this, dir, add_entry_dir_perms);
+        resource_transition(default, source, this, obj_classes, name);
+    }
+
+    fn filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+        /// Create a file-like object in this directory with a private type.
+        allow(source, this, dir, rw_dir_perms);
+        resource_transition(default, source, this, obj_classes, name);
+    }
+
+    fn unconfined(domain source) {
+        named_socket::unconfined(source);
+        dir::unconfined(source);
+        symlink::unconfined(source);
+    }
+}
+
+//
+// Higher-level file virtuals
+//
+
+TODO: Handle filetrans
+
+@derive(strategy=common_file_api)
+virtual resource common_file inherits dir, file, symlink, common_file_api {
+    /// Virtual for regular files (file object class).
+    /// This provides common access patterns for accessing files,
+    /// including directory and symlink access.
+}
+
+let notcommondir_class_set = [ fifo_file file sock_file blk_file chr_file ];
+
+@derive(strategy=common_dir_api)
+virtual resource common_dir inherits dir, symlink, common_dir_api {
+    /// Virtual for directories (dir object class).
+    /// This provides common access patterns for accessing files,
+    /// including symlink access.
+}
+
+@derive(strategy=common_pipe_api)
+virtual resource common_pipe inherits dir, pipe, symlink, common_pipe_api {
+    /// Virtual for pipes (FIFOs, fifo_file object class).
+    /// This provides common access patterns for accessing pipes,
+    /// including directory and symlink access.
+}
+
+@derive(strategy=common_named_socket_api)
+virtual resource common_named_socket inherits dir, named_socket, symlink, common_named_socket_api {
+    /// Low-level virtual for named UNIX sockets (sock_file object class).
+    /// This provides common access patterns for accessing named sockets,
+    /// including directory and symlink access.
+}

@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_coredump_t inherits systemd_app_domain {
+    /// Core dump handler.
+
+    //
+    // Resources
+    //
+    @alias(systemd_coredump_exec_t)
+    extend exec  {
+        file_context("/usr/bin/systemd-coredump", file);
+        file_context("/usr/lib/systemd/systemd-coredump", file);
+    }
+
+    @alias(systemd_coredump_var_lib_t)
+    resource state inherits common_file, systemd_tmpfiles_managed {
+        file_context("/var/lib/systemd/coredump(/.*)?", any);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ setgid setuid setpcap ]);
+    allow(this, self, cap_userns, sys_ptrace);
+    allow(this, self, process, setcap);
+
+    this.state.manage(); var_lib_t.list(systemd_coredump_t); var_t.list(systemd_coredump_t);
+
+    bin_t.exec(systemd_coredump_t);
+
+    default_context_t.list(systemd_coredump_t); selinux_config_t.list(systemd_coredump_t);
+
+    etc_t.read(systemd_coredump_t);
+
+    executable.read(systemd_coredump_t);
+
+    fs_t.getattr_superblock(systemd_coredump_t);
+
+    init_t.ps(systemd_coredump_t);
+    init_t.runtime.list(systemd_coredump_t);
+    init_t.runtime<common_named_socket>.write(systemd_coredump_t);
+    init_t.state.list(systemd_coredump_t);
+
+    kernel_t.userspace_entrypoint(systemd_coredump_t);
+    kernel_t.rw_inherited_pipes(systemd_coredump_t);
+
+    kmsg_device_t.write(systemd_coredump_t);
+
+    mountpoint<dir>.getattr(systemd_coredump_t);
+
+    proc_t.read(systemd_coredump_t);
+
+    selinuxfs_t.getattr_superblock(systemd_coredump_t); sysfs_t.getattr_superblock(systemd_coredump_t); sysfs_t.list(systemd_coredump_t);
+
+    sysctl_t.kernel.read(systemd_coredump_t); sysctl_t.list(systemd_coredump_t); proc_t.list(systemd_coredump_t);
+
+    syslog.send_messages(systemd_coredump_t);
+}

@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_resolved_t inherits systemd_app_domain {
+    /// Network name resolution management.
+
+    //
+    // Resources
+    //
+    @alias(systemd_resolved_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-resolved", file);
+    }
+
+    @alias(systemd_resolved_runtime_t)
+    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+        /// Runtime files in /run/systemd/resolve.
+        file_context("/run/systemd/resolve(/.*)?", any);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ chown net_raw setgid setpcap setuid ]);
+    allow(this, self, process, setcap);
+
+    this.runtime.manage();
+    init_t.runtime.filetrans(this, this.runtime, dir); runtime_t.list(); var_t.list();
+
+    cgroup_t.list();
+
+    dns_port_t.tcp_bind();
+    dns_port_t.udp_bind();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    init_t.unix_datagram_send();
+
+    llmnr_port_t.tcp_bind();
+    llmnr_port_t.udp_bind();
+
+    network.tcp_server();
+    network.udp_server();
+
+    nss.get_hosts_entry();
+
+    proc_t.dontaudit_getattr_superblock();
+
+    root_t.watch();
+
+    runtime_t.watch();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+    sysctl_t.net.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.read();
+
+    system_dbusd_t.client();
+    system_dbusd_t.own_default_service();
+    system_dbusd_t.runtime<dir>.watch();
+    system_dbusd_t.runtime<named_socket>.watch();
+
+    systemd_networkd_t.runtime.watch();
+    systemd_networkd_t.runtime.read();
+}

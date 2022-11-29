@@ -1,0 +1,784 @@
+// SPDX-License-Identifier: GPL-2.0
+
+// this is the combination of refpolicy2 device, storage, and terminal modules
+
+//
+// Groups of devices
+//
+
+@alias(ptynode)
+virtual resource pty inherits terminal {
+    /// Virtual for PTY devices.
+
+    devpts_t.associate(this);
+
+    fn read(domain source) {
+        /// Read this PTY.
+        character_device::read(source);
+        devpts_t::list(source);
+    }
+
+    fn dontaudit_read(domain source) {
+        /// Do not audit denials for reading this PTY.
+        character_device::dontaudit_read(source);
+        devpts_t::dontaudit_list(source);
+    }
+
+    fn append(domain source) {
+        /// Append this PTY.
+        character_device::append(source);
+        devpts_t::list(source);
+    }
+
+    fn dontaudit_append(domain source) {
+        /// Do not audit denials for appending this PTY.
+        character_device::dontaudit_append(source);
+        devpts_t::dontaudit_list(source);
+    }
+
+    fn write(domain source) {
+        /// Write this PTY.
+        character_device::write(source);
+        devpts_t::list(source);
+    }
+
+    fn dontaudit_write(domain source) {
+        /// Do not audit denials for writing this PTY.
+        character_device::dontaudit_write(source);
+        devpts_t::dontaudit_list(source);
+    }
+
+    fn rw(domain source) {
+        /// Read and write this PTY.
+        character_device::rw(source);
+        devpts_t::list(source);
+    }
+
+    fn dontaudit_rw(domain source) {
+        /// Do not audit denials for reading and for writing this PTY.
+        character_device::dontaudit_rw(source);
+        devpts_t::dontaudit_list(source);
+    }
+}
+
+virtual resource serial_device inherits common_character_device {
+    /// Virtual for serial devices.
+}
+
+@alias(server_ptynode)
+virtual resource login_pty inherits ptynode {
+    /// Virtual for login PTY devices.
+}
+
+virtual resource terminal inherits common_character_device {
+    /// Virtual for terminals (TTYs and PTYs)
+}
+
+@alias(ttynode)
+virtual resource tty inherits serial_device, terminal {
+    /// Virtual for TTY devices.
+}
+
+// TODO: assertions
+//attribute fixed_disk_raw_read;
+//attribute fixed_disk_raw_write;
+//attribute scsi_generic_read;
+//attribute scsi_generic_write;
+
+//
+// Concrete types
+//
+
+resource agp_device_t inherits common_character_device {
+    /// The /dev/agpgart device.
+    file_context(/dev/(misc/)?agpgart, chardev);
+}
+
+resource acpi_bios_t inherits common_character_device {
+    /// The /dev/apm_bios device.
+    file_context(/dev/apm_bios, chardev);
+    file_context(/dev/snapshot, chardev);
+    file_context(/dev/wmi/dell-smbios, chardev);
+}
+
+resource autofs_device_t inherits common_character_device {
+    /// The /dev/autofs* devices.
+    file_context(/dev/autofs.*, chardev);
+}
+
+resource bsdpty_device_t inherits common_character_device {
+    /// The /dev/[pt]ty[a-ep-z][0-9a-f] and /dev/pty/* devices.
+    file_context(/dev/[pt]ty[a-ep-z][0-9a-f], chardev);
+
+    file_context(/dev/pty/.*, chardev);
+}
+
+resource cachefiles_device_t inherits common_character_device {
+    /// The /dev/cachefiles device.
+    file_context(/dev/cachefiles, chardev);
+}
+
+resource clock_device_t inherits common_character_device {
+    /// Real-time clock devices, such as /dev/rtc and /dev/hpet.
+    file_context(/dev/efirtc, chardev);
+    file_context(/dev/gtrsc.*, chardev);
+    file_context(/dev/hpet, chardev);
+    file_context(/dev/pcfclock.*, chardev);
+    file_context(/dev/pps.*, chardev);
+    file_context(/dev/ptp[0-9]*, chardev);
+    file_context(/dev/(misc/)?rtc[0-9]*, chardev);
+}
+
+@alias(smartcard_device_t)
+resource cmx_device_t inherits common_character_device {
+    /// Cisco Connected Mobile Experiences (CMX) devices, /dev/cmx*.
+    file_context(/dev/cmx.*, chardev);
+}
+
+resource console_device_t inherits terminal {
+    /// The /dev/console device.
+    file_context(/dev/console, chardev);
+}
+
+resource cpu_device_t inherits common_character_device {
+    /// CPU control devices such as /dev/microcode and /dev/cpu*.
+    file_context(/dev/microcode, chardev);
+    file_context(/dev/msr.*, chardev);
+    file_context(/dev/cpu.*, chardev);
+}
+
+resource crash_device_t inherits common_character_device {
+    /// The /dev/crash device.
+    file_context(/dev/crash, chardev, system_u:object_r:crash_device_t:mls_systemhigh);
+}
+
+resource crypt_device_t inherits common_character_device {
+    /// The IBM zSeries z90crypt hardware ssl accelerator.
+    file_context(/dev/z90crypt, chardev);
+}
+
+resource dax_device_t inherits common_character_device {
+    /// Filesystem direct access devices, /dev/dax*.*.
+    file_context(/dev/dax[0-9]\.[0-9], chardev, system_u:object_r:dax_device_t:mls_systemhigh);
+}
+
+@hint(class=[file fifo_file sock_file blk_file chr_file], hint="Only directories and symlinks should have this label. This may indicate mislabeled files.")
+resource device_t inherits filesystem, mountpoint, common_dir {
+    /// The /dev directory.
+    /// This consists of the /dev directory and symlinks.  Other classes of files,
+    /// especially character devices and block devices, should not have this label.
+
+    file_context(/etc/udev/devices, dir);
+
+    file_context(/dev, dir);
+    file_context(/dev/.*, any);
+
+    // used by init scripts to initially populate udev /dev
+    file_context(/usr/lib/udev/devices(/.*)?, any);
+
+    if (distro_debian) {
+        // this is a static /dev dir "backup mount"
+        // if you want to disable udev, you will have to boot permissive and relabel!
+        file_context(/dev/\.static, dir);
+        file_context(/dev/\.static/dev, dir);
+        // TODO add back in when we figure out what to do with none
+        // file_context(/dev/\.static/dev/.+, <<none>>);
+    }
+
+    fs_use_trans(devtmpfs);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+resource devtty_t inherits common_character_device {
+    /// The /dev/tty devices.
+    file_context(/dev/tty, chardev, system_u:object_r:devtty_t:s0);
+}
+//mls_trusted_object(devtty_t)
+
+resource dlm_control_device_t inherits common_character_device {
+    /// The /dev/misc/dlm* devices.
+    file_context(/dev/misc/dlm.*, chardev);
+}
+
+resource dri_device_t inherits common_character_device {
+    /// Graphics card direct rendering interfaces, such as /dev/dri/*.
+    file_context(/dev/i915, chardev);
+    file_context(/dev/radeon, chardev);
+    file_context(/dev/dri/.+, chardev);
+}
+
+resource event_device_t inherits common_character_device {
+    /// Event devices, such as /dev/event*.
+    file_context(/dev/event.*, chardev);
+    file_context(/dev/lik.*, chardev);
+    file_context(/dev/uinput, chardev);
+    file_context(/dev/biometric/sensor.*, chardev);
+
+    file_context(/dev/input/.*, chardev);
+    file_context(/dev/input/keyboard.*, chardev);
+    file_context(/dev/input/event.*, chardev);
+    file_context(/dev/input/uinput, chardev);
+}
+
+resource fixed_disk_device_t inherits common_block_device, common_character_device {
+    /// Fixed storage devices, including MD and LVM devices.
+    /// Accessing these devices should be avoided. By accessing the device,
+    /// a domain can bypass SELinux access controls for filesystems.
+
+    file_context(/dev/\.tmp-block-.*, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/[shmxv]d[^/]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/dasd[^/]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/dasd[^/]*, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/dm-[0-9]+, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/drbd[^/]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/etherd/.+, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/flash[^/]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/initrd, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/jsfd, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/jsflash, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/loop.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/lvm, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/mtd.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/mtd.*, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/nb[^/]+, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/nvme[0-9]+, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/nvme[0-9]n[^/]+, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/pmem[0-9]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/ps3d.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/ram.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/(raw/)?rawctl, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/rd.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/dev/tw[a-z][^/]+, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/dev/ubd[^/]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/vd[^/]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/xvd[^/]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/zd.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/zfs, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/zpios, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/zram[0-9]+, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/dev/ataraid/.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/dev/cciss/[^/]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/dev/i2o/hd[^/]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/dev/ida/[^/]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/dev/md/.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context(/dev/mapper/.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/dev/device-mapper, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/dev/raw/raw[0-9]+, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/dev/scramdisk/.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    file_context(/usr/lib/udev/devices/loop.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+
+    if (distro_redhat) {
+        file_context(/dev/root, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    }
+}
+// TODO:
+// neverallow ~{ fixed_disk_raw_read storage_unconfined_type } fixed_disk_device_t:{ chr_file blk_file } read;
+// neverallow ~{ fixed_disk_raw_write storage_unconfined_type } fixed_disk_device_t:{ chr_file blk_file } { append write };
+
+resource framebuf_device_t inherits common_character_device {
+    /// Graphics framebuffer devices, /dev/fb*
+    file_context(/dev/fb[0-9]*, chardev);
+}
+
+resource freefall_device_t inherits common_character_device {
+    /// The freefall detection device, /dev/freefall.
+    file_context(/dev/freefall, chardev);
+}
+
+type fuse_device_t inherits common_character_device {
+    /// The FUSE device, /dev/fuse.
+    file_context(/dev/fuse, chardev);
+    file_context(/usr/lib/udev/devices/fuse, chardev);
+}
+
+resource gpiochip_device_t inherits common_character_device {
+    /// General purpose IO devices, /dev/gpiochip*.
+    file_context(/dev/gpiochip[0-9], chardev);
+}
+
+resource ipmi_device_t inherits common_character_device {
+    /// IPMI devices, /dev/ipmi/*
+    file_context(/dev/ipmi[0-9]+, chardev);
+    file_context(/dev/ipmi/[0-9]+, chardev);
+}
+
+resource kmsg_device_t inherits common_character_device {
+    /// Kernel message devices, /dev/kmsg and /dev/mcelog.
+    file_context(/dev/kmsg, chardev, system_u:object_r:kmsg_device_t:mls_systemhigh);
+    file_context(/dev/mcelog, chardev, system_u:object_r:kmsg_device_t:mls_systemhigh);
+}
+//optional_policy(`
+//    init_mountpoint(kmsg_device_t)
+//')
+
+resource ksm_device_t inherits common_character_device {
+    /// The kernel same-page merging device, /dev/ksm.
+    file_context(/dev/ksm, chardev);
+}
+
+@alias(qemu_device_t)
+resource kvm_device_t inherits common_character_device {
+    /// The kernel virtual machine device, /dev/ksm.
+    file_context(/dev/kvm, chardev);
+    file_context(/dev/kqemu, chardev);
+}
+
+resource lirc_device_t inherits common_character_device {
+    /// The infared remote control devices, /dev/lirc*.
+    file_context(/dev/lirc[0-9]+, chardev);
+}
+
+resource loop_control_device_t inherits common_character_device {
+    /// The loopback control device, /dev/loop-control.
+    file_context(/dev/loop-control, chardev);
+}
+
+resource lvm_control_t inherits common_character_device {
+    /// Device mapper control devices.
+    file_context(/dev/btrfs-control, chardev);
+    file_context(/dev/etherd/.+, chardev);
+    file_context(/dev/mapper/control, chardev);
+}
+
+resource mei_device_t inherits common_character_device {
+    /// Intel(R) management engine interfaces, /dev/mei*.
+    file_context(/dev/mei[0-9]*, chardev);
+}
+
+resource memory_device_t inherits common_character_device, cap_sys_rawio_checks {
+    /// Memory devices, such as /dev/mem and /dev/kmem.
+    /// Reading and writing these devices should be avoided as much as possible.
+    /// By accessing the device, a domain can bypass SELinux access controls
+    /// for processes.
+    file_context(/dev/kmem, chardev, system_u:object_r:memory_device_t:mls_systemhigh);
+    file_context(/dev/mem, chardev, system_u:object_r:memory_device_t:mls_systemhigh);
+    file_context(/dev/mergemem, chardev, system_u:object_r:memory_device_t:mls_systemhigh);
+    file_context(/dev/oldmem, chardev, system_u:object_r:memory_device_t:mls_systemhigh);
+    file_context(/dev/port, chardev, system_u:object_r:memory_device_t:mls_systemhigh);
+}
+// TODO:
+//neverallow ~{ memory_raw_read devices_unconfined_type } memory_device_t:{ chr_file blk_file } read;
+//neverallow ~{ memory_raw_write devices_unconfined_type } memory_device_t:{ chr_file blk_file } { append write };
+
+resource modem_device_t inherits common_character_device {
+    /// The modem device, /dev/modem.
+    // TODO: Should this merge into ppp_device_t?
+    file_context(/dev/modem, chardev);
+    file_context(/dev/noz.*, chardev);
+}
+
+resource mouse_device_t inherits common_character_device {
+    /// Mouse devices, such as /dev/input/mice and /dev/misc/psaux.
+    file_context(/dev/.*mouse.*, chardev);
+    file_context(/dev/atibm, chardev);
+    file_context(/dev/elographics/e2201, chardev);
+    file_context(/dev/inportbm, chardev);
+    file_context(/dev/jbm, chardev);
+    file_context(/dev/js.*, chardev);
+    file_context(/dev/lircm, chardev);
+    file_context(/dev/logibm, chardev);
+    file_context(/dev/mice, chardev);
+    file_context(/dev/pc110pad, chardev);
+    file_context(/dev/(misc/)?psaux, chardev);
+    file_context(/dev/vrtpanel, chardev);
+    file_context(/dev/input/m.*, chardev);
+    file_context(/dev/input/.*mouse.*, chardev);
+    file_context(/dev/input/mice, chardev);
+    file_context(/dev/input/js.*, chardev);
+    file_context(/dev/touchscreen/ucb1x00, chardev);
+    file_context(/dev/touchscreen/mk712, chardev);
+}
+
+resource mtrr_device_t inherits common_character_device {
+    /// Memory type range register device, /dev/cpu/mtrr.
+    file_context(/dev/cpu/mtrr, chardev);
+}
+// TODO: I think this should be dropped
+//genfscon proc /mtrr gen_contextsystem_u:object_r:mtrr_device_t:s0);
+//optional_policy(`
+//    init_mountpoint(mtrr_device_t)
+//')
+
+resource null_device_t inherits common_character_device {
+    /// Null and full devices, /dev/null and /dev/full.
+
+    file_context(/dev/full, chardev);
+    file_context(/dev/null, chardev);
+
+    // used by init scripts to initially populate udev /dev
+    file_context(/usr/lib/udev/devices/null, chardev);
+
+    initial_context(devnull);
+}
+//mls_trusted_object(null_device_t)
+
+resource nvram_device_t inherits common_character_device {
+    /// Non-volatime RAM devices, /dev/nvram and /dev/ndctl*.
+    // TODO: should these be system high or low?
+    file_context(/dev/ndctl[0-9], chardev);
+    file_context(/dev/nvram, chardev, system_u:object_r:nvram_device_t:mls_systemhigh);
+}
+
+resource power_device_t inherits common_character_device {
+    /// Power management unit devices, /dev/pmu and /dev/smu.
+    file_context(/dev/pmu, chardev);
+    file_context(/dev/smu, chardev);
+}
+
+@alias(netcontrol_device_t)
+resource pmqos_device_t inherits common_character_device {
+    /// Power management quality of service (PM QoS) devices.
+    /// /dev/cpu_dma_latency, /dev/network_latency, /dev/network_throughput, and
+    /// /dev/memory_bandwidth.
+    file_context(/dev/memory_bandwidth, chardev);
+    file_context(/dev/network_latency, chardev);
+    file_context(/dev/network_throughput, chardev);
+    file_context(/dev/cpu_dma_latency, chardev);
+}
+
+resource ppp_device_t inherits common_character_device {
+    /// Point-to-Point Protocol (PPP) devices.
+    file_context(/dev/ippp.*, chardev);
+    file_context(/dev/ppp, chardev);
+    file_context(/dev/pppox.*, chardev);
+    file_context(/usr/lib/udev/devices/ppp, chardev);
+}
+
+resource printer_device_t inherits common_character_device {
+    /// Printer devices.
+    file_context(/dev/irlpt[0-9]+, chardev);
+    file_context(/dev/lp.*, chardev);
+    file_context(/dev/par.*, chardev);
+    file_context(/dev/usblp.*, chardev);
+    file_context(/dev/mfpports/.*, chardev);
+    file_context(/dev/usb/lp.*, chardev);
+    file_context(/usr/lib/udev/devices/lp.*, chardev);
+}
+// TODO: mls_file_write_within_range(printer_device_t)
+
+resource ptmx_t inherits common_character_device {
+    /// Pseudo terminal (pty) multiplexer, /dev/ptmx.
+    devpts_t.associate(this);
+
+    file_context(/dev/ptmx, chardev);
+
+    // if /dev/ptmx is a symlink to /dev/pts/ptmx then we need to have /dev/pts/ptmx
+    // relabelled before sshd etc are ready to accept connections
+    file_context(/dev/pts/ptmx, chardev);
+}
+// TODO: mls_trusted_object(ptmx_t)
+
+//
+// random_device_t is the type of /dev/random
+//
+resource random_device_t inherits common_character_device {
+    /// Pseudorandom number generators, such as /dev/random and /dev/hwrng.
+    file_context(/dev/hw_random, chardev);
+    file_context(/dev/hwrng, chardev);
+    file_context(/dev/random, chardev);
+}
+
+resource removable_device_t inherits common_block_device {
+    /// Removable storage devices.
+    /// Accessing these devices should be avoided. By accessing the device,
+    /// a domain can bypass SELinux access controls for filesystems.
+
+    // TODO: These likely should be all MLS systemhigh.
+    file_context(/dev/aztcd, blockev);
+    file_context(/dev/bpcd, blockev);
+
+    file_context(/dev/cdu.*, blockev);
+    file_context(/dev/cm20.*, blockev);
+    file_context(/dev/fd[^/]+, blockev);
+    file_context(/dev/gscd, blockev);
+    file_context(/dev/hitcd, blockev);
+
+    file_context(/dev/hwcdrom, blockev);
+    file_context(/dev/mcdx?, blockev);
+    file_context(/dev/megadev.*, chardev);
+    file_context(/dev/mmcblk.*, blockev);
+    file_context(/dev/mmcblk.*, chardev);
+    file_context(/dev/mspblk.*, blockev);
+    file_context(/dev/optcd, blockev);
+    file_context(/dev/p[fg][0-3], blockev);
+    file_context(/dev/pcd[0-3], blockev);
+    file_context(/dev/pd[a-d][^/]*, blockev);
+    file_context(/dev/pg[0-3], chardev);
+    file_context(/dev/s(cd|r)[^/]*, blockev);
+    file_context(/dev/sbpcd.*, blockev);
+
+    file_context(/dev/sjcd, blockev);
+    file_context(/dev/sonycd, blockev);
+
+    file_context(/dev/ub[a-z][^/]+, blockev, system_u:object_r:removable_device_t:mls_systemhigh);
+
+    file_context(/dev/floppy/[^/]*, blockev);
+
+    file_context(/dev/usb/rio500, chardev);
+}
+
+resource scanner_device_t inherits common_character_device {
+    /// Scanner devices, such as /dev/usb/scanner*.
+
+    file_context(/dev/mmetfgrab, chardev);
+
+    file_context(/dev/usb/dc2xx.*, chardev);
+    file_context(/dev/usb/mdc800.*, chardev);
+    file_context(/dev/usb/scanner.*, chardev);
+}
+
+type scsi_generic_device_t inherits common_character_device {
+    /// SCSI generic devices, /dev/sg* and /dev/bsg/*.
+    /// Accessing these devices should be avoided. By accessing the device,
+    /// a domain can bypass SELinux access controls for filesystems.
+
+    // TODO: This should likely be systemhigh
+    file_context(/dev/bsg/.+, chardev);
+
+    file_context(/dev/sg[0-9]+, chardev);
+}
+// TODO:
+//neverallow ~{ scsi_generic_read storage_unconfined_type } scsi_generic_device_t:{ chr_file blk_file } read;
+//neverallow ~{ scsi_generic_write storage_unconfined_type } scsi_generic_device_t:{ chr_file blk_file } { append write };
+
+resource sound_device_t inherits common_character_device {
+    /// Sound devices and mixers, such as /dev/audio* and /dev/sequencer.
+    file_context(/dev/admmidi.*, chardev);
+    file_context(/dev/adsp.*, chardev);
+    file_context(/dev/audio.*, chardev);
+    file_context(/dev/aload.*, chardev);
+    file_context(/dev/amidi.*, chardev);
+    file_context(/dev/amixer.*, chardev);
+    file_context(/dev/beep, chardev);
+    file_context(/dev/dahdi/.*, chardev);
+    file_context(/dev/dmfm, chardev);
+    file_context(/dev/dmmidi.*, chardev);
+    file_context(/dev/dsp.*, chardev);
+    file_context(/dev/hfmodem, chardev);
+    file_context(/dev/midi.*, chardev);
+    file_context(/dev/mixer.*, chardev);
+    file_context(/dev/mpu401.*, chardev);
+    file_context(/dev/patmgr[01], chardev);
+    file_context(/dev/rmidi.*, chardev);
+    file_context(/dev/sequencer, chardev);
+    file_context(/dev/sequencer2, chardev);
+    file_context(/dev/smpte.*, chardev);
+    file_context(/dev/srnd[0-7], chardev);
+    file_context(/dev/s(ou)?nd/.*, chardev);
+    file_context(/dev/sndstat, chardev);
+}
+
+resource sysdig_device_t inherits common_character_device {
+    /// System and process troubleshooting device (sysdig), /dev/sysdig*.
+    file_context(/dev/sysdig[0-9], chardev);
+}
+
+resource tape_device_t inherits common_character_device {
+    /// Tape storage devices, such as /dev/tape*.
+    // TODO: There is one block dev here.  Possibly should be systemhigh.
+    file_context(/dev/n?(raw)?[qr]ft[0-3], chardev);
+    file_context(/dev/n?[hs]t[0-9].*, chardev);
+    file_context(/dev/n?z?qft[0-3], chardev);
+    file_context(/dev/n?osst[0-3].*, chardev);
+    file_context(/dev/n?pt[0-9]+, chardev);
+    file_context(/dev/n?tpqic[12].*, chardev);
+
+    file_context(/dev/ht[0-1], blockev);
+
+    file_context(/dev/tape.*, chardev);
+}
+
+resource tee_device_t inherits common_character_device {
+    /// Trusted Execution Environment (TEE) client devices, /dev/tee*.
+    file_context(/dev/tee[0-9], chardev);
+}
+
+resource tee_priv_device_t inherits common_character_device {
+    /// Trusted Execution Environment (TEE) supplicant devices, /dev/teepriv*.
+    file_context(/dev/teepriv[0-9], chardev);
+}
+
+resource tpm_device_t inherits common_character_device {
+    /// Trusted Platform Module (TPM) devices, /dev/tpm* and /dev/tpmrm*.
+    file_context(/dev/tpm[0-9]*, chardev);
+    file_context(/dev/tpmrm[0-9]*, chardev);
+}
+
+resource tty_device_t inherits terminal, serial_device {
+    /// TTY devices not allocated to users.
+
+    file_context(/dev/.*tty[^/]*, chardev);
+    file_context(/dev/adb.*, chardev);
+    file_context(/dev/capi.*, chardev);
+    file_context(/dev/cu.*, chardev);
+    file_context(/dev/dcbri[0-9]+, chardev);
+    file_context(/dev/hpilo/[^/]*, chardev);
+    file_context(/dev/hvc.*, chardev);
+    file_context(/dev/hvsi.*, chardev);
+    file_context(/dev/i2c[^/]*, chardev);
+    file_context(/dev/ircomm[0-9]+, chardev);
+    file_context(/dev/ip2[^/]*, chardev);
+    file_context(/dev/isdn.*, chardev);
+    file_context(/dev/rfcomm[0-9]+, chardev);
+    file_context(/dev/slamr[0-9]+, chardev);
+    file_context(/dev/ttySG.*, chardev);
+    file_context(/dev/xvc[^/]*, chardev);
+
+    file_context(/dev/tts/[^/]*, chardev);
+
+    file_context(/dev/vcc?/.*, chardev);
+
+    file_context(/dev/vcs[^/]*, chardev);
+
+    file_context(/dev/xvc[0-9]*, chardev);
+}
+
+resource tun_tap_device_t inherits common_character_device {
+    /// TUN/TAP devices.
+    file_context(/dev/tap.*, chardev);
+    file_context(/dev/net/.*, chardev);
+    file_context(/usr/lib/udev/devices/net/.*, chardev);
+}
+
+resource uhid_device_t inherits common_character_device {
+    /// User-space I/O driver support for HID subsystem, /dev/uhid.
+    file_context(/dev/uhid, chardev);
+}
+
+resource urandom_device_t inherits common_character_device {
+    /// Pseudorandom number generator, /dev/urandom.
+    file_context(/dev/urandom, chardev);
+}
+
+resource usb_device_t inherits common_character_device {
+    /// USB devices, such as /dev/bus/usb/*
+    file_context(/dev/[0-9].*, chardev);
+    file_context(/dev/fw.*, chardev);
+    file_context(/dev/hiddev.*, chardev);
+    file_context(/dev/hidraw.*, chardev);
+    file_context(/dev/ub[a-c], chardev);
+    file_context(/dev/usb.+, chardev);
+    file_context(/dev/bus/usb/.*/[0-9]+, chardev);
+}
+
+resource usbmon_device_t inherits common_character_device {
+    /// USB monitoring devices, /dev/usbmon*.
+    file_context(/dev/usbmon.+, chardev);
+}
+
+resource usbtty_device_t inherits serial_device {
+    /// USB tty devices, /dev/usb/tty*.
+    file_context(/dev/usb/tty.*, chardev);
+}
+
+resource userio_device_t inherits common_character_device {
+    /// Userspace I/O devices, /dev/uio*.
+    file_context(/dev/uio[0-9]+, chardev);
+}
+
+resource v4l_device_t inherits common_character_device {
+    /// Video4Linux devices, such as /dev/video* and /dev/dvb/*.
+    file_context(/dev/em8300.*, chardev);
+    file_context(/dev/radio.*, chardev);
+    file_context(/dev/raw1394.*, chardev);
+    file_context(/dev/sonypi, chardev);
+    file_context(/dev/tlk[0-3], chardev);
+    file_context(/dev/vbi.*, chardev);
+    file_context(/dev/video.*, chardev);
+    file_context(/dev/vttuner, chardev);
+    file_context(/dev/vtx.*, chardev);
+    file_context(/dev/winradio.*, chardev);
+    file_context(/dev/dvb/.*, chardev);
+}
+
+resource vfio_device_t inherits common_character_device {
+    /// Virtual Function I/O (VFIO) devices, /dev/vfio/*.
+    file_context(/dev/vfio/.+, chardev);
+}
+
+resource virtio_device_t inherits serial_device {
+    /// I/O virtualization devices, /dev/vport*.
+    file_context(/dev/vport[0-9]p[0-9]+, chardev);
+}
+
+// TODO: Merge vhost_device_t into virtio_device_t ?
+
+resource vhost_device_t inherits common_character_device {
+    /// Vhost devices like /dev/vhost-net and /dev/vhost-scsi.
+    file_context(/dev/net/vhost, chardev);
+    file_context(/dev/vhci, chardev);
+    file_context(/dev/vhost-net, chardev);
+    file_context(/dev/vhost-scsi, chardev);
+}
+
+// TODO: Change vmnet into virtio_device_t ?
+
+resource vmware_device_t inherits common_character_device {
+    /// VMWare virtual machine monitor, /dev/vmmon, and virtual networks, /dev/vmnet*.
+    file_context(/dev/vmmon, chardev);
+    file_context(/dev/vmnet.*, chardev);
+}
+
+resource watchdog_device_t inherits common_character_device {
+    /// Watchdog devices, /dev/watchdog*.
+    file_context(/dev/watchdog.*, chardev);
+}
+
+resource wireless_device_t inherits common_character_device {
+    /// Wireless control devices, such as /dev/rfkill.
+    file_context(/dev/rfkill, chardev);
+}
+
+resource xen_device_t inherits common_character_device {
+    /// Xen devices such as /dev/xen/*.
+
+    file_context(/dev/evtchn, chardev);
+
+    file_context(/dev/xen/blktap.*, chardev);
+    file_context(/dev/xen/evtchn, chardev);
+    file_context(/dev/xen/gntdev, chardev);
+    file_context(/dev/xen/gntalloc, chardev);
+    file_context(/dev/xen/hypercall, chardev);
+    file_context(/dev/xen/privcmd, chardev);
+    file_context(/dev/xen/xenbus, chardev);
+    file_context(/dev/xen/xenbus_backend, chardev);
+}
+
+resource xserver_misc_device_t inherits common_character_device {
+    /// Miscellaneous X server devices.
+    // TODO: This looks like most of them can move to dri_device_t.
+    // TODO: /dev/vbox* are Virtualbox devices, not related to X. vboxdrv, vboxdrvu, vboxnetctl
+    file_context(/dev/3dfx, chardev);
+    file_context(/dev/controlD64, chardev);
+    file_context(/dev/drm_dp_aux[0-9]*, chardev);
+    file_context(/dev/gfx, chardev);
+    file_context(/dev/graphics, chardev);
+    file_context(/dev/mga_vid.*, chardev);
+    file_context(/dev/nvidia.*, chardev);
+    file_context(/dev/opengl, chardev);
+    file_context(/dev/vbox.*, chardev);
+    file_context(/dev/vga_arbiter, chardev);
+    file_context(/dev/card.*, chardev);
+    file_context(/dev/mvideo/.*, chardev);
+}
+
+resource zero_device_t inherits common_character_device {
+    /// Zero device, /dev/zero.
+    file_context(/dev/zero, chardev);
+
+    // used by init scripts to initially populate udev /dev
+    file_context(/usr/lib/udev/devices/zero, chardev);
+}
+// TODO: mls_trusted_object(zero_device_t)

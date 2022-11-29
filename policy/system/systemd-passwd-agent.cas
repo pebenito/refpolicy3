@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_passwd_agent_t inherits systemd_app_domain {
+    /// User password request handler.
+
+    //
+    // Resources
+    //
+    @alias(systemd_passwd_agent_exec_t)
+    extend exec  {
+        file_context("/usr/bin/systemd-tty-ask-password-agent", file);
+    }
+
+    @alias(systemd_passwd_runtime_t)
+    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+        /// Runtime files in /run and /var/run.
+        file_context("/run/systemd/ask-password(/.*)?", any);
+        file_context("/run/systemd/ask-password-block(/.*)?", any);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ chown sys_tty_config dac_override ]);
+    allow(this, self, process, setsockcreate);
+
+    this.runtime.manage();
+    this.runtime.watch();
+    init_t.runtime.filetrans(this, this.runtime, [ dir fifo_file file sock_file ]);
+
+    device_t.create();
+    device_t<common_file>.read();
+    device_t<common_named_socket>.write();
+
+    etc_t.read();
+
+    fs_t.getattr_superblock();
+
+    getty_t.inherit_file_descriptors();
+
+    init_t.unix_stream_connect();
+    init_t.runtime<common_dir>.create();
+    init_t.runtime<common_pipe>.read();
+
+    init_script_t.runtime.read(); runtime_t.list(); var_t.list();
+
+    kernel_t.abstract_stream_connect();
+
+    lvm_t.check_existence();
+
+    nss.get_passwd_entry();
+
+    plymouthd_t.unix_stream_connect();
+
+    proc_t.read();
+
+    user_devpts_t.rw();
+
+    user_tty_device_t.rw();
+
+    usr_t.list();
+
+// typeattribute systemd_passwd_runtime_t init_path_unit_loc_type;
+}

@@ -1,0 +1,332 @@
+// SPDX-License-Identifier: GPL-2.0
+
+resource var_yp_t inherits common_file {
+    /// NIS database.
+    file_context("/var/yp(/.*)?", any);
+}
+
+domain ypbind_t inherits daemon {
+    /// NIS binding service.
+
+    //
+    // Resources
+    //
+    @alias(ypbind_exec_t)
+    extend exec {
+        file_context("/usr/bin/ypbind", file);
+        file_context("/usr/sbin/ypbind", file);
+    }
+
+    @alias(ypbind_initrc_exec_t)
+    extend initrc_exec {
+        file_context("/etc/rc\.d/init\.d/ypbind", file);
+    }
+
+    @alias(ypbind_runtime_t)
+    extend runtime {
+        file_context("/run/ypbind.*", file);
+    }
+
+    @alias(ypbind_tmp_t)
+    extend tmp {}
+
+    @alias(ypbind_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/ypbind.*\.service", file);
+    }
+
+    //
+    // Policy
+    //
+    dontaudit(ypbind_t, self, capability, [ net_admin sys_tty_config ]);
+
+    autofs_t.list();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    network.tcp_server();
+    network.udp_server();
+
+    network_port.tcp_connect();
+
+    proc_t.read();
+
+    reserved_network_port.dontaudit_tcp_bind();
+    reserved_network_port.dontaudit_udp_bind();
+
+    reserved_port_t.tcp_bind();
+    reserved_port_t.udp_bind();
+
+    rpc_network_port.tcp_bind();
+    rpc_network_port.udp_bind();
+
+    syslog.send_messages();
+
+    sysfs_t.read();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+
+    unreserved_port_t.tcp_bind();
+    unreserved_port_t.udp_bind();
+
+    usr_t.list();
+
+    var_yp_t.manage();
+
+    optional {
+        NetworkManager_t.dbus_send();
+
+        system_dbusd_t.client();
+        system_dbusd_t.own_default_service();
+    }
+}
+
+
+domain yppasswdd_t inherits daemon {
+    /// NIS password update service.
+
+    //
+    // Resources
+    //
+    @alias(yppasswdd_exec_t)
+    extend exec {
+        file_context("/usr/bin/rpc\.yppasswdd", file);
+        file_context("/usr/sbin/rpc\.yppasswdd", file);
+    }
+
+    extend initrc_exec {
+        file_context("/etc/rc\.d/init\.d/yppasswd", file);
+    }
+
+    @alias(yppasswdd_runtime_t)
+    extend runtime {
+        file_context("/run/yppass.*", file);
+    }
+
+    extend unit {
+        file_context("/usr/lib/systemd/system/yppasswdd.*\.service", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, dac_override);
+    dontaudit(this, self, capability, sys_tty_config);
+    allow(this, self, process, setfscreate);
+    allow(this, self, unix_stream_socket, [ accept listen ]);
+
+    autofs_t.list();
+
+    bin_t.exec();
+
+    etc_t.relabel();
+
+    etc_runtime_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    network.tcp_server();
+    network.udp_server();
+
+    proc_t.list();
+    proc_t.getattr();
+
+    reserved_network_port.dontaudit_tcp_bind();
+    reserved_network_port.dontaudit_udp_bind();
+
+    rpc_network_port.tcp_bind();
+    rpc_network_port.udp_bind();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    sysfs_t.read();
+
+    selinux.get_fs_mountpoint();
+
+    shadow_t.manage();
+    shadow_t.relabel();
+    etc_t.filetrans(yppasswdd_t, shadow_t, file);
+
+    shell_exec_t.exec();
+
+    syslog.send_messages();
+
+    var_yp_t.manage();
+
+    optional {
+        hostname_t.exec.exec();
+    }
+// typeattribute yppasswdd_t can_change_object_identity;
+//server_packet_t.sendrecv(yppasswdd_t);
+//    allow yppasswdd_t shadow_lock_t:dir search_dir_perms;
+//    allow yppasswdd_t shadow_lock_t:file rw_file_perms;
+}
+
+
+
+domain ypserv_t inherits daemon {
+    /// NIS server.
+
+    //
+    // Resources
+    //
+    @alias(ypserv_conf_t)
+    extend conf {
+        file_context("/etc/ypserv\.conf", file);
+    }
+
+    @alias(ypserv_exec_t)
+    extend exec {
+        file_context("/usr/bin/ypserv", file);
+        file_context("/usr/sbin/ypserv", file);
+    }
+
+    @alias(nis_initrc_exec_t)
+    extend initrc_exec {
+        file_context("/etc/rc\.d/init\.d/ypserv", file);
+    }
+
+    @alias(ypserv_runtime_t)
+    extend runtime {
+        file_context("/run/ypserv.*", file);
+    }
+
+    @alias(ypserv_tmp_t)
+    extend tmp {}
+
+    extend unit {
+        file_context("/usr/lib/systemd/system/ypserv.*\.service", file);
+    }
+
+    //
+    // Policy
+    //
+    dontaudit(this, self, capability, sys_tty_config);
+
+    autofs_t.list();
+
+    bin_t.exec();
+
+    network.tcp_server();
+    network.udp_server();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    reserved_network_port.dontaudit_tcp_bind();
+    reserved_network_port.dontaudit_udp_bind();
+
+    reserved_port_t.tcp_bind();
+    reserved_port_t.udp_bind();
+
+    rpc_network_port.tcp_bind();
+    rpc_network_port.udp_bind();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    var_t<common_file>.read();
+
+    var_yp_t.manage();
+
+    ypxfr_t.domtrans();
+
+// server_packet_t.sendrecv(ypserv_t);
+}
+
+
+domain ypxfr_t inherits daemon {
+    /// NIS database transfer.
+
+    //
+    // Resources
+    //
+    @alias(ypxfr_exec_t)
+    extend exec {
+        file_context("/usr/bin/rpc\.ypxfrd", file);
+        file_context("/usr/lib/yp/ypxfr", file);
+        file_context("/usr/sbin/rpc\.ypxfrd", file);
+    }
+
+    extend initrc_exec {
+        file_context("/etc/rc\.d/init\.d/ypxfrd", file);
+    }
+
+    @alias(ypxfr_runtime_t)
+    extend runtime {
+        file_context("/run/ypxfrd.*", file);
+    }
+
+    extend unit {
+        file_context("/usr/lib/systemd/system/ypxfrd.*\.service", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, unix_stream_socket, [ accept listen ]);
+    allow(this, self, unix_dgram_socket, [ accept listen ]);
+
+    network.tcp_client();
+    network.tcp_server();
+    network.udp_server();
+
+    network_port.tcp_connect();
+
+    reserved_network_port.dontaudit_tcp_bind();
+    reserved_network_port.dontaudit_udp_bind();
+
+    reserved_port_t.tcp_bind();
+    reserved_port_t.udp_bind();
+
+    rpc_network_port.tcp_bind();
+    rpc_network_port.udp_bind();
+
+    syslog.send_messages();
+
+    var_yp_t.manage();
+
+    ypserv_t.dontaudit_rw_inherited_tcp_sockets();
+    ypserv_t.dontaudit_rw_inherited_udp_sockets();
+    ypserv_t.conf.read();
+
+// server_packet_t.sendrecv(ypxfr_t);
+// client_packet_type.sendrecv(ypxfr_t);
+}
+
+module nis_base {
+    resource var_yp_t;
+}
+
+module ypbind {
+    domain ypbind_t;
+}
+
+module yppasswdd {
+    domain yppasswdd_t;
+}
+
+module ypserv {
+    domain ypserv_t;
+}
+
+module ypxfr {
+    domain ypxfr_t;
+}
+
+module nis {
+    module nis_base;
+    module ypbind;
+    module yppasswdd;
+    module ypserv;
+    module ypxfr;
+}

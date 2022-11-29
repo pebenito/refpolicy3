@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//
+// Mountpoint permissions are for the case when a file has been assigned
+// an extended attribute for the first time.  Directories where filesystems
+// are mounted over may never get relabeled.
+//
+
+@hint(hint="This indicates that your object has either a missing or an invalid context.  The context should be fixed instead of adding access to unlabeled_t.")
+resource unlabeled_t inherits mountpoint, network_peer {
+    /// Objects that are missing labels or have invalid labels.
+    /// These objects have unknown security properties.  Adding access to this
+    /// is strongly discouraged.  Instead, address the underlying cause of the
+    /// unlabeled objects.
+
+    neverallow(domain, this, file, entrypoint);
+
+    // If you load a new policy that removes active domains, processes can
+    // get stuck if you do not allow unlabeled processes to signal init.
+    // If you load an incompatible policy, you should probably reboot,
+    // since you may have compromised system security.
+    init_t.sigchld(unlabeled_t);
+
+    //
+    // Labeling statements
+    //
+
+    initial_context(unlabeled, system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context(file, system_u:object_r:unlabeled_t:mls_systemhigh);
+    // These initial sids are no longer used, and can be removed:
+    initial_context(any_socket, system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context(file_labels);
+    initial_context(icmp_socket, system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context(igmp_packet, system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context(init);
+    initial_context(kmod, system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context(policy, system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context(scmp_packet, system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context(sysctl_modprobe);
+    initial_context(sysctl_fs);
+    initial_context(sysctl_kernel);
+    initial_context(sysctl_net);
+    initial_context(sysctl_net_unix);
+    initial_context(sysctl_vm);
+    initial_context(sysctl_dev);
+    initial_context(tcp_socket, system_u:object_r:unlabeled_t:mls_systemhigh);
+}

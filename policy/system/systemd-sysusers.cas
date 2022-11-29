@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_sysusers_t inherits systemd_app_domain {
+    /// Allocate users and groups from sysusers.d.
+
+    //
+    // Resources
+    //
+    @alias(systemd_sysusers_exec_t)
+    extend exec  {
+        file_context("/usr/bin/systemd-sysusers", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ chown fsetid ]);
+
+    auth.manage_shadow_passwords();
+
+    cgroup_t.list();
+
+    etc_t.manage();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    nss.get_passwd_entry();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+}

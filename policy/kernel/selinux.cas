@@ -1,0 +1,111 @@
+// SPDX-License-Identifier: GPL-2.0
+
+tunable secure_mode_policyload {
+    default false;
+}
+
+tunable secure_mode_setbool {
+    default false;
+}
+
+//
+// Virtuals
+//
+
+@hint(class=file, perm=read, hint="Use the .get() member function to get Boolean state.")
+@hint(class=file, perm=write, hint="Use the .set() member function to set Boolean state.")
+virtual resource booleans inherits file_api {
+    fn get(domain source) {
+        sysfs_t.list(source);
+        selinuxfs_t.list(source);
+        file_api::read(source);
+    }
+
+    fn dontaudit_get(domain source) {
+        sysfs_t.dontaudit_list(source);
+        selinuxfs_t.dontaudit_list(source);
+        file_api::dontaudit_read(source);
+    }
+
+    fn set(domain source) {
+        sysfs_t.list(source);
+        selinuxfs_t.list(source);
+        file_api::read(source);
+
+        if(secure_mode_setbool) {
+            selinuxfs_t.dontaudit_write(source);
+            file_api::dontaudit_write(source);
+            dontaudit(source, security_t, security, setbool);
+        } else {
+            selinuxfs_t.write(source);
+            file_api::write(source);
+            allow(source, security_t, security, setbool);
+        }
+    }
+
+    fn dontaudit_set(domain source) {
+        sysfs_t.dontaudit_list(source);
+        selinuxfs_t.dontaudit_list(source);
+        file_api::dontaudit_rw(source);
+        dontaudit(source, security_t, security, setbool);
+    }
+}
+
+//
+// Concreate resources
+//
+
+resource boolean_t inherits booleans {
+    genfscon(selinuxfs, /booleans/, file, this);
+}
+
+// SELinux security server
+@hint(class=security, hint="Please use the SELinux API.")
+@hint(class=security, perm=[setenforce load_policy setbool setsecparam], hint="These permissions affect the security state, use with caution only on highly trusted domains.")
+@hint(class=security, perm=setenforce, hint="Use selinux.get_enforce_mode() or selinux.dontaudit_set_enforce_mode()")
+@hint(class=security, perm=read_policy, hint="Use selinux.read_policy() or selinux.dontaudit_read_policy()")
+@hint(class=security, perm=load_policy, hint="Use selinux.load_policy() or selinux.dontaudit_load_policy()")
+@hint(class=security, perm=setsecparam, hint="Use selinux.set_parameters() or selinux.dontaudit_set_parameters()")
+@hint(class=security, perm=setbool, hint="Use set() or dontaudit_set() functions of the boolean type you want to operate on.")
+@hint(class=security, perm=check_context, hint="Use selinux.validate_contexts() or selinux.dontaudit_validate_contexts()")
+@hint(class=security, perm=compute_av, hint="Use selinux.get_access_decisions() or selinux.dontaudit_get_access_decisions()")
+@hint(class=security, perm=compute_create, hint="Use selinux.get_create_contexts() or selinux.dontaudit_get_create_contexts()")
+@hint(class=security, perm=compute_member, hint="Use selinux.get_member_contexts() or selinux.dontaudit_member_contexts()")
+@hint(class=security, perm=compute_relabel, hint="Use selinux.get_relabel_contexts() or selinux.dontaudit_get_relabel_contexts()")
+@hint(class=security, perm=compute_user, hint="Use selinux.get_user_contexts() or selinux.dontaudit_get_user_contexts()")
+resource security_t {
+    initial_context(security, system_u:object_r:security_t:mls_systemhigh);
+}
+
+//
+// Boolean to determine whether the system permits loading policy, and setting
+// enforcing mode.  Set this to true and you have to reboot to set it back.
+//
+boolean(secure_mode_policyload, false);
+resource secure_mode_policyload_t inherits booleans {
+    genfscon(selinuxfs, /booleans/secure_mode_policyload, file, this);
+
+    fn set(domain source) {
+        sysfs_t.list(source);
+        selinuxfs_t.list(source);
+        file_api::read(source);
+
+        if(!secure_mode_policyload && !secure_mode_setbool) {
+            selinuxfs_t.dontaudit_write(source);
+            file_api::dontaudit_write(source);
+            dontaudit(source, security_t, security, setbool);
+        } else {
+            selinuxfs_t.write(source);
+            file_api::write(source);
+            allow(source, security_t, security, setbool);
+        }
+    }
+}
+
+
+// Boolean to determine whether the system permits setting Booelan values.
+boolean(secure_mode_setbool, false);
+
+// TODO:
+//type secure_mode_policyload_t;
+//selinux_labeled_boolean(secure_mode_policyload_t, secure_mode_policyload)

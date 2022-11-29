@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_sessions_t inherits systemd_app_domain {
+    /// Manage permitted user login using /run/nologin.
+
+    //
+    // Resources
+    //
+    @alias(systemd_sessions_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-user-sessions", file);
+    }
+
+    @alias(systemd_sessions_runtime_t)
+    resource runtime inherits runtimefile, systemd_mountpoint, systemd_tmpfiles_managed {
+        /// Runtime files in /run and /var/run.
+        file_context("/run/\.nologin[^/]*", file);
+        file_context("/run/nologin", file);
+        file_context("/run/systemd/seats(/.*)?", any);
+        file_context("/run/systemd/sessions(/.*)?", any);
+    }
+
+    //
+    // Policy
+    //
+    this.runtime.manage();
+    runtime_t.filetrans(this, this.runtime, file);
+
+    cgroup_t.list();
+
+    default_context_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    proc_t.dontaudit_getattr_superblock();
+
+    ramfs_t.list();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    tmpfs_t.list();
+
+//typeattribute systemd_sessions_runtime_t daemonpidfile;
+//var_run_t.filetrans(initrc_t, systemd_sessions_runtime_t, dir, "systemd_sessions");
+}

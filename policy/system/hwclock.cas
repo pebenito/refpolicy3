@@ -1,0 +1,67 @@
+// SPDX-License-Identifier: GPL-2.0
+
+resource adjtime_t inherits common_file {
+    /// Time corrections file.
+    file_context("/etc/adjtime", file);
+}
+
+domain hwclock_t inherits system_app_domain {
+
+    @alias(hwclock_exec_t)
+    extend exec {
+        file_context("/usr/bin/hwclock", file);
+        file_context("/usr/sbin/hwclock", file);
+    }
+
+    // Give hwclock the capabilities it requires.  dac_override is a surprise,
+    // but hwclock does require it.
+    allow(this, self, capability, [dac_override sys_rawio sys_time sys_tty_config]);
+    dontaudit(this, self, capability, sys_tty_config);
+    allow(this, self, process, signal_perms);
+    allow(this, self, fifo_file, rw_fifo_file_perms);
+
+    // Allow hwclock to store & retrieve correction factors.
+    adjtime_t.rw();
+    adjtime_t.setattr();
+
+    audit.send_messages();
+
+    autofs_t.list();
+
+    bin_t.exec();
+
+    clock_device_t.rw();
+    clock_device_t.setattr();
+
+    console_device_t.dontaudit_rw();
+
+    etc_t.read();
+
+    fs_t.getattr_superblock();
+
+    locale_t.read();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    sysfs_t.read();
+
+    proc_t.read();
+
+    pty.rw();
+
+    shell_exec_t.exec();
+
+    syslog.send_messages();
+
+    tty.rw();
+
+    // for when /usr is not mounted:
+    unlabeled_t<dir>.dontaudit_list();
+
+    usr_t.list();
+
+//optional_policy(`
+//    acpi_append_log(hwclock_t)
+//    acpi_rw_stream_sockets(hwclock_t)
+//')
+}

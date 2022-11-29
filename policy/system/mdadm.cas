@@ -1,0 +1,129 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain mdadm_t inherits daemon, system_app_domain {
+    /// Multi-device management (Linux Software RAID)
+
+    //
+    // Resources
+    //
+    @alias(mdadm_exec_t)
+    extend exec {
+        file_context("/usr/bin/iprdump", file);
+        file_context("/usr/bin/iprinit", file);
+        file_context("/usr/bin/iprupdate", file);
+        file_context("/usr/bin/mdadm", file);
+        file_context("/usr/bin/mdmon", file);
+        file_context("/usr/bin/mdmpd", file);
+        file_context("/usr/bin/raid-check", file);
+        file_context("/usr/sbin/iprdump", file);
+        file_context("/usr/sbin/iprinit", file);
+        file_context("/usr/sbin/iprupdate", file);
+        file_context("/usr/sbin/mdadm", file);
+        file_context("/usr/sbin/mdmon", file);
+        file_context("/usr/sbin/mdmpd", file);
+        file_context("/usr/sbin/raid-check", file);
+    }
+
+    @alias(mdadm_initrc_exec_t)
+    extend initrc_exec {
+        file_context("/etc/rc\.d/init\.d/mdmonitor", file);
+    }
+
+    @alias(mdadm_runtime_t)
+    extend runtime {
+        file_context("/dev/\.mdadm\.map", file);
+        file_context("/dev/md/.*", file);
+        file_context("/run/mdadm(/.*)?", any);
+
+        device_t.associate();
+        tmpfs_t.associate();
+    }
+
+    @alias(mdadm_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/[^/]*mdadm-.*", file);
+        file_context("/usr/lib/systemd/system/[^/]*mdmon.*", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ dac_override ipc_lock sys_admin ]);
+    dontaudit(this, self, capability, sys_tty_config);
+    dontaudit(this, self, cap_userns, sys_ptrace);
+    allow(this, self, process, setsched);
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+
+    this.runtime.manage();
+    device_t.filetrans(this, this.runtime, file);
+    runtime_t.filetrans(this, this.runtime, [ dir file ]);
+
+    autofs_t.list();
+
+    bin_t.exec();
+
+    cgroup_t.watch();
+
+    clock_device_t.read();
+
+    device_t<block_device>.dontaudit_getattr();
+    device_t<common_character_device>.getattr();
+
+    device_node<block_device>.dontaudit_getattr();
+    device_node<common_character_device>.getattr();
+
+    efivarfs_t.read();
+
+    etc_t.read();
+
+    etc_runtime_t.read();
+
+    file_type<common_file>.dontaudit_getattr();
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    fixed_disk_device_t.rw();
+    fixed_disk_device_t.manage();
+    device_t.filetrans(this, fixed_disk_device_t, blk_file);
+
+    gpmctl_t.dontaudit_getattr();
+
+    hugetlbfs_t.list();
+
+    init_t.initctl.dontaudit_getattr();
+
+    kernel.request_module_load();
+
+    proc_t.read();
+    proc_t.kcore.getattr();
+    proc_t.mdstat.rw();
+
+    scsi_generic_device_t.rw();
+
+    shell_exec_t.exec();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    syslog.send_messages();
+
+    sysfs_t.rw();
+
+    system_mail_t.domtrans();
+
+    tmpfs_t.dontaudit_list();
+
+    tty_device_t.dontaudit_rw();
+
+    user_home_dir_t.dontaudit_list();
+}
+//typeattribute mdadm_t mlsfileread;
+//typeattribute mdadm_t mlsfilewrite;
+//domain_entry_file(initrc_t, mdadm_initrc_exec_t)
+//domtrans_pattern(init_run_all_scripts_domain, mdadm_initrc_exec_t, initrc_t)
+
+//optional {
+//    user_cron_spool_log_t<common_file>.rw();
+//    mdadm_t.domtrans(system_cronjob_t);
+//    mdadm_t.domtrans(crond_t);
+//}

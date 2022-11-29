@@ -1,0 +1,203 @@
+// SPDX-License-Identifier: GPL-2.0
+
+tunable systemd_logind_get_bootloader {
+    /// Allow systemd-logind to interact with the bootloader.
+    /// Read which one is installed on fixed disks, enumerate
+    /// entries for dbus property BootLoaderEntries, etc.)
+    default false;
+}
+
+domain systemd_logind_t inherits systemd_daemon {
+    /// User login management service.
+
+    //
+    // Resources
+    //
+    @alias(systemd_logind_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-logind", file);
+    }
+
+    @alias(systemd_logind_inhibit_runtime_t)
+    resource inhibit inherits runtimefile, common_pipe, systemd_mountpoint {
+        file_context("/run/systemd/inhibit(/.*)?", any);
+    }
+
+    @alias(systemd_logind_runtime_t)
+    extend runtime inherits systemd_mountpoint {
+        file_context("/run/systemd/users(/.*)?", any);
+    }
+
+    @alias(systemd_logind_var_lib_t)
+    resource state inherits common_file, systemd_mountpoint {
+        file_context("/var/lib/systemd/linger(/.*)?", any);
+
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ chown dac_override dac_read_search fowner sys_admin sys_tty_config ]);
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+
+    this.inhibit.manage();
+    init_t.runtime.filetrans(this, this.inhibit, dir, "inhibit");
+
+    this.state.manage(); var_lib_t.list(); var_t.list();
+    init_t.state.filetrans(this, this.state, dir);
+
+    cgroup_t.getattr_superblock();
+    cgroup_t.read();
+
+    default_context_t.read();
+
+    devicekit_disk_t.dbus_send();
+
+    devicekit_power_t.dbus_send();
+
+    dri_device_t.mmap_rw();
+    dri_device_t.setattr();
+
+    efivarfs_t.read();
+
+    event_device_t.rw();
+    event_device_t.setattr();
+
+    faillog_t.manage(); var_log_t<common_dir>.rw();
+
+    fs_t.getattr_superblock();
+
+    allow(this, init_t, service, [ start status ]);
+    allow(this, init_t, system, [ start stop status ]);
+
+    init_script_t.dbus_send();
+    init_script_t.runtime.read();
+    init_script_t.runtime.watch();
+
+    kvm_device_t.getattr();
+    kvm_device_t.setattr();
+
+    local_login_t.ps();
+
+    modemmanager_t.dbus_send();
+
+    NetworkManager_t.dbus_send();
+
+    nss.get_passwd_entry();
+
+    policykit_t.dbus_send();
+
+    proc_t.dontaudit_getattr_superblock();
+
+    removable_device_t.getattr();
+    removable_device_t.setattr();
+
+    scsi_generic_device_t.getattr();
+    scsi_generic_device_t.setattr();
+
+    sound_device_t.getattr();
+    sound_device_t.setattr();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.rw();
+
+    system_dbusd_t.client();
+    system_dbusd_t.own_default_service();
+
+    // for /run/systemd/userdb/io.systemd.Machine
+    systemd_machined_t.unix_stream_connect();
+
+    systemd_sessions_t.runtime.manage();
+
+    systemd_userdbd_t.unix_stream_connect();
+
+    systemdunit.startstop();
+
+    tmpfs_t.getattr_superblock();
+    tmpfs_t.relabelfrom();
+    tmpfs_t.mount();
+    tmpfs_t.unmount();
+
+    tty_device_t.rw();
+    tty_device_t.setattr();
+
+    udev_t.runtime.read();
+
+    //unconfined_t.dbus_send();
+
+    urandom_device_t.read();
+
+    usb_device_t.getattr();
+    usb_device_t.setattr();
+
+    user_runtime_t.manage();
+    user_runtime_t.mounton();
+    user_runtime_t<dir>.relabel();
+
+    user_runtime_content<common_dir>.delete();
+    user_runtime_content<common_file>.delete();
+    user_runtime_content<common_pipe>.delete();
+    user_runtime_content<common_named_socket>.delete();
+    user_runtime_content<symlink>.delete();
+
+    user_runtime_root_t.manage();
+
+    // user_tmp_t is for the dbus-1 directory
+    user_tmp_t<common_dir>.delete();
+    user_tmp_t<common_file>.delete();
+    user_tmp_t<common_pipe>.delete();
+    user_tmp_t<common_named_socket>.delete();
+    user_tmp_t<symlink>.delete();
+
+    user_tmpfs_t.list();
+    user_tmpfs_t<dir>.relabel();
+    user_tmpfs_t<file>.relabel();
+
+    user_tty_device_t.rw();
+    user_tty_device_t.setattr();
+
+    userdomain.ps(); proc_t.list();
+
+    v4l_device_t.getattr();
+    v4l_device_t.setattr();
+
+    wireless_device_t.manage();
+    wireless_device_t.rw();
+
+    xdm_t.ps();
+    xdm_t.dbus_send();
+
+    xserver_t.ps();
+    xserver_t.dbus_send();
+
+    if (systemd_logind_get_bootloader) {
+        dosfs_t.getattr_superblock();
+        dosfs_t.read();
+        boot_t.list();
+
+        // systemd-logind uses util-linux's blkid in order to find the ESP (EFI System Partition).
+        // This reads the first sectors of fixed disk devices.
+        fixed_disk_device_t.dontaudit_read();
+    }
+
+// typeattribute systemd_logind_t can_change_object_identity;
+//typeattribute systemd_logind_runtime_t daemonpidfile;
+//var_run_t.filetrans(initrc_t, systemd_logind_runtime_t, dir, "systemd_logind");
+
+    //
+    // Functions
+    //
+    fn inhibit_logins(domain source)
+        /// Use login inhibit functions.
+        this.inherit_file_descriptors();
+        systemd_sessions_t.runtime<pipe>.write_inherited();
+        source.send_general_signals(this);
+    }
+
+    fn inhibit_shutdown(domain source) {
+        /// Use shutdown inhibit functions.
+        this.inherit_file_descriptors(source);
+        this.inhibit<pipe>.write_inherited(source);
+    }
+}

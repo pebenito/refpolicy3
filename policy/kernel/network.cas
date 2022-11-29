@@ -1,0 +1,478 @@
+// SPDX-License-Identifier: GPL-2.0
+
+// TODO: Create low level socket permission sets.
+
+//
+// Object class sets
+//
+
+let dgram_socket_class_set = [ udp_socket unix_dgram_socket ];
+let stream_socket_class_set = [ tcp_socket unix_stream_socket sctp_socket ];
+let unpriv_socket_class_set = [ tcp_socket udp_socket unix_stream_socket unix_dgram_socket sctp_socket ];
+let socket_class_set = [ tcp_socket udp_socket rawip_socket netlink_socket packet_socket unix_stream_socket unix_dgram_socket appletalk_socket netlink_route_socket netlink_tcpdiag_socket netlink_nflog_socket netlink_xfrm_socket netlink_selinux_socket netlink_audit_socket netlink_dnrt_socket netlink_kobject_uevent_socket tun_socket netlink_iscsi_socket netlink_fib_lookup_socket netlink_connector_socket netlink_netfilter_socket netlink_generic_socket netlink_scsitransport_socket netlink_rdma_socket netlink_crypto_socket sctp_socket icmp_socket ax25_socket ipx_socket netrom_socket atmpvc_socket x25_socket rose_socket decnet_socket atmsvc_socket rds_socket irda_socket pppox_socket llc_socket can_socket tipc_socket bluetooth_socket iucv_socket rxrpc_socket isdn_socket phonet_socket ieee802154_socket caif_socket alg_socket nfc_socket vsock_socket kcm_socket qipcrtr_socket smc_socket xdp_socket ];
+
+//
+// Socket permission sets
+//
+
+let read_inherited_socket_perms = [getattr read ioctl getopt shutdown];
+let write_inherited_socket_perms = [getattr append write ioctl getopt shutdown];
+let rw_inherited_socket_perms = [getattr read append write ioctl shutdown];
+let manage_socket_perms = [create ioctl read getattr write setattr append bind getopt setopt shutdown];
+let manage_stream_socket_perms = [create ioctl read getattr write setattr append bind getopt setopt shutdown listen accept];
+
+//
+// Low-level api
+//
+
+virtual resource infiniband_endport {
+    /// Virtual for infiniband endports.
+
+    fn manage(domain source) {
+        /// Manage the subnet of this endport.
+        allow(source, this, infiniband_endport, manage_subnet);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to this endport.
+        this.manage(source);
+    }
+}
+
+virtual resource infiniband_parition_key {
+    /// Virtual for infiniband partition keys.
+
+    fn access(domain source) {
+        /// Access this partition key.
+        allow(source, this, infiniband_pkey, access);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to this partition key.
+        this.access(source);
+    }
+}
+
+virtual resource ipsec_policy_db {
+    /// Virtual for IPSEC security policy databases.
+    fn match(domain source) {
+        /// Match this security policy database.
+        allow(source, this, association, polmatch);
+    }
+
+    fn set_context(domain source) {
+        /// Set the context of this security policy database.
+        allow(source, this, association, setcontext);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to this security policy database.
+        allow(source, this, association, [ polmatch setcontext ]);
+    }
+}
+
+virtual resource network_interface {
+    /// Virtual for network interfaces.
+
+    fn send(domain source) {
+        /// Send traffic out this interface.
+        allow(source, this, netif, egress);
+    }
+
+    fn receive(domain source) {
+        /// Receive traffic from this interface.
+        allow(source, this, netif, ingress);
+    }
+
+    fn sendrecv(domain source) {
+        /// Send and receive from this interface.
+        this.send(source);
+        this.receive(source);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to this interface.
+        this.sendrecv(source);
+    }
+}
+
+virtual resource network_node {
+    /// Virtual for network nodes.
+
+    fn send(domain source) {
+        /// Send traffic to this node.
+        allow(source, this, node, sendto);
+    }
+
+    fn rawip_bind(domain source) {
+        /// Bind to the node for raw IP sockets.
+        allow(source, this, rawip_socket, name_bind);
+    }
+
+    fn dontaudit_rawip_bind(domain source) {
+        /// Do not audit denials for binding to the node for raw IP sockets.
+        dontaudit(source, this, rawip_socket, name_bind);
+    }
+
+    fn receive(domain source) {
+        /// Receive traffic from this node.
+        allow(source, this, node, recvfrom);
+    }
+
+    fn sendrecv(domain source) {
+        /// Send and receive traffic from this node.
+        this.send(source);
+        this.receive(source);
+    }
+
+    fn stcp_bind(domain source) {
+        /// Bind SCTP sockets to this node.
+        allow(source, this, tcp_socket, bind);
+    }
+
+    fn tcp_bind(domain source) {
+        /// Bind TCP sockets to this node.
+        allow(source, this, tcp_socket, bind);
+    }
+
+    fn udp_bind(domain source) {
+        /// Bind UDP sockets to this node.
+        allow(source, this, udp_socket, bind);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to this node.
+        this.sendrecv(source);
+        this.rawip_bind(source);
+        this.sctp_bind(source);
+        this.tcp_bind(source);
+        this.udp_bind(source);
+    }
+}
+
+virtual resource network_packet {
+    /// Virtual for network packets.
+
+    fn receive(domain source) {
+        /// Receive this packet.
+        allow(source, this, packet, [recv]);
+    }
+
+    fn relabelto(domain source) {
+        /// Add netfilter labeling rules with this packet type.
+        allow(source, this, packet, relabelto);
+    }
+
+    fn send(domain source) {
+        /// Send this packet.
+        allow(source, this, packet, [send]);
+    }
+
+    fn sendrecv(domain source) {
+        /// Send and receive this packet.
+        this.send(source);
+        this.receive(source);
+    }
+
+    fn forward_in(network_peer peer) {
+        /// Allow the network peer traffic to forward incoming traffic with this packet.
+        allow(peer, this, packet, forward_in);
+    }
+
+    fn forward_out(network_peer peer) {
+        /// Allow the network peer traffic to forward incoming traffic with this packet.
+        allow(peer, this, packet, forward_out);
+    }
+
+    fn forward_inout(network_peer peer) {
+        /// Allow the network peer traffic to forward incoming traffic with this packet.
+        this.forward_in(peer);
+        this.forward_out(peer);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to this packet.
+        this.sendrecv(source);
+        this.relabelto(source);
+    }
+}
+
+virtual resource network_peer {
+    /// Virtual for labeled networking peers.
+
+    fn all_recvfrom(domain source) {
+        /// Receive a peer using any protocol with netlabel.
+        this.raw_recvfrom(source);
+        this.sctp_recvfrom(source);
+        this.tcp_recvfrom(source);
+        this.udp_recvfrom(source);
+    }
+
+    fn dontaudit_all_recvfrom(domain source) {
+        /// Do not audit denials for receiving any protocol using netlabel.
+        this.dontaudit_raw_recvfrom(source);
+        this.dontaudit_sctp_recvfrom(source);
+        this.dontaudit_tcp_recvfrom(source);
+        this.dontaudit_udp_recvfrom(source);
+    }
+
+    fn raw_recvfrom(domain source) {
+        /// Receive a peer raw IP packet using netlabel.
+        allow(source, this, peer, recvfrom);
+        allow(source, this, rawip_socket, recvfrom);
+        allow(source, self, association, send);
+        allow(source, this, association, receive);
+    }
+
+    fn dontaudit_raw_recvfrom(domain source) {
+        /// Do not audit denials for receiving a peer raw IP packet using netlabel.
+        dontaudit(source, this, peer, recvfrom);
+        dontaudit(source, this, rawip_socket, recvfrom);
+        dontaudit(source, self, association, send);
+        dontaudit(source, this, association, receive);
+    }
+
+    fn sctp_recvfrom(domain source) {
+        /// Receive from a peer SCTP connection using netlabel.
+        allow(source, this, peer, recvfrom);
+        allow(source, this, sctp_socket, recvfrom);
+        allow(source, self, association, send);
+        allow(source, this, association, receive);
+    }
+
+    fn dontaudit_sctp_recvfrom(domain source) {
+        /// Do not audit denials for receiving from a peer SCTP connection using netlabel.
+        dontaudit(source, this, peer, recvfrom);
+        dontaudit(source, this, sctp_socket, recvfrom);
+        dontaudit(source, self, association, send);
+        dontaudit(source, this, association, receive);
+    }
+
+    fn tcp_recvfrom(domain source) {
+        /// Receive from a peer TCP connection using netlabel.
+        allow(source, this, peer, recvfrom);
+        allow(source, this, tcp_socket, recvfrom);
+        allow(source, self, association, send);
+        allow(source, this, association, receive);
+    }
+
+    fn dontaudit_tcp_recvfrom(domain source) {
+        /// Do not audit denials for receiving from a peer TCP connection using netlabel.
+        dontaudit(source, this, peer, recvfrom);
+        dontaudit(source, this, tcp_socket, recvfrom);
+        dontaudit(source, self, association, send);
+        dontaudit(source, this, association, receive);
+    }
+
+    fn udp_recvfrom(domain source) {
+        /// Receive a peer UDP datagram using netlabel.
+        allow(source, this, peer, recvfrom);
+        allow(source, this, tcp_socket, recvfrom);
+        allow(source, self, association, send);
+        allow(source, this, association, receive);
+    }
+
+    fn dontaudit_udp_recvfrom(domain source) {
+        /// Do not audit denials for receiving a peer UDP datagram using netlabel.
+        dontaudit(source, this, peer, recvfrom);
+        dontaudit(source, this, tcp_socket, recvfrom);
+        dontaudit(source, self, association, send);
+        dontaudit(source, this, association, receive);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to this network peer.
+        this.all_recvfrom(source);
+    }
+}
+
+// TODO: sctp_socket:association
+virtual resource network_port {
+    /// Virtual for network ports.
+    /// This is a socket level check.  Use packet controls with SECMARK
+    /// to do network access control.
+
+    fn sctp_bind(domain source) {
+        /// Bind to the port for SCTP.
+        allow(source, this, sctp_socket, name_bind);
+    }
+
+    fn dontaudit_sctp_bind(domain source) {
+        /// Do not audit denials for binding to the port for SCTP.
+        dontaudit(source, this, sctp_socket, name_bind);
+    }
+
+    fn sctp_connect(domain source) {
+        /// Connect to the port using SCTP.
+        allow(source, this, sctp_socket, name_connect);
+    }
+
+    fn dontaudit_sctp_connect(domain source) {
+        /// Connect to the port using SCTP.
+        dontaudit(source, this, sctp_socket, name_connect);
+    }
+
+    fn tcp_bind(domain source) {
+        /// Bind to the port for TCP.
+        allow(source, this, tcp_socket, name_bind);
+    }
+
+    fn dontaudit_tcp_bind(domain source) {
+        /// Do not audit denials for binding to the port for TCP.
+        dontaudit(source, this, tcp_socket, name_bind);
+    }
+
+    fn tcp_connect(domain source) {
+        /// Connect to the port using TCP.
+        allow(source, this, tcp_socket, name_connect);
+    }
+
+    fn dontaudit_tcp_connect(domain source) {
+        /// Connect to the port using TCP.
+        dontaudit(source, this, tcp_socket, name_connect);
+    }
+
+    fn udp_bind(domain source) {
+        /// Bind to the port for UDP.
+        allow(source, this, udp_socket, name_bind);
+    }
+
+    fn dontaudit_udp_bind(domain source) {
+        /// Do not audit denials for binding to the port for UDP.
+        dontaudit(source, this, udp_socket, name_bind);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to this port.
+        this.sctp_bind(source);
+        this.tcp_bind(source);
+        this.udp_bind(source);
+        this.sctp_connect(source);
+        this.tcp_connect(source);
+    }
+}
+
+//
+// Groupings
+//
+
+// TODO: should we keep server and client packet distinctions?
+
+virtual resource client_packet inherits network_packet {
+    /// Virtual for client network packets.
+}
+
+virtual resource reserved_network_port inherits network_port {
+    /// Virtual for reserved ports 1-1023.
+    /// This should be imported by any port that labels
+    /// a port in this range.
+
+    fn sctp_bind(domain source) {
+        /// Bind to the port for SCTP.
+        allow(source, self, capability, net_bind_service);
+        network_port::sctp_bind(source)
+    }
+
+    fn dontaudit_sctp_bind(domain source) {
+        /// Do not audit denials for binding to the port for SCTP.
+        dontaudit(source, self, capability, net_bind_service);
+        network_port::dontaudit_sctp_bind(source)
+    }
+
+    fn tcp_bind(domain source) {
+        /// Bind to the port for TCP.
+        allow(source, self, capability, net_bind_service);
+        network_port::tcp_bind(source);
+    }
+
+    fn dontaudit_tcp_bind(domain source) {
+        /// Do not audit denials for binding to the port for TCP.
+        dontaudit(source, self, capability, net_bind_service);
+        network_port::dontaudit_tcp_bind(source);
+    }
+
+    fn udp_bind(domain source) {
+        /// Bind to the port for UDP.
+        allow(source, self, capability, net_bind_service);
+        network_port::udp_bind(source);
+    }
+
+    fn dontaudit_udp_bind(domain source) {
+        /// Do not audit denials for binding to the port for UDP.
+        dontaudit(source, self, capability, net_bind_service);
+        network_port::dontaudit_udp_bind(source);
+    }
+}
+
+virtual resource rpc_network_port inherits reserved_network_port {
+    /// RPC ports, 512-1023.
+    /// This should be imported by any port that labels
+    /// a port in this range.
+}
+
+virtual resource server_packet inherits network_packet {
+    /// Virtual for server network packets.
+}
+
+
+//
+// Concrete network interfaces
+//
+
+resource netif_t inherits network_interface {
+    /// Default type for network interfaces.
+    initial_context(netif, system_u:object_r:netif_t:s0 - mls_systemhigh);
+}
+
+//if (enable_mls) {
+//network_interface(lo, lo, s0 - mls_systemhigh)
+//} else {
+//typealias netif_t alias lo_netif_t;
+//}
+
+
+//
+// Concrete nodes
+//
+resource node_t inherits network_node {
+    /// Default type for network nodes.
+    initial_context(node, system_u:object_r:node_t:s0 - mls_systemhigh);
+}
+
+
+//
+// Concrete ports
+//
+
+@alias(hi_reserved_port_t)
+resource rpc_port_t inherits rpc_network_port {
+    /// Default type for RPC ports, 512-1023.
+    portcon(sctp, 512-1023, this);
+    portcon(tcp, 512-1023, this);
+    portcon(udp, 512-1023, this);
+}
+
+resource reserved_port_t inherits reserved_network_port {
+    /// Default type for ports 1-511.
+    portcon(sctp, 1-511, this);
+    portcon(tcp, 1-511, this);
+    portcon(udp, 1-511, this);
+}
+
+@alias(port_t)
+resource unreserved_port_t inherits network_port {
+    /// The default type for network ports.
+    /// Generally this labels ports > 1023 that are not
+    /// otherwise defined.
+    initial_context(port, this);
+}
+
+
+//
+// Concrete netlabel
+//
+
+resource netlabel_peer_t inherits network_peer {
+    /// Type for remote processes using netlabel.
+    initial_context(netmsg, system_u:object_r:netlabel_peer_t:mls_systemhigh);
+}

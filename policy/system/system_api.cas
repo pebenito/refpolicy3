@@ -1,0 +1,1109 @@
+// SPDX-License-Identifier: GPL-2.0
+
+final api audit {
+    // Auditing API
+
+    fn send_messages(domain source) {
+        /// Send audit messages to the kernel audit subsystem.
+        allow(source, self, capability, audit_write);
+        allow(source, self, netlink_audit_socket, [read_netlink_socket_perms nlmsg_relay ]);
+    }
+
+    fn dontaudit_send_messages(domain source) {
+        /// Do not audit denials for sending audit messages to the kernel audit subsystem.
+        dontaudit(source, self, capability, audit_write);
+        dontaudit(source, self, netlink_audit_socket, [read_netlink_socket_perms nlmsg_relay ]);
+    }
+
+    fn set_loginuid(domain source) {
+        /// Set the audit login UID for the session.
+        /// This should only be used by login programs.  Other programs that change the
+        /// process UID, such as su and sudo, should not do this.
+        allow(source, self, capability, audit_control);
+        allow(source, self, netlink_audit_socket, [read_netlink_socket_perms nlmsg_relay ]);
+    }
+
+    fn set_tty_auditing(domain source) {
+        /// Set TTY auditing.
+        allow(source, self, netlink_audit_socket, [read_netlink_socket_perms nlmsg_tty_audit ]);
+    }
+
+    fn set_parameters(domain source) {
+        /// Set audit subsystem parameters
+        allow(source, self, capability, [audit_control audit_write]);
+        allow(source, self, netlink_audit_socket, [manage_netlink_socket_perms nlmsg_relay]);
+    }
+
+    fn read_log(domain source) {
+        /// Read the audit log.
+        auditd_t.log.read(source);
+        auditd_t.log.watch(source);
+        dontaudit(source, auditd_t.log, file, map);
+        var_log_t.list(source);
+        var_t.list(source);
+    }
+}
+
+final api auth {
+    fn read_shadow_passwords(domain source) {
+        /// Read /etc/shadow.
+        shadow_t.read(source);
+    }
+
+    fn rw_shadow_passwords(domain source) {
+        /// Read and write /etc/shadow.
+        shadow_t.rw(source);
+        shadow_lock_t.rw(source);
+    }
+
+    fn manage_shadow_passwords(domain source) {
+        /// Create, read, write, and delete /etc/shadow.
+        shadow_t.manage(source);
+        etc_t.filetrans(source, shadow_t, file);
+
+        shadow_lock_t.rw(source);
+    }
+
+    fn use_pam(domain source) {
+        /// Use the PAM authentication stack.
+
+        audit.send_messages(source);
+
+        auth.use_pam_systemd();
+
+        auth_cache_t.list(source);
+
+        bin_t.list(source);
+
+        cert_t.read(source);
+
+        chkpwd_t.domtrans(source);
+
+        etc_t.read(source);
+
+        faillog_t.create(source);
+        faillog_t.rw(source);
+        faillog_t.setattr(source);
+
+        // TODO: move these out since not all
+        // authentications are logins.
+        lastlog_t.rw(source);
+        lastlog_t.setattr(source);
+
+        nss.get_passwd_entry();
+
+        random_device_t.read(source);
+
+        // for encrypted homedir
+        sysfs_t.read(source);
+
+        syslog.send_messages(source);
+
+        // for SSP/ProPolice
+        urandom_device_t.read(source);
+
+        var_log_t.list(source);
+
+        var_t.list(source);
+
+        wtmp_t.rw(source);
+
+        if (authlogin_pam) {
+            pam_t.exec.exec(source);
+
+            shadow_t.dontaudit_read(source);
+
+            updpwd_t.domtrans(source);
+        } else {
+            nss.get_shadow_entry(source);
+        }
+
+        // optional {
+            system_dbusd_t.client(source);
+
+            fprintd_t.dbus_send(source);
+        // }
+
+        // optional {
+        // kerberos_manage_host_rcache($1)
+        // kerberos_read_config($1)
+        // kerberos_read_keytab()
+        // }
+
+        // optional {
+        // nis_authenticate();
+        // }
+
+        // optional {
+        // pcscd_read_runtime_files($1)
+        // pcscd_stream_connect($1)
+        // }
+    }
+
+    fn use_pam_selinux(domain source) {
+        /// Use pam_selinux module for SELinux user setup.
+        default_context_t.read(source); selinux_config_t.list(source); etc_t.list(source);
+
+        selinux.get_fs_mountpoint(source);
+        selinux.validate_contexts(source);
+        selinux.get_access_decisions(source);
+        selinux.get_create_contexts(source);
+        selinux.get_relabel_contexts(source);
+        selinux.get_user_contexts(source);
+
+        selinux_config_t.read(source); etc_t.list(source);
+    }
+
+    fn use_pam_systemd(domain source) {
+        /// Use the pam_systemd PAM module.
+        system_dbusd_t.client(source);
+        systemd_logind_t.dbus_send(source);
+        systemd_machined_t.unix_stream_connect(source);
+
+        // TODO: possible additional access:
+        //systemd_logind_t.inherit_file_descriptors(source);
+        //systemd_sessions_t.runtime<pipe>.write_inherited(source);
+        //source.send_general_signals(systemd_logind_t);
+    }
+}
+
+final api base_files {
+    fn read_fonts(domain source) {
+        /// Read systemwide fonts.
+        fonts_t.read(source);
+        fonts_cache_t.read(source);
+
+        lib_t.list(source);
+
+        usr_t.list(source);
+    }
+
+    fn read_public_files(domain source) {
+        /// Read widely-shared public files.
+        /// These are typically exported by services such as ftp or samba.
+        public_content_t.read(source);
+        public_content_rw_t.read(source);
+    }
+
+    fn manage_public_files(domain source) {
+        /// Create, read, write, and delete widely-shared public files.
+        /// These are typically exported by services such as ftp or samba.
+        public_content_t.read(source);
+        public_content_t.dontaudit_write(source);
+        public_content_rw_t.manage(source);
+        public_content_rw_t<common_dir>.manage(source);
+        public_content_rw_t<symlink>.manage(source);
+    }
+}
+
+final api kernel {
+    /// Kernel-related access.
+
+    @alias(ipcs)
+    fn get_sysv_ipc_info(domain source) {
+        /// Get global interprocess communication info.
+        /// For example, this is the core permission for
+        /// the `ipcs` command.
+        allow(source, kernel_t, system, ipc_info);
+    }
+
+    @alias(insmod)
+    fn insert_modules(domain source) {
+        /// Insert kernel modules.
+        /// This should only be done by domains with the highest trust.
+        /// The modprobe/insmod programs/domains should be used instead,
+        /// where possible.
+
+        if(secure_mode_insmod) {
+            dontaudit(source, self, capability, sys_module);
+            dontaudit(source, self, system, module_load);
+
+            kernel_module_t.dontaudit_read();
+            dontaudit(source, kernel_module_t, system, module_load);
+        } else {
+            allow(source, self, capability, sys_module);
+            allow(source, self, system, module_load);
+
+            kernel_module_t.read();
+            allow(source, kernel_module_t, system, module_load);
+        }
+    }
+
+    fn request_module_load(domain source) {
+        /// Request that a kernel module be loaded.
+           allow(source, kernel_t, system, module_request);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to kernel interface.
+        this.insert_modules(source);
+        allow(source, kernel_t, system, [ ipc_info syslog_read syslog_mod syslog_console module_request ]);
+    }
+}
+
+final api lang {
+    /// Access due to programming language.
+    /// This is typically implicit access required as part of a
+    /// compiler output or interpreter.
+    // NB Not doing any compiler/interpreter specific functions
+    // at this time, e.g. gcc vs clang.
+
+    @alias(golang)
+    fn go(domain source) {
+        // Go reads /sys/kernel/mm/transparent_hugepage/hpage_pmd_size
+        sysfs_t.read();
+    }
+}
+
+final api libs {
+    /// Access due to library usage.
+    /// This is typically implicit access required due to simply being
+    /// linked to a library.
+
+    fn libselinux_linked(domain source) {
+        selinux.get_fs_mountpoint(source);
+        selinux_config_t.read(source); etc_t.list(source);
+    }
+
+    fn dontaudit_libselinux_linked(domain source) {
+        selinux.dontaudit_get_fs_mountpoint(source);
+        selinux_config_t.dontaudit_read(source);
+    }
+}
+
+final api network {
+    /// Common network accesses.
+
+    @alias(read_resolv_conf)
+    fn read_dns_server_config(domain source) {
+        /// Read DNS server resolution config, typically resolv.conf.
+
+        net_conf_t.read(source); etc_t.list(source); runtime_t.list(source); var_t.list(source);
+
+        //optional {
+            // for /etc/resolv.conf symlink
+            NetworkManager_t.runtime<common_file>.read(source); runtime_t.list(source); var_t.list(source);
+        //}
+
+        //optional {
+            systemd_resolved_t.runtime<common_file>.read(source);
+        //}
+    }
+
+    fn tcp_client(domain source) {
+        /// Baseline permissions for TCP clients
+        /// This includes access for default network nodes (node_t) and default
+        /// network interfaces (netif_t).  Port connection access will need to be
+        /// added by caller to complete the access.
+
+        allow(source, self, tcp_socket, create_socket_perms);
+
+        // Certificates for TLS
+        cert_t.read(source);
+
+        // /etc/hosts
+        etc_t.read(source);
+
+        netif_t.sendrecv(source);
+
+        netlabel_peer_t.tcp_recvfrom(source);
+
+        node_t.sendrecv(source);
+
+        // Do gethostbyname()
+        nss.gethostbyname(source);
+    }
+
+    fn tcp_server(domain source) {
+        /// Baseline permissions for TCP servers
+        /// This includes access for default network nodes (node_t) and default
+        /// network interfaces (netif_t).  Port binding access will need to be
+        /// added by caller to complete the access.
+
+        allow(source, self, tcp_socket, create_stream_socket_perms);
+
+        // Certificates for TLS
+        cert_t.read();
+
+        netif_t.sendrecv(source);
+
+        netlabel_peer_t.tcp_recvfrom(source);
+
+        node_t.sendrecv(source);
+        node_t.tcp_bind(source);
+    }
+
+    fn udp_client(domain source) {
+        /// Baseline permissions for UDP clients
+        /// This includes access for default network nodes (node_t) and default
+        /// network interfaces (netif_t).  Assumes bidirectional communication.
+
+        allow(source, self, udp_socket, create_socket_perms);
+
+        // /etc/hosts
+        etc_t.read(source);
+
+        netif_t.sendrecv(source);
+
+        netlabel_peer_t.udp_recvfrom(source);
+
+        node_t.sendrecv(source);
+
+        // Do gethostbyname()
+        nss.gethostbyname(source);
+    }
+
+    fn udp_server(domain source) {
+        /// Baseline permissions for UDP servers
+        /// This includes access for default network nodes (node_t) and default
+        /// network interfaces (netif_t).  Port binding access will need to be
+        /// added by caller to complete the access.    Assumes bidirectional
+        /// communication.
+
+        allow(source, self, udp_socket, create_socket_perms);
+
+        netif_t.sendrecv(source);
+
+        netlabel_peer_t.udp_recvfrom(source);
+
+        node_t.sendrecv(source);
+        node_t.udp_bind(source);
+    }
+
+    @alias(dns_name_resolve)
+    fn use_dns(domain source) {
+        /// IP network permissions for DNS lookup.
+        /// Use nss.get_hosts_entry() instead if the
+        /// gethostbyname() libc function is used.
+
+        allow(source, self, tcp_socket, manage_socket_perms);
+        allow(source, self, udp_socket, manage_socket_perms);
+        allow(source, self, netlink_route_socket, [ manage_socket_perms nlmsg_read ]);
+
+        //dns_client_packet_t.sendrecv(source);
+
+        dns_port_t.tcp_connect(source);
+
+        netif_t.sendrecv(source);
+
+        netlabel_peer_t.tcp_recvfrom(source);
+        netlabel_peer_t.udp_recvfrom(source);
+
+        network.read_dns_server_config(source);
+
+        node_t.sendrecv(source);
+
+    }
+
+    fn use_ldap(domain source) {
+        /// IP network perms for LDAP connections
+        allow(source, self, tcp_socket, manage_socket_perms);
+
+        //ldap_client_packet_t.sendrecv(source);
+
+        ldap_port_t.tcp_connect(source);
+
+        network.read_dns_server_config(source);
+
+        netif_t.sendrecv(source);
+
+        netlabel_peer_t.all_recvfrom(source);
+
+        node_t.sendrecv(source);
+    }
+
+    fn use_nis(domain source) {
+        /// IP network perms for NIS connections
+
+        allow(source, self, tcp_socket, create_stream_socket_perms);
+        allow(source, self, udp_socket, create_socket_perms);
+
+        netif_t.sendrecv(source);
+
+        netlabel_peer_t.tcp_recvfrom(source);
+        netlabel_peer_t.udp_recvfrom(source);
+
+        network.read_dns_server_config(source);
+
+        network_port.dontaudit_tcp_bind(source);
+        network_port.dontaudit_tcp_connect(source);
+        network_port.dontaudit_udp_bind(source);
+
+        node_t.sendrecv(source);
+        node_t.tcp_bind(source);
+        node_t.udp_bind(source);
+
+        portmap_port_t.tcp_connect(source);
+
+        reserved_port_t.tcp_connect(source);
+
+        unreserved_port_t.tcp_bind(source);
+        unreserved_port_t.tcp_connect(source);
+        unreserved_port_t.udp_bind(source);
+    }
+}
+
+tunable nss_dns {
+    /// Enable DNS lookups for NSS databases
+    default true;
+}
+
+tunable nss_ldap {
+    /// Enable remote LDAP databases for NSS
+    default true;
+}
+
+tunable nss_nis {
+    /// Enable remote NIS databases for NSS
+    default true;
+}
+
+final api nss {
+    /// Name service switch
+    /// Local databases, files and UNIX socket connections to local daemons,
+    /// are always enabled.  Remote access requires tunable activation.
+
+    @alias(gethostbyname)
+    fn get_hosts_entry(domain source) {
+        avahi_t.stream_connect(source);
+
+        lsassd_t.stream_connect(source);
+
+        nscd_t.lookup();
+
+        nss.get_entry(source);
+
+        // This seems needed when the mymachines NSS module is used
+        systemd_machined_t.runtime.read();
+
+        systemd_resolved_t.dbus_chat(source);
+
+        if(nss_dns) {
+            network.use_dns(source);
+        }
+    }
+
+    @alias(getnetent)
+    fn get_networks_entry(domain source) {
+        etc_t.read(source);
+
+        if(nss_dns) {
+            network.dns_name_resolve(source);
+        }
+    }
+
+    @alias(getpwent, get_group_entry, getgrent)
+    fn get_passwd_entry(domain source) {
+        nss.get_entry(source);
+
+        // kerberos_use()
+
+        nscd_t.lookup();
+
+        nslcd_t.unix_stream_connect();
+
+        sssd_t.unix_stream_connect();
+
+        winbind_t.unix_stream_connect();
+    }
+
+    @alias(getspnam)
+    fn get_shadow_entry(domain source) {
+        etc_t.read(source);
+
+        shadow_t.read(source);
+
+        sssd_t.unix_stream_connect();
+    }
+
+    fn get_entry(domain source) {
+        /// Get entry from NSS.
+        /// A more specific nss function should be used
+        /// where possible.
+
+        etc_t.read(source);
+
+        // NIS and LDAP can provide results for almost
+        // all types of NSS databases.
+
+        if(nss_ldap) {
+            cert_t.read(source);
+
+            network.use_ldap(source);
+
+            // Support for LDAPS
+            random_device_t.read(source);
+
+            urandom_device_t.read(source);
+        }
+
+        optional {
+            slapd_t.stream_connect(source);
+        }
+
+        optional {
+            if(nss_nis) {
+                network.use_nis(source);
+
+                var_yp_t.read(source);
+            }
+        }
+    }
+}
+
+api final selinux {
+
+    // This may be subsumed by other functions
+    fn use_status_page(domain source) {
+        sysfs_t.list(source);
+        selinuxfs_t.mmap_rw(source);
+    }
+
+    fn get_fs_mountpoint(domain source) {
+        /// Get the mountpoint of selinuxfs.
+
+        // starting in libselinux 2.0.5, init_selinuxmnt() will
+        // attempt to short circuit by checking if SELINUXMNT
+        // (/selinux or /sys/fs/selinux) is already a selinuxfs
+        selinuxfs_t.getattr_superblock(source);
+        sysfs_t.getattr_superblock(source);
+        sysfs_t.list(source);
+
+        // read /proc/filesystems to see if selinuxfs is supported
+        // then read /proc/self/mount to see where selinuxfs is mounted
+        proc_t.read(source);
+    }
+
+    fn dontaudit_get_fs_mountpoint(domain source) {
+        /// Do not audit denials for getting the mountpoint of selinuxfs.
+
+        // starting in libselinux 2.0.5, init_selinuxmnt() will
+        // attempt to short circuit by checking if SELINUXMNT
+        // (/selinux or /sys/fs/selinux) is already a selinuxfs
+        selinuxfs_t.dontaudit_getattr_superblock(source);
+        sysfs_t.dontaudit_getattr_superblock(source);
+        sysfs_t.dontaudit_list(source);
+
+        // read /proc/filesystems to see if selinuxfs is supported
+        // then read /proc/self/mount to see where selinuxfs is mounted
+        proc_t.dontaudit_read(source);
+    }
+
+    @alias(getenforce)
+    fn get_enforce_mode(domain source) {
+        /// Get the enforcing mode.
+        libs.libselinux_linked(domain source);
+
+        selinuxfs_t.read(source); sysfs_t.list(source);
+    }
+
+    @alias(dontaudit_getenforce)
+    fn dontaudit_get_enforce_mode(domain source) {
+        /// Do not audit denials for getting the enforcing mode.
+        sysfs_t.dontaudit_list(source);
+        selinuxfs_t.dontaudit_read(source);
+    }
+
+    @alias(setenforce)
+    fn set_enforce_mode(domain source) {
+        /// Set the enforcing mode.
+        // TODO:
+        // neverallow ~{ selinux_unconfined_type can_setenforce } security_t:security setenforce;
+
+        libs.libselinux_linked(domain source);
+
+        selinuxfs_t.read(source); sysfs_t.list(source);
+
+        if (!secure_mode_policyload) {
+            allow(source, security_t, security, setenforce);
+            selinuxfs_t.write(source);
+        } else {
+            dontaudit(source, security_t, security, setenforce);
+            selinuxfs_t.dontaudit_write(source);
+        }
+    }
+
+    @alias(dontaudit_setenforce)
+    fn dontaudit_set_enforce_mode(domain source) {
+        /// Do not audit denials for setting the enforcing mode.
+        selinuxfs_t.dontaudit_rw(source); sysfs_t.dontaudit_list(source);
+
+        dontaudit(source, security_t, security, setenforce);
+    }
+
+    fn read_policy(domain source) {
+        /// Read the running policy from kernel memory.
+
+        libs.libselinux_linked(domain source);
+
+        allow(source, security_t, security, read_policy);
+
+        selinuxfs_t.read(source); sysfs_t.list(source);
+
+        // Read the kernel policy on disk
+        policy_config_t.read(source); selinux_config_t.list(source); etc_t.list(source);
+    }
+
+    fn dontaudit_read_policy(domain source) {
+        /// Do not audit denials for reading the running policy from kernel memory.
+        dontaudit(source, security_t, security, read_policy);
+
+        selinuxfs_t.dontaudit_read(source); sysfs_t.dontaudit_list(source);
+
+        policy_config_t.dontaudit_read(source); selinux_config_t.dontaudit_list(source); etc_t.dontaudit_list(source);
+    }
+
+    fn load_policy(domain source) {
+        /// Load a new SELinux policy.
+        // TODO:
+        // neverallow ~{ selinux_unconfined_type can_load_policy } security_t:security load_policy;
+
+        libs.libselinux_linked(domain source);
+
+        selinuxfs_t.rw(source); sysfs_t.list(source);
+
+        if(secure_mode_policyload) {
+            dontaudit(source, security_t, security, load_policy);
+        } else {
+            allow(source, security_t, security, load_policy);
+        }
+    }
+
+    fn dontaudit_load_policy(domain source) {
+        /// Do not audit denials for loading a new SELinux policy.
+        // TODO:
+        // neverallow ~{ selinux_unconfined_type can_load_policy } security_t:security load_policy;
+
+        sysfs_t.dontaudit_list(source);
+        selinuxfs_t.dontaudit_rw(source);
+        dontaudit(source, security_t, security, load_policy);
+    }
+
+    fn set_parameters(domain source) {
+        // TODO:
+        // neverallow ~{ selinux_unconfined_type can_setsecparam } security_t:security setsecparam;
+
+        allow(source, security_t, security, setsecparam);
+        auditallow(source, security_t, security, setsecparam);
+
+        libs.libselinux_linked(domain source);
+
+        selinuxfs_t.rw(source); sysfs_t.list(source);
+    }
+
+    // TDOD:
+//    interface(`selinux_labeled_boolean',`
+//        gen_require(`
+//            attribute boolean_type;
+//        ')
+//
+//        typeattribute $1 boolean_type;
+//
+//        # because of this statement, any module which
+//        # calls this interface must be in the base module:
+//        genfscon selinuxfs /booleans/$2 -- gen_context(system_u:object_r:$1,s0)
+//    ')
+
+    fn set_generic_booleans(domain source) {
+        boolean_t.get(source); selinuxfs_t.list(source); sysfs_t.list(source);
+
+        libs.libselinux_linked(domain source);
+
+        if (!secure_mode_setbool) {
+            boolean_t.set(source);
+            selinuxfs_t.write(source);
+            allow(source, security_t, security, setbool);
+        } else {
+            boolean_t.dontaudit_set(source);
+            selinuxfs_t.dontaudit_write(source);
+            dontaudit(source, security_t, security, setbool);
+        }
+    }
+
+    fn get_all_booleans(domain source) {
+        booleans.get(source); selinuxfs_t.list(source); sysfs_t.list(source);
+
+        libs.libselinux_linked(domain source);
+       }
+
+    fn set_all_booleans(domain source) {
+        booleans.read(source); selinuxfs_t.list(source); sysfs_t.list(source);
+
+        libs.libselinux_linked(domain source);
+
+        if (!secure_mode_setbool) {
+            allow(source, security_t, security, setbool);
+            selinuxfs_t.write(source);
+
+            // was: allow $1 { boolean_type -secure_mode_policyload_t }:file write_file_perms;
+            booleans.set(source);
+            delete(secure_mode_policyload_t.set(source));
+
+            selinuxfs_t.write(source);
+            allow(source, security_t, security, setbool);
+        } else {
+            dontaudit(source, security_t, security, setbool);
+            selinuxfs_t.dontaudit_write(source);
+            booleans.dontaudit_set(source);
+        }
+
+        if(!secure_mode_policyload && !secure_mode_setbool) {
+            secure_mode_policyload_t.write(source);
+        } else {
+            secure_mode_policyload_t.dontaudit_write(source);
+        }
+    }
+
+    @alias(validate_labels)
+    fn validate_contexts(domain source) {
+        /// Validate contexts.
+        libs.libselinux_linked(domain source);
+
+        allow(source, security_t, security, check_context);
+
+        selinuxfs_t.rw(source); sysfs_t.list(source);
+    }
+
+    @alias(dontaudit_validate_labels)
+    fn dontaudit_validate_contexts(domain source) {
+        /// Do not audit denials for validating contexts.
+
+        dontaudit(source, security_t, security, check_context);
+
+        selinuxfs_t.dontaudit_rw(source); sysfs_t.dontaudit_list(source);
+
+    }
+
+    @alias(compute_access_vectors, compute_av)
+    fn get_access_decisions(domain source) {
+        /// Get SELinux access decisions.
+        /// This is typically used by userspace object managers.
+        allow(source, self, netlink_selinux_socket, create_socket_perms);
+
+        libs.libselinux_linked(domain source);
+
+        allow(source, security_t, security, compute_av);
+
+        selinuxfs_t.rw(source); sysfs_t.list(source);
+    }
+
+    @alias(dontaudit_compute_access_vectors, dontaudit_compute_av)
+    fn dontaudit_get_access_decisions(domain source) {
+        /// Do not audit denials for getting SELinux access decisions.
+        dontaudit(source, self, netlink_selinux_socket, create_socket_perms);
+
+        dontaudit(source, security_t, security, compute_av);
+
+        selinuxfs_t.dontaudit_rw(source); sysfs_t.dontaudit_list(source);
+    }
+
+    @alias(compute_create)
+    fn get_create_contexts(domain source) {
+        /// Get the context of a new object.
+        allow(source, security_t, security, compute_create);
+
+        libs.libselinux_linked(domain source);
+
+        selinuxfs_t.rw(source); sysfs_t.list(source);
+    }
+
+    @alias(dontaudit_compute_create)
+    fn dontaudit_get_create_contexts(domain source) {
+        /// Do not audit denials for getting the context of a new object.
+        dontaudit(source, security_t, security, compute_create);
+
+        selinuxfs_t.dontaudit_rw(source); sysfs_t.dontaudit_list(source);
+    }
+
+    @alias(get_member_labels, compute_member)
+    fn get_member_contexts(domain source) {
+        /// Get polyinstantiated directory member contexts.
+        libs.libselinux_linked(domain source);
+
+        allow(source, security_t, security, compute_member);
+
+        selinuxfs_t.rw(source); sysfs_t.list(source);
+    }
+
+    @alias(dontaudit_get_member_labels, compute_member)
+    fn dontaudit_get_member_contexts(domain source) {
+        /// Do not audit denials for getting polyinstantiated directory member contexts.
+        dontaudit(source, security_t, security, compute_member);
+
+        selinuxfs_t.dontaudit_rw(source); sysfs_t.dontaudit_list(source);
+    }
+
+    @alias(get_relabel_labels)
+    fn get_relabel_contexts(domain source) {
+        /// Get the new context for relabeling.
+        allow(source, security_t, security, compute_relabel);
+
+        libs.libselinux_linked(domain source);
+
+        selinuxfs_t.rw(source); sysfs_t.list(source);
+    }
+
+    @alias(dontaudit_get_relabel_labels)
+    fn dontaudit_get_relabel_contexts(domain source) {
+        /// Do not audit denials for getting the new context for relabeling.
+        dontaudit(source, security_t, security, compute_relabel);
+
+        selinuxfs_t.dontaudit_rw(source); sysfs_t.dontaudit_list(source);
+    }
+
+    @alias(get_user_labels)
+    fn get_user_contexts(domain source) {
+        /// Get user login contexts.
+        default_context_t.read(source); selinux_config_t.list(source); etc_t.list(source);
+
+        libs.libselinux_linked(domain source);
+
+        allow(source, security_t, security, compute_user);
+
+        selinuxfs_t.rw(source); sysfs_t.list(source);
+    }
+
+    @alias(dontaudit_get_user_labels)
+    fn dontaudit_get_user_contexts(domain source) {
+        /// Do not audit denials for getting user login contexts.
+        dontaudit(source, security_t, security, compute_user);
+
+        selinuxfs_t.dontaudit_rw(source); sysfs_t.dontaudit_list(source);
+    }
+
+    fn file_contexts_setfscreate(domain source) {
+        /// Use setfscreate with the results of selabel_lookup
+        /// This is for SELinux-aware programs to create files with the
+        /// correct labels using selabel_lookup() results.
+
+        allow(source, self, process, setfscreate);
+
+        file_context_t.mmap_read(source); default_context_t.list(source); selinux_config_t.list(source); etc_t.list(source);
+
+        libs.libselinux_linked(domain source);
+
+        selinux.validate_contexts(source);
+    }
+
+    fn monitor_status(domain source) {
+        /// Monitor SELinux events and status.
+
+        // Old socket method:
+        allow(source, self, netlink_selinux_socket, manage_socket_perms);
+
+        // New status page:
+        selinux.use_status_page(spirce);
+
+        libs.libselinux_linked(source);
+    }
+
+    @alias(userspace_avc)
+    fn userspace_object_manager(domain source) {
+        /// Act as a SELinux userspace object manager.
+
+        audit.send_messages(source);
+
+        default_context_t.read(system_dbusd_t);
+
+        selinux.monitor_status(source);
+        selinux.validate_contexts(source);
+        selinux.get_access_decisions(source);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access to SELinux configuration.
+        selinux.set_enforce_mode(source);
+        selinux.set_all_booleans(source);
+        selinux.set_parameters(source);
+        selinux.validate_contexts(source);
+        selinux.get_access_decisions(source);
+        selinux.get_create_contexts(source);
+        selinux.get_member_contexts(source);
+        selinux.get_relabel_contexts(source);
+        selinux.get_user_contexts(source);
+    }
+}
+
+final api syslog {
+    /// System log (syslog) API.
+
+    //
+    // Kernel ring buffer
+    //
+    fn read_kernel_ring_buffer(domain source) {
+        /// Read the kernel ring buffer.
+        allow(source, self, capability2, syslog);
+        allow(source, kernel_t, system, syslog_read);
+
+        proc_t.kmsg.read(source); proc_t.list(source);
+        }
+
+        fn dontaudit_read_kernel_ring_buffer(domain source) {
+        /// Do not audit denials for reading the kernel ring buffer.
+        dontaudit(source, self, capability2, syslog);
+        dontaudit(source, kernel_t, system, syslog_read);
+
+        proc_t.kmsg.dontaudit_read(source);
+    }
+
+    fn change_console_log_level(domain source) {
+        /// Change the console log level for kernel messages.
+        allow(source, self, capability2, syslog);
+        allow(source, kernel_t, system, syslog_console);
+    }
+
+    fn configure_kernel_ring_buffer(domain source) {
+        /// Configure the kernel ring buffer.
+        allow(source, self, capability2, syslog);
+        allow(source, kernel_t, system, syslog_mod);
+    }
+
+    //
+    // syslog()
+    //
+    fn send_messages(domain source) {
+        /// Send syslog messages.
+
+        devlog_t.rw(source);
+
+        // the type of socket depends on the syslog daemon
+        allow(source, syslogd_t, unix_dgram_socket, sendto);
+        allow(source, syslogd_t, unix_stream_socket, connectto);
+
+        // If syslog is down, the glibc syslog() function
+        // will write to the console.
+        console_device_t.write(source);
+        console_device_t.dontaudit_read(source);
+
+        optional {
+            // systemd journal socket is in /run/systemd/journal/dev-log
+            syslogd_runtime_t.list(source); init_runtime_t.list(source); runtime_t.list(source);
+
+            // Allow systemd-journald to check whether the process died
+            source.check_existence(syslogd_t);
+
+            allow(source, kernel_t, unix_datagram_socket, sendto);
+        }
+    }
+
+    fn read_log(domain source) {
+        /// Allows reading of generic log files
+        var_t.list(source);
+
+        var_log_t.read(source);
+    }
+}
+
+final api term {
+    fn open_pty(domain source, pty ptydev) {
+        /// Open a PTY device.
+
+        bsdpty_device_t.dontaudit_rw(source);
+
+        ptmx.rw(source);
+
+        devpts_t.list(source);
+        devpts_t.getattr_superblock(source);
+
+        resource_transition(ptydev, source, devpts_t, chr_file);
+    }
+}
+
+final api unconfined {
+    fn domain(domain source) {
+        // Use most Linux capabilities
+        allow(source, self, [ capability cap_userns ], [ chown dac_override dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice sys_resource sys_time sys_tty_config mknod lease audit_write audit_control setfcap ]);
+        allow(source, self, [ capability2 cap2_userns ], [ syslog wake_alarm ];
+        // Use most namespace capabilities
+        allow(source, self, cap_userns, [ audit_write chown dac_override dac_read_search fowner fsetid ipc_lock ipc_owner kill lease linux_immutable mknod net_admin net_bind_service net_raw setfcap setgid setpcap setuid sys_admin sys_boot sys_chroot sys_module sys_nice sys_pacct sys_ptrace sys_rawio sys_resource sys_time sys_tty_config ]);
+        allow(source, self, cap2_userns, [ audit_read bpf block_suspend mac_admin mac_override perfmon syslog wake_alarm ]);
+
+        device_node<block_device>.unconfined(source);
+        device_node<character_device>.unconfined(source);
+
+        domain.unconfined(source);
+
+        file_type<file>.unconfined(source);
+        file_type<dir>.unconfined(source);
+        file_type<symlink>.unconfined(source);
+        file_type<pipe>.unconfined(source);
+        file_type<named_socket>.unconfined(source);
+        file_type<block_device>.unconfined(source);
+        file_type<character_device>.unconfined(source);
+        // Mount/unmount any filesystem with the context= option.
+        file_type<filesystem>.unconfined(source);
+
+        filesystem.unconfined(source);
+
+        ipsec_policy_db.unconfined(source);
+
+        kernel.unconfined(source);
+
+        network_interface.unconfined(source);
+
+        network_node.unconfined(source);
+
+        network_packet.unconfined(source);
+
+        network_peer.unconfined(source);
+
+        network_port.unconfined(source);
+
+        nscd_t.unconfined(source);
+
+        proc_entry.unconfined(source);
+
+        selinux.unconfined(source);
+
+        sysctl_entry.unconfined(source);
+
+        systemd_t.unconfined(source);
+
+        system_dbusd_t.unconfined(source);
+
+        unlabeled_t<domain>.unconfined(source);
+        unlabeled_t<file>.unconfined(source);
+        unlabeled_t<dir>.unconfined(source);
+        unlabeled_t<symlink>.unconfined(source);
+        unlabeled_t<pipe>.unconfined(source);
+        unlabeled_t<named_socket>.unconfined(source);
+        unlabeled_t<block_device>.unconfined(source);
+        unlabeled_t<character_device>.unconfined(source);
+        unlabeled_t<filesystem>.unconfined(source);
+        unlabeled_t<network_peer>.unconfined(source);
+        unlabeled_t<network_packet>.unconfined(source);
+        unlabeled_t<infiniband_endport>.unconfined(source);
+        unlabeled_t<infiniband_parition_key>.unconfined(source);
+
+        if (allow_execmod) {
+            allow(source, this, file_type, execmod);
+        }
+
+        if (allow_execmem) {
+            // Allow making anonymous memory executable, e.g.
+            // for runtime-code generation or executable stack.
+            allow(source, self, process execmem;
+
+            if (allow_execstack) {
+
+                // Allow making the stack executable via mprotect;
+                // execstack implies execmem;
+                allow(source, self, process execstack;
+            }
+
+            if (allow_execheap) {
+                // Allow making the stack executable via mprotect.
+                allow(source, self, process execheap;
+            }
+        }
+
+// TODO:
+//allow(source, self, passwd { passwd chfn chsh rootok crontab };
+//typeattribute source sepgsql_unconfined;
+//typeattribute source x_domain;
+//typeattribute source xserver_unconfined;
+// pass constraints
+//typeattribute source can_change_object_identity;
+//typeattribute source set_curr_context;
+//typeattribute source process_uncond_exempt;
+}

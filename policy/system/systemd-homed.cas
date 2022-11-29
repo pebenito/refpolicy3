@@ -1,0 +1,150 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_homed_t inherits systemd_daemon {
+    /// Home directory manager.
+
+    //
+    // Resources
+    //
+    @alias(systemd_homed_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-homed", file);
+    }
+
+    @alias(systemd_homed_runtime_t)
+    extend runtime {
+        file_context("/run/systemd/home(/.*)?", any);
+    }
+
+    @alias(systemd_homed_storage_t)
+    resource storage inherits common_file {}
+
+    @alias(systemd_homed_var_lib_t)
+    resource state inherits common_file {
+        file_context("/var/lib/systemd/home(/.*)?", any);
+    }
+
+    @alias(systemd_homed_tmpfs_t)
+    extend tmpfs {}
+
+    //
+    // Policy
+    //
+
+    dontaudit(this, self, capability, [ sys_resource sys_admin ]);
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+
+    this.state.read();
+
+    this.storage.read();
+
+    etc_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    fs_t.get_quotas();
+
+    home_root_t.list();
+    home_root_t.watch();
+
+    init_t.runtime.filetrans(this, this.runtime, dir);
+    init_t.state.filetrans(this, this.state, dir); var_lib_t.list();
+
+    mail_spool_t.list(); var_spool_t.list();
+
+    proc_t.read();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
+
+    // Entries such as /sys/devices/virtual/block/loop1/uevent:
+    sysfs_t.read();
+
+    systemd_homework_t.domtrans();
+    allow(this, systemd_homework_t, process, nnp_transition);
+
+    systemd_userdbd_runtime_t.filetrans(this, this.runtime, sock_file);
+
+    udev_t.runtime.read();
+
+    optional {
+        init_t.dbus_send();
+
+        system_dbusd_t.client();
+        system_dbusd_t.own_default_service();
+    }
+}
+
+domain systemd_homework_t inherits common_domain {
+    /// systemd-homed worker process.
+
+    //
+    // Resources
+    //
+    @alias(systemd_homework_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-homework", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ chown fowner fsetid sys_admin ]);
+    dontaudit(this, self, capability, sys_resource);
+
+    // mount on /run/systemd/user-home-mount
+    systemd_homed_t.runtime.mounton();
+    systemd_homed_t.runtime.manage();
+    var_run_t.filetrans(this, systemd_homed_t.runtime, file);
+    init_t.runtime.filetrans(this, systemd_homed_t.runtime, dir);
+
+    systemd_homed_t.storage.manage();
+    home_root_t.filetrans(this, systemd_homed_t.storage, file);
+
+    etc_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+    filesystem<common_dir>.list();
+
+    // loopback:
+    fixed_disk_device_t.rw();
+
+    fs_t.mount();
+    fs_t.unmount();
+
+    fsadm_t.exec.exec();
+
+    init_t.rw_inherited_unix_stream_sockets();
+    init_t.dontaudit_search_keys();
+
+    kernel.request_module_load();
+    kernel.get_sysv_ipc_info();
+
+    kernel_t.write_keys();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
+
+    // Entries such as /sys/devices/virtual/block/loop1/uevent:
+    sysfs_t.read();
+
+    systemd_homed_t.tmpfs.rw_inherited();
+
+    loop_control_device_t.rw();
+
+    lvm_control_t.rw();
+
+    proc_t.read();
+
+    random_device_t.read();
+
+    runtime_t.mounton();
+
+    udev_t.runtime.read();
+
+    urandom_device_t.read();
+}

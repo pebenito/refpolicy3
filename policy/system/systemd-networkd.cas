@@ -1,0 +1,104 @@
+// SPDX-License-Identifier: GPL-2.0
+
+tunable systemd_networkd_dhcp_server {
+    /// Allow systemd-networkd to run its DHCPd server component.
+    default false;
+}
+
+domain systemd_networkd_t inherits systemd_app_domain {
+    /// Network configuration detection and configuration.
+
+    //
+    // Resources
+    //
+    @alias(systemd_networkd_exec_t)
+    extend exec  {
+       file_context("/usr/lib/systemd/systemd-networkd", file);
+    }
+
+    @alias(systemd_networkd_runtime_t)
+    resource runtime inherits runtimefile, systemd_mountpoint {
+        /// Runtime files in /run and /var/run.
+        file_context("/run/systemd/netif(/.*)?", any);
+    }
+
+    @alias(systemd_networkd_unit_t)
+    resource unit inherits common_file, systemdunit {
+        /// The systemd unit.
+        file_context("/usr/lib/systemd/system/systemd-networkd.*", any);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ chown dac_override fowner net_admin net_raw setgid setpcap setuid ]);
+    allow(this, self, netlink_generic_socket, manage_socket_perms);
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+    allow(this, self, netlink_route_socket, [ manage_socket_perms nlmsg_read nlmsg_write ]);
+    allow(this, self, packet_socket, manage_socket_perms);
+    allow(this, self, process, setcap);
+    allow(this, self, rawip_socket, manage_socket_perms);
+    allow(this, self, tun_socket, [ manage_socket_perms relabelfrom relabelto ]);
+    allow(this, self, udp_socket, manage_socket_perms);
+
+    this.runtime.manage();
+
+    bin_t.exec();
+    bin_t.entrypoint();
+
+    cgroup_t.list();
+
+    dhcpc_port_t.udp_bind();
+
+    etc_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    init_t.unix_datagram_send();
+
+    kernel.request_module_load();
+
+    nfsd_fs_t.read();
+
+    network.udp_server();
+
+    nss.get_hosts_entry();
+    nss.get_networks_entry();
+
+    proc_t.read();
+    proc_t.net.read();
+    proc_t.dontaudit_getattr_superblock();
+
+    root_t.watch();
+
+    runtime_t.watch(); var_t.list();
+    runtime_t.list(); var_t.list();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+    sysctl_t.net.rw();
+
+    sysfs_t.read();
+
+    tun_tap_device_t.rw();
+
+    udev_t.runtime.read();
+
+    urandom_device_t.read();
+
+    usr_t.list();
+
+    if (systemd_networkd_dhcp_server) {
+        dhcpd_port_t.udp_bind();
+    }
+
+    optional {
+        system_dbusd_t.client();
+        system_dbusd_t.own_default_service();
+        system_dbusd_t.runtime<dir>.watch();
+        system_dbusd_t.runtime<named_socket>.watch();
+
+        systemd_hostnamed_t.dbus_send();
+    }
+}

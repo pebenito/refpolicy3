@@ -1,0 +1,206 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain syslogd_t inherits daemon {
+    /// System log daemon.
+
+    //
+    // Resources
+    //
+    @alias(syslog_conf_t)
+    extend conf {
+        file_context("/etc/rsyslog\.conf", file);
+        file_context("/etc/syslog\.conf", file);
+        file_context("/etc/rsyslog\.d(/.*)?", any);
+    }
+
+    @alias(devlog_t)
+    resource devlog inherits common_named_socket {
+        /// The /dev/log syslog socket.
+        // This is separate from systemd_t.runtime because
+        // it is a MLS trusted object.
+        file_context("/dev/log", socket, system_u:object_r:devlog_t:mls_systemhigh);
+        file_context("/run/log", socket, system_u:object_r:devlog_t:mls_systemhigh);
+    //typeattribute devlog_t mlstrustedobject;
+    }
+
+    @alias(syslogd_exec_t)
+    extend exec  {
+        file_context("/usr/bin/metalog", file);
+        file_context("/usr/bin/minilogd", file);
+        file_context("/usr/bin/rsyslogd", file);
+        file_context("/usr/bin/syslog-ng", file);
+        file_context("/usr/bin/syslogd", file);
+        file_context("/usr/sbin/metalog", file);
+        file_context("/usr/sbin/minilogd", file);
+        file_context("/usr/sbin/rsyslogd", file);
+        file_context("/usr/sbin/syslog-ng", file);
+        file_context("/usr/sbin/syslogd", file);
+    }
+
+    @alias(syslogd_initrc_exec_t)
+    extend initrc_exec  {
+        file_context("/etc/rc\.d/init\.d/rsyslog", file);
+    }
+
+    @alias(syslogd_runtime_t)
+    extend runtime {
+        file_context("/run/metalog\.pid", file, system_u:object_r:syslogd_runtime_t:mls_systemhigh);
+        file_context("/run/rsyslogd\.pid", file, system_u:object_r:syslogd_runtime_t:mls_systemhigh);
+        file_context("/run/syslogd\.pid", file, system_u:object_r:syslogd_runtime_t:mls_systemhigh);
+        file_context("/run/syslog-ng\.ctl", file, system_u:object_r:syslogd_runtime_t:mls_systemhigh);
+        file_context("/run/syslog-ng\.pid", file, system_u:object_r:syslogd_runtime_t:mls_systemhigh);
+        file_context("/run/syslog-ng(/.*)?", any, system_u:object_r:syslogd_runtime_t:mls_systemhigh);
+    }
+
+    @alias(syslogd_var_lib_t)
+    resource state inherits common_file {
+        /// Contents of syslog dirs in /var/lib/.
+        file_context("/var/lib/misc/syslog-ng\.persist-?", file);
+        file_context("/var/lib/syslog-ng(/.*)?", any);
+        file_context("/var/lib/r?syslog(/.*)?", any);
+        file_context("/var/lib/syslog-ng\.persist", file);
+    }
+
+    @alias(syslogd_tmp_t)
+    extend tmp {}
+
+    @alias(syslogd_unit_t)
+    extend unit {
+        file_context("/usr/lib/systemd/system/rsyslog.*\.service", file);
+    }
+
+    //
+    // Policy
+    //
+
+    // chown fsetid for syslog-ng
+    // sys_admin for the integrated klog of syslog-ng and metalog
+    // sys_nice for rsyslog
+    allow(this, self, capability, [ chown dac_override fsetid net_admin setgid setuid sys_admin sys_nice sys_resource sys_tty_config ]);
+    dontaudit(this, self, capability, sys_ptrace);
+    dontaudit(this, self, cap_userns, [ kill sys_ptrace ]);
+    // setpgid for metalog
+    // setrlimit for syslog-ng
+    // getsched for syslog-ng
+    // setsched for rsyslog
+    // getcap/setcap for syslog-ng
+    allow(this, self, process, [ setcap setpgid setrlimit setsched ]);
+    // receive messages to be logged
+    allow(this, self, udp_socket, manage_socket_perms);
+    allow(this, self, tcp_socket, manage_stream_socket_perms);
+
+    // Create and bind to /dev/log or /var/run/log.
+    this.devlog.manage();
+    device_t.filetrans(this, this.devlog, sock_file);
+    runtime_t.filetrans(this, this.devlog, sock_file);
+
+    this.port.tcp_bind();
+    this.port.udp_bind();
+    this.port.tcp_connect();
+
+    this.runtime.mmap_manage();
+
+    this.state.mmap_manage();
+    var_lib_t.filetrans(this, this.state, [ file dir ]);
+
+    this.tmp.mmap_manage();
+
+    autofs_t.list();
+
+    // log to console
+    console_device_t.write();
+
+    cron_log_t<common_file>.manage();
+    var_log_t.filetrans(syslogd_t, cron_log_t, file, "cron.log");
+
+    etc_t.read();
+
+    etc_runtime_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    innd_log_t<common_file>.manage();
+    var_log_t.filetrans(syslogd_t, innd_log_t, file, "news.crit");
+    var_log_t.filetrans(syslogd_t, innd_log_t, file, "news.err");
+    var_log_t.filetrans(syslogd_t, innd_log_t, file, "news.notice");
+
+    mysqld_t.unix_stream_connect();
+    mysqld_t.port.tcp_connect();
+
+    networking.tcp_client();
+    networking.tcp_server();
+    networking.udp_server();
+
+    nss.get_hosts_entry();
+
+    postgresql_t.unix_stream_connect();
+    postgresql_t.port.tcp_connect();
+
+    proc_t.read();
+    proc_t.net.read();
+    // Allow access to /proc/kmsg for syslog-ng
+    proc_t.kmsg.read();
+
+    // syslog-ng can listen and connect on tcp port 514 (rsh)
+    rsh_port_t.tcp_bind();
+    rsh_port_t.tcp_connect();
+
+    selinux_config_t.read();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+    // rsyslog
+    sysctl_t.vm.overcommit.read(); sysctl_t.vm.list(); sysctl_t.list();
+
+    sysfs_t.read();
+
+    // rsyslog
+    syslog.configure_kernel_ring_buffer();
+    syslog.change_console_log_level();
+
+    system_map_t.read(); boot_t.list();
+
+    // for sending messages to logged in users
+    tty.write();
+
+    // Allow syslog to a terminal
+    tty_device_t.write();
+    // default gentoo syslog-ng config appends kernel
+    // and high priority messages to /dev/tty12
+    // and chown/chgrp/chmod /dev/tty12, which is denied
+    tty_device_t.dontaudit_setattr();
+
+    // /initrd is not umounted before minilog starts
+    unlabeled_t<dir>.dontaudit_list();
+
+    urandom_device_t.read();
+
+    usr_t.read();
+
+    var_log_t.manage();
+
+    var_spool_t.list();
+
+    // for sending messages to logged in users (utmp)
+    wtmp_t.read();
+    wtmp_t.dontaudit_write();
+
+    // log to the xconsole
+    xconsole_device_t.rw();
+
+//typeattribute syslogd_t mlstrustedsocket;
+//typeattribute syslogd_t mlsfilewrite;
+
+//domain_entry_file(initrc_t, syslogd_initrc_exec_t)
+//domtrans_pattern(init_run_all_scripts_domain, syslogd_initrc_exec_t, initrc_t)
+
+//if (enable_mcs) {
+//    range_transition { init_t initrc_t } syslogd_exec_t:process s15:c0.c1023;
+//}
+
+//if (enable_mls) {
+//    range_transition { init_t initrc_t } syslogd_exec_t:process s15:c0.c1023;
+//    typeattribute syslogd_t mlsrangetrans;
+//}
+}

@@ -1,0 +1,84 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain systemd_machined_t inherits systemd_daemon {
+    /// Virtual machine and container registration.
+
+    //
+    // Resources
+    //
+
+    @alias(systemd_machined_exec_t)
+    extend exec  {
+        file_context("/usr/lib/systemd/systemd-machined", file);
+    }
+
+    @alias(systemd_machined_runtime_t)
+    extend runtime {
+        file_context("/run/systemd/machines(/.*)?", any);
+    }
+
+    @alias(systemd_machined_devpts_t)
+    resource pty inherits login_pty {}
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ setgid sys_chroot sys_ptrace ]);
+    allow(this, self, cap_userns, sys_chroot);
+    allow(this, self, process, setfscreate);
+
+    this.pty.rw();
+    this.pty.manage();
+
+    cgroup_t.getattr_superblock();
+
+    device_t.getattr();
+
+    devpts_t.getattr_superblock();
+
+    init_t.ps();
+    allow(this, init_t, service, [ start status ]);
+    allow(this, init_t, system, [ start stop status ]);
+
+    init_script_t.ps();
+
+    nfsd_fs_t.read();
+
+    proc_t.read();
+
+    selinuxfs_t.getattr_superblock(); sysfs_t.getattr_superblock(); sysfs_t.list();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    syslog.send_messages();
+
+    systemd_unit_t.startstop();
+
+    systemd_userdbd_runtime_t<common_named_socket>.manage();
+
+    term.open_pty(this, this.pty);
+
+    tmpfs_t.getattr_superblock();
+
+    optional {
+        init_t.dbus_send();
+        init_script_t.dbus_send();
+
+        system_dbusd_t.client();
+        system_dbusd_t.own_default_service();
+    }
+
+// typeattribute systemd_machined_runtime_t daemonpidfile;
+//var_run_t.filetrans(initrc_t, systemd_machined_runtime_t, dir, "machines");
+
+    //
+    // Functions
+    //
+    fn shell(domain source) {
+        /// Use machinectl shell.
+        this.inherit_file_descriptors(source);
+        this.pty.rw_inherited(source);
+
+        ptmx_t.rw(source);
+    }
+}

@@ -1,0 +1,462 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//
+// Concrete types
+//
+
+resource auth_cache_t inherits logfile, common_sock_file {
+    file_context("/var/cache/coolkey(/.*)?", any);
+}
+
+resource chkpwd_t inherits app_domain {
+    /// pam_unix_chkpwd
+
+    extend exec {
+        file_context("/usr/bin/unix_chkpwd", file);
+        file_context("/usr/bin/unix_verify", file);
+        file_context("/usr/bin/validate", file);
+        file_context("/usr/libexec/chkpwd/tcb_chkpwd", file);
+        file_context("/usr/sbin/unix_chkpwd", file);
+        file_context("/usr/sbin/unix_verify", file);
+        file_context("/usr/sbin/validate", file);
+    }
+
+    allow(chkpwd_t, self, capability, [dac_override setuid ]);
+    dontaudit(chkpwd_t, self, capability, sys_tty_config);
+    allow(chkpwd_t, self, process, [getattr signal]);
+    dontaudit(chkpwd_t, self, process, getcap);
+
+    audit.send_messages();
+
+    console_device_t.dontaudit_rw();
+
+    devpts_t<common_character_device>.dontaudit_rw();
+
+    etc_t.read();
+
+    fs_t.dontaudit_getattr_superblock();
+
+    proc_t.dontaudit_getattr_superblock();
+
+    pty.dontaudit_rw();
+
+    random_device_t.read();
+
+    selinux.get_enforce_mode();
+    selinux.get_fs_mountpoint();
+    selinux.dontaudit_validate_contexts();
+
+    selinux_config_t.read();
+
+    shadow_t.read(); etc_t.list();
+
+    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
+    sysctl_t.kernel.dontaudit_read(); sysctl_t.dontaudit_list(); proc_t.dontaudit_list();
+
+    sysfs_t.list();
+
+    syslog.send_messages();
+
+    tty_device_t.dontaudit_rw();
+
+    usr_t.list();
+
+    urandom_device_t.read();
+
+    user_devpts_t.rw();
+    user_tty_device_t.rw();
+
+    // for nscd
+    var_t.dontaudit_list();
+
+    // dontaudit chkpwd_t privfd:fd use; -- delete the allow from app_domain
+    // typeattribute chkpwd_t nsswitch_domain;
+    // dontaudit chkpwd_t newrole_t:fd use;
+    //optional_policy(`
+    //    # apache leaks file descriptors
+    //    apache_dontaudit_rw_tcp_sockets()
+    //')
+    //
+    //optional_policy(`
+    //    kerberos_use()
+    //')
+    //
+    //optional_policy(`
+    //    nis_authenticate()
+    //')
+}
+
+resource faillog_t inherits logfile {
+    /// Login failure database
+    file_context("/var/log/btmp.*", file);
+    file_context("/var/log/faillog", file);
+    file_context("/var/log/tallylog", file);
+    file_context("/run/faillock(/.*)?", any);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+resource lastlog_t inherits logfile {
+    /// Most recent login information for users
+    file_context("/var/log/lastlog", file);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+@alias(pam_t)
+domain pam_timestamp_t inherits common_domain {
+    @alias(pam_exec_t)
+    extend exec {
+        file_context("/usr/bin/pam_timestamp_check", file);
+        file_context("/usr/sbin/pam_timestamp_check", file);
+    }
+
+    @alias(pam_runtime_t)
+    resource runtime inherits runtimefile {
+        /// Runtime files in /run and /var/run.
+
+        file_context("/run/pam_mount(/.*)?", any);
+        file_context("/run/sepermit(/.*)?", any);
+        file_context("/run/sudo(/.*)?", any);
+        file_context("/run/sudo/ts/%{USERNAME}", any);
+        file_context("/var/(db|adm)/sudo(/.*)?", any);
+        file_context("/var/lib/sudo(/.*)?", any);
+        file_context("/run/console(/.*)?", any);
+    }
+
+    @alias(pam_tmp_t)
+    resource tmp inherits tmpfile {
+        /// Temporary files in /tmp and /var/tmp.
+    }
+
+    allow pam_t self:process { transition setsched setpgid setcap share noatsecure siginh rlimitinh dyntransition setkeycreate setsockcreate };
+    dontaudit pam_t self:capability sys_tty_config;
+
+    allow pam_t self:fd use;
+
+    this.runtime.read();
+    this.runtime.delete();
+
+    this.tmp.manage();
+    tmp_t.filetrans(pam_t, pam_tmp_t, [ file dir ]);
+
+    autofs_t.list();
+
+    etc_t.read();
+
+    init_script_t.runtime.dontaudit_rw();
+
+    proc_t.read();
+
+    pty.rw();
+
+    runtime_t.list();
+
+    syslog.send_messages();
+
+    tty.rw();
+
+    usr_t.list();
+
+    var_t.list();
+
+// typeattribute pam_t nsswitch_domain;
+//optional {
+//local_login_t.inherit_file_descriptors();
+//}
+};
+
+domain pam_console_t inherits system_app_domain {
+    /// PAM helper to set permissions on the console.
+
+    @alias(pam_console_exec_t)
+    extend exec {
+        file_context("/usr/bin/pam_console_apply", file);
+        file_context("/usr/sbin/pam_console_apply", file);
+    }
+
+    @alias(pam_var_console_t)
+    resource runtime inherits runtimefile {
+        /// For /var/run/console.lock
+    }
+
+    allow(this, self, capability, [ chown fowner fsetid ]);
+    dontaudit(this, self, capability, sys_tty_config);
+
+    // for /var/run/console.lock checking
+    this.runtime.read(); runtime_t.list(); var_t.list();
+    this.runtime.dontaudit_write();
+
+    autofs_t.list();
+
+    acpi_bios_t.getattr();
+    acpi_bios_t.setattr();
+
+    cert_t.read();
+
+    console_device_t.rw();
+    console_device_t.setattr();
+
+    dri_device_t.getattr();
+    dri_device_t.setattr();
+
+    etc_t.read();
+
+    // read /etc/mtab
+    etc_runtime_t.read();
+
+    event_device_t.getattr();
+    event_device_t.setattr();
+
+    file_context_t.mmap_read(); default_context_t.list(); selinux_config_t.list();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    fixed_disk_device_t.getattr();
+    fixed_disk_device_t.setattr();
+
+    framebuf_device_t.getattr();
+    framebuf_device_t.setattr();
+
+    init_t.inherit_file_descriptors();
+
+    kernel_t.inherit_file_descriptors();
+
+    misc_device_t.getattr();
+    misc_device_t.setattr();
+
+    mnt_t.list();
+
+    mouse_device_t.getattr();
+    mouse_device_t.setattr();
+
+    noxattr_filesystem.list();
+
+    printer_device_t.getattr();
+    printer_device_t.setattr();
+
+    power_device_t.getattr();
+    power_device_t.setattr();
+
+    // Read /proc/meminfo
+    proc_t.read();
+
+    pty.rw();
+
+    removable_device_t.getattr();
+    removable_device_t.setattr();
+
+    scanner_device_t.getattr();
+    scanner_device_t.setattr();
+
+    scsi_generic_device_t.getattr();
+    scsi_generic_device_t.setattr();
+
+    sound_device_t.getattr();
+    sound_device_t.setattr();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    tty.rw();
+
+    tty_device_t.setattr();
+    tty_device_t.rw();
+
+    dontaudit(pam_console_t, unlabeled_t, dir, list_dir_perms);
+
+    urandom_device_t.read();
+
+    usb_device_t.getattr();
+    usb_device_t.setattr();
+
+    usr_t.list();
+
+    v4l_device_t.getattr();
+    v4l_device_t.setattr();
+
+    xserver_misc_device_t.getattr();
+    xserver_misc_device_t.setattr();
+
+// typeattribute pam_console_t mlsfileread;
+// typeattribute pam_console_t mlsfilewrite;
+// typeattribute pam_console_t nsswitch_domain;
+// dontaudit pam_console_t unpriv_userdomain:fd use; -- partial delete of allow from app_domain
+
+//    optional {
+//        allow pam_console_t gpmctl_t:sock_file getattr_sock_file_perms;
+//        allow pam_console_t gpmctl_t:fifo_file getattr_fifo_file_perms;
+//        allow pam_console_t gpmctl_t:sock_file setattr_sock_file_perms;
+//    }
+
+//    optional {
+//        allow pam_console_t xdm_var_run_t:file read_file_perms;
+//        dontaudit pam_console_t xserver_log_t:file { append ioctl write };
+//    }
+
+}
+
+resource pam_motd_runtime_t inherits runtimefile {
+    /// The message of the day
+    /// The contents of the file is typically displayed at login.
+
+    file_context("/run/motd", file);
+    file_context("/run/motd\.dynamic", file);
+    file_context("/run/motd\.dynamic\.new", file);
+}
+
+resource shadow_t inherits authentication_file {
+    /// The shadow password file, /etc/shadow
+
+    file_context("/etc/gshadow.*", file);
+    file_context("/etc/shadow.*", file);
+    file_context("/etc/tcb(/.*)?", file);
+
+    file_context("/var/db/shadow.*", file);
+}
+
+resource shadow_lock_t inherits lockfile {
+    /// Lock files for password files.
+
+    file_context("/etc/\.pwd\.lock", file);
+    file_context("/etc/group\.lock", file);
+    file_context("/etc/passwd\.lock", file);
+}
+
+domain updpwd_t inherits common_domain {
+    /// unix_update PAM password changing tool.
+
+    @alias(updpwd_exec_t)
+    extend exec {
+        file_context("/usr/bin/tcb_convert", file);
+        file_context("/usr/bin/tcb_unconvert", file);
+        file_context("/usr/bin/unix_update", file);
+        file_context("/usr/sbin/tcb_convert", file);
+        file_context("/usr/sbin/tcb_unconvert", file);
+        file_context("/usr/sbin/unix_update", file);
+    }
+
+    allow(this, self, capability, [ chown dac_override ]);
+    allow(this, self, process, setfscreate);
+
+    console_device_t.dontaudit_rw();
+
+    devpts_t.list();
+
+    etc_t.manage();
+
+    proc_t.read();
+
+    shadow_t.manage();
+
+    shadow_lock_t.rw();
+
+    syslog.send_messages();
+
+    tty_device_t.dontaudit_rw();
+
+    urandom_device_t.read();
+
+    user_devpts_t.rw_inherited();
+
+    user_tty_device_t.rw_inherited();
+
+    usr_t.list();
+
+// typeattribute updpwd_t nsswitch_domain;
+// typeattribute updpwd_t can_change_object_identity;
+}
+
+domain utempter_t inherits app_domain {
+    /// Helper program to update login records
+
+    @alias(utempter_exec_t)
+    extend exec {
+        file_context("/usr/bin/utempter", file);
+        file_context("/usr/lib/([^/]+/)?utempter/utempter", file);
+        file_context("/usr/sbin/utempter", file);
+    }
+
+    allow(this, self, capability, setgid);
+
+    etc_t.read();
+
+    init_script_t.runtime.rw();
+
+    ptmx_t.dontaudit_rw();
+
+    pty.getattr();
+    pty.dontaudit_rw();
+
+    runtime_t.list(); var_t.list();
+
+    tty.getattr();
+    tty.dontaudit_rw();
+
+    urandom_device_t.read();
+
+    var_log_t.list(); var_t.list();
+
+    wtmp_t.rw();
+
+// typeattribute updpwd_t nsswitch_domain;
+}
+
+resource var_auth_t inherits authentication_file {
+    /// The type of /var/lib/auth, usually used for auth data in pam_able
+
+    file_context("/var/lib/abl(/.*)?", any);
+    file_context("/var/lib/pam_ssh(/.*)?", any);
+    file_context("/run/pam_ssh(/.*)?", any);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+resource wtmp_t inherits logfile {
+    /// Login records
+    // TODO change /run/utmp to his type
+    file_context("/var/log/wtmp.*", file);
+
+    systemd_tmpfiles_t.manager_of(this);
+}
+
+module auth_base {
+    resource faillog_t;
+    resource lastlog_t;
+    resource shadow_t;
+    resource shadow_lock_t;
+    resource wtmp_t;
+}
+
+module auth_extra {
+    resource auth_cache_t;
+    resource var_auth_t;
+}
+
+module pam {
+    domain chkpwd_t;
+    domain pam_console_t;
+    resource pam_motd_runtime_t;
+    resource updpwd_t;
+}
+
+module pam_timestamp {
+    domain pam_timestamp_t;
+}
+
+module utempter {
+    domain utempter_t;
+}
+
+module auth {
+    module auth_base;
+    module auth_extra;
+    module pam;
+    module pam_timestamp;
+    module utempter_t;
+}

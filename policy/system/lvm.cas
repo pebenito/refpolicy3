@@ -1,0 +1,338 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain lvm_t inherits system_app_domain {
+    /// Device mapper tools such as dmsetup, lvm, and cryptsetup.
+
+    //
+    // Resources
+    //
+
+    @alias(lvm_etc_t)
+    resource conf inherits common_file {
+        /// Device mapper config files.
+        file_context("/etc/lvm(/.*)?", any);
+    }
+
+    @alias(lvm_exec_t)
+    extend exec {
+        file_context("/usr/bin/cryptsetup", file);
+        file_context("/usr/bin/dmraid", file);
+        file_context("/usr/bin/dmsetup", file);
+        file_context("/usr/bin/dmsetup\.static", file);
+        file_context("/usr/bin/e2fsadm", file);
+        file_context("/usr/bin/lvchange", file);
+        file_context("/usr/bin/lvcreate", file);
+        file_context("/usr/bin/lvdisplay", file);
+        file_context("/usr/bin/lvextend", file);
+        file_context("/usr/bin/lvm", file);
+        file_context("/usr/bin/lvmetad", file);
+        file_context("/usr/bin/lvm\.static", file);
+        file_context("/usr/bin/lvmchange", file);
+        file_context("/usr/bin/lvmdiskscan", file);
+        file_context("/usr/bin/lvmiopversion", file);
+        file_context("/usr/bin/lvmsadc", file);
+        file_context("/usr/bin/lvmsar", file);
+        file_context("/usr/bin/lvreduce", file);
+        file_context("/usr/bin/lvremove", file);
+        file_context("/usr/bin/lvrename", file);
+        file_context("/usr/bin/lvresize", file);
+        file_context("/usr/bin/lvs", file);
+        file_context("/usr/bin/lvscan", file);
+        file_context("/usr/bin/multipathd", file);
+        file_context("/usr/bin/multipath\.static", file);
+        file_context("/usr/bin/pvchange", file);
+        file_context("/usr/bin/pvcreate", file);
+        file_context("/usr/bin/pvdata", file);
+        file_context("/usr/bin/pvdisplay", file);
+        file_context("/usr/bin/pvmove", file);
+        file_context("/usr/bin/pvremove", file);
+        file_context("/usr/bin/pvs", file);
+        file_context("/usr/bin/pvscan", file);
+        file_context("/usr/bin/vgcfgbackup", file);
+        file_context("/usr/bin/vgcfgrestore", file);
+        file_context("/usr/bin/vgchange", file);
+        file_context("/usr/bin/vgchange\.static", file);
+        file_context("/usr/bin/vgck", file);
+        file_context("/usr/bin/vgcreate", file);
+        file_context("/usr/bin/vgdisplay", file);
+        file_context("/usr/bin/vgexport", file);
+        file_context("/usr/bin/vgextend", file);
+        file_context("/usr/bin/vgimport", file);
+        file_context("/usr/bin/vgmerge", file);
+        file_context("/usr/bin/vgmknodes", file);
+        file_context("/usr/bin/vgreduce", file);
+        file_context("/usr/bin/vgremove", file);
+        file_context("/usr/bin/vgrename", file);
+        file_context("/usr/bin/vgs", file);
+        file_context("/usr/bin/vgscan", file);
+        file_context("/usr/bin/vgscan\.static", file);
+        file_context("/usr/bin/vgsplit", file);
+        file_context("/usr/bin/vgwrapper", file);
+        file_context("/usr/lib/lvm-10/.*", file);
+        file_context("/usr/lib/lvm-200/.*", file);
+        file_context("/usr/lib/udev/udisks-lvm-pv-export", file);
+        file_context("/usr/sbin/cryptsetup", file);
+        file_context("/usr/sbin/dmraid", file);
+        file_context("/usr/sbin/dmsetup", file);
+        file_context("/usr/sbin/dmsetup\.static", file);
+        file_context("/usr/sbin/e2fsadm", file);
+        file_context("/usr/sbin/lvchange", file);
+        file_context("/usr/sbin/lvcreate", file);
+        file_context("/usr/sbin/lvdisplay", file);
+        file_context("/usr/sbin/lvextend", file);
+        file_context("/usr/sbin/lvm", file);
+        file_context("/usr/sbin/lvmetad", file);
+        file_context("/usr/sbin/lvm\.static", file);
+        file_context("/usr/sbin/lvmchange", file);
+        file_context("/usr/sbin/lvmdiskscan", file);
+        file_context("/usr/sbin/lvmiopversion", file);
+        file_context("/usr/sbin/lvmsadc", file);
+        file_context("/usr/sbin/lvmsar", file);
+        file_context("/usr/sbin/lvreduce", file);
+        file_context("/usr/sbin/lvremove", file);
+        file_context("/usr/sbin/lvrename", file);
+        file_context("/usr/sbin/lvresize", file);
+        file_context("/usr/sbin/lvs", file);
+        file_context("/usr/sbin/lvscan", file);
+        file_context("/usr/sbin/multipathd", file);
+        file_context("/usr/sbin/multipath\.static", file);
+        file_context("/usr/sbin/pvchange", file);
+        file_context("/usr/sbin/pvcreate", file);
+        file_context("/usr/sbin/pvdata", file);
+        file_context("/usr/sbin/pvdisplay", file);
+        file_context("/usr/sbin/pvmove", file);
+        file_context("/usr/sbin/pvremove", file);
+        file_context("/usr/sbin/pvs", file);
+        file_context("/usr/sbin/pvscan", file);
+        file_context("/usr/sbin/vgcfgbackup", file);
+        file_context("/usr/sbin/vgcfgrestore", file);
+        file_context("/usr/sbin/vgchange", file);
+        file_context("/usr/sbin/vgchange\.static", file);
+        file_context("/usr/sbin/vgck", file);
+        file_context("/usr/sbin/vgcreate", file);
+        file_context("/usr/sbin/vgdisplay", file);
+        file_context("/usr/sbin/vgexport", file);
+        file_context("/usr/sbin/vgextend", file);
+        file_context("/usr/sbin/vgimport", file);
+        file_context("/usr/sbin/vgmerge", file);
+        file_context("/usr/sbin/vgmknodes", file);
+        file_context("/usr/sbin/vgreduce", file);
+        file_context("/usr/sbin/vgremove", file);
+        file_context("/usr/sbin/vgrename", file);
+        file_context("/usr/sbin/vgs", file);
+        file_context("/usr/sbin/vgscan", file);
+        file_context("/usr/sbin/vgscan\.static", file);
+        file_context("/usr/sbin/vgsplit", file);
+        file_context("/usr/sbin/vgwrapper", file);
+    }
+
+    @alias(lvm_lock_t)
+    resource lock inherits lockfile {
+        /// Lock files.
+        file_context("/etc/lvm/lock(/.*)?", any);
+        file_context("/var/lock/lvm(/.*)?", any);
+
+        systemd_tmpfiles_t.manager_of(this);
+    }
+
+    @alias(lvm_metadata_t)
+    resource metadata inherits common_file {
+        /// LVM metadata.
+        file_context("/etc/lvm/\.cache", file);
+        file_context("/etc/lvm/cache(/.*)?", any);
+        file_context("/etc/lvm/archive(/.*)?", any);
+        file_context("/etc/lvm/backup(/.*)?", any);
+        file_context("/etc/lvmtab(/.*)?", any);
+        file_context("/etc/lvmtab\.d(/.*)?", any);
+        file_context("/var/cache/multipathd(/.*)?", any);
+    }
+
+    @alias(lvm_runtime_t)
+    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+        /// Runtime files in /run and /var/run.
+        file_context("/run/multipathd\.sock", socket);
+        file_context("/run/dmevent.*", any);
+        file_context("/run/lvm(/.*)?", any);
+    }
+
+    @alias(lvm_var_lib_t)
+    resource state inherits common_file {
+        /// Contents of /var/lib/...
+        file_context("/var/lib/multipath(/.*)?", any);
+    }
+
+    @alias(lvm_tmp_t)
+    resource tmp inherits tmpfile, common_named_socket {
+        /// Temporary files in /tmp and /var/tmp.
+    }
+
+    @alias(lvm_tmpfs_t)
+    resource tmpfs inherits tmpfsfile {
+        /// POSIX shared memory segments (tmpfs files)
+    }
+
+    @alias(lvm_unit_t)
+    resource unit inherits common_file {
+        /// The systemd units.
+        file_context("/usr/lib/systemd/system/blk-availability.*", file);
+        file_context("/usr/lib/systemd/system/dm-event.*", file);
+        file_context("/usr/lib/systemd/system/lvm2-.*", file);
+        file_context("/usr/lib/systemd/system/lvm2-lvmetad.*", file);
+    }
+
+    //
+    // Policy
+    //
+    // DAC overrides and mknod for modifying /dev entries (vgmknodes)
+    // rawio needed for dmraid
+    // net_admin for multipath
+    allow(this, self, capability, [ chown dac_override fowner ipc_lock mknod net_admin sys_admin sys_nice sys_rawio sys_resource ]);
+    dontaudit(this, self, capability, sys_tty_config);
+    allow(this, self, process, setfscreate);
+    // LVM will complain a lot if it cannot set its priority.
+    allow(this, self, process, setsched);
+    allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
+    // gt: the following is for sockets in the AF_ALG namespace (userspace interface to the kernel Crypto API)
+    allow(this, self, socket, manage_stream_socket_perms);
+
+    this.conf.mmap_read();
+    // create /etc/lvm/archive
+    this.conf<dir>.create();
+
+    this.lock.manage();
+    var_lock_t.filetrans(this, this.lock, [ dir file ]);
+
+    // Write to /etc/lvm, /etc/lvmtab, /etc/lvmtab.d
+    // Map for vgchange on /etc/lvm/backup/ files
+    this.metadata.mmap_manage();
+    this.conf.filetrans(this, this.metadata, file);
+    etc_t.filetrans(this, this.metadata_t, file);
+
+    this.runtime.manage();
+    var_run_t.filetrans(this, this.runtime, [ file sock_file ]);
+
+    this.state.manage();
+    var_lib_t.filetrans(this, this.state, [ file dir ]);
+
+    this.tmp.manage();
+    tmp_t.filetrans(this, this.tmp, [ file dir ]);
+
+    this.tmpfs.manage();
+    tmpfs_t.filetrans(this, this.tmpfs, [ file dir ]);
+
+    anon_inodefs_t.rw();
+
+    autofs_t.list();
+
+    bin_t.exec();
+
+    bootloader_tmp_t.rw();
+
+    crack_db_t.read();
+
+    debugfs_t.list();
+
+    device_t.relabel();
+    device_t<common_character_device>.dontaudit_getattr();
+    device_t<common_block_device>.dontaudit_getattr();
+    device_t<common_pipe>.dontaudit_getattr();
+
+    // LVM (vgscan) scans for devices by stating every file in /dev and applying a regex...
+    device_node<common_character_device>.dontaudit_read();
+    device_node<common_block_device>.dontaudit_read();
+
+    domain.ps(lvm_t)
+
+    etc_t.read();
+
+    etc_runtime_t.read();
+
+    filesystem_image.mmap_rw();
+
+    // LVM creates block devices in /dev/mapper or /dev/<vg>
+    // depending on its version
+    // LVM(2) needs to create directories (/dev/mapper, /dev/<vg>)
+    // and links from /dev/<vg> to /dev/mapper/<vg>-<lv>
+    fixed_disk_device_t.manage();
+    fixed_disk_device_t.relabel();
+    device_t.filetrans(lvm_t, fixed_disk_device_t, blk_file);
+    // Access raw devices and old /dev/lvm (c 109,0).  Is this needed?
+    //fixed_disk_device_t.rw();
+
+    fs_t.getattr_superblock();
+
+    gpmctl_t.dontaudit_getattr();
+
+    init_t.initctl.dontaudit_getattr();
+
+    init_script_t.ps();
+    init_script_t.tmp.read();
+
+    kernel.request_module_load();
+    kernel.get_sysv_ipc_info();
+
+    kernel_t.inherit_file_descriptors();
+
+    kmod_t.domtrans();
+
+    lvm_control_t.rw();
+
+    mnt_t.list();
+
+    proc_t.read();
+    // it has no reason to need this
+    proc_t.kcore.dontaudit_getattr();
+
+    random_device_t.read();
+
+    removable_t.dontaudit_read();
+
+    removable_device_t.dontaudit_read();
+
+    selinux.file_contexts_setfscreate();
+
+    shell_exec_t.exec();
+
+    // Read system variables in /proc/sys
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    // Read /sys/block. Device mapper metadata is kept there.
+    // Write read_ahead_kb
+    sysfs_t.rw();
+
+    // no other dbus access?
+    //system_dbusd_t.client();
+
+    tmpfs_t<common_file>.dontaudit_getattr();
+
+    udev_t.runtime.read();
+
+    // for when /usr is not mounted:
+    unlabeled_t<dir>.list();
+
+    urandom_device_t.read();
+
+    usr_t.read();
+
+    virt_image.manage(); virt_state_t.list();
+    virt_image<block_device>.rw();
+
+    xend_t.dontaudit_rw_inherited_stream_sockets();
+    xend_t.log.append();
+    xend_t.log.dontaudit_write();
+
+    if (distro_redhat) {
+        rpm_script_t.tmp<common_file>.manage();
+
+        unconfined.domain();
+
+        // this is from the initrd:
+        unlabeled_t<dir>.rw();
+    }
+
+//typeattribute lvm_t mlsfileread;
+//typeattribute lvm_t mlsfilewritetoclr;
+// needs privowner because it assigns the identity system_u to device nodes
+// but runs as the identity of the sysadmin
+//typeattribute lvm_t can_change_object_identity;
+}

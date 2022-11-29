@@ -1,0 +1,171 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//
+// Tunables
+//
+@alias(systemd_tmpfiles_manage_all)
+tunable systemd_tmpfiles_manage_non_security {
+    /// Enable support for systemd-tmpfiles to manage all non-security files.
+    default false;
+}
+
+//
+// Groupings
+//
+virtual resource systemd_tmpfiles_configfile {
+    /// Grouping of config files for systemd-tmpfiles.
+}
+
+virtual resource systemd_tmpfiles_managed {
+    /// Grouping of files systemd-tmpfiles manages.
+}
+
+//
+// Concrete types
+//
+resource systemd_factory_conf_t inherits common_file, common_dir, symlink, systemd_tmpfiles_configfile {
+    file_context("/usr/share/factory(/.*)?", any);
+}
+
+domain systemd_tmpfiles_t inherits systemd_daemon {
+    /// Create/delete files on volatile filesystems.
+
+    //
+    // Resources
+    //
+    @alias(systemd_tmpfiles_conf_t)
+    extend conf inherits systemd_tmpfiles_configfile {
+        file_context("/run/tmpfiles\.d", dir);
+        // TODO add back in when we figure out what to do with none
+        // file_context("/run/tmpfiles\.d/.*", any, <<none>>);
+    }
+
+    @alias(systemd_tmpfiles_exec_t)
+    extend exec  {
+        file_context("/usr/bin/systemd-tmpfiles", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, systemd_tmpfiles_t, self, capability, [ chown dac_override dac_read_search fowner fsetid mknod net_admin sys_admin ]);
+
+    cgroup_t.list();
+
+    configfile.manage();
+    configfile<common_file>.relabel();
+    configfile<common_dir>.manage();
+    configfile<common_dir>.relabel();
+
+    device_t.getattr();
+    device_t.manage();
+    device_t<common_named_socket>.manage();
+    device_t<common_character_device>.manage();
+    device_t<common_block_device>.manage();
+    device_t.relabel();
+    device_t<common_character_device>.relabel();
+    device_t<common_block_device>.relabel();
+    device_t.watch();
+    device_t<symlink>.watch();
+    device_t<common_named_socket>.watch();
+    device_t<common_character_device>.watch();
+    device_t<common_block_device>.watch();
+
+    device_node<common_character_device>.manage();
+    device_node<common_block_device>.manage();
+    device_node<common_character_device>.relabel();
+    device_node<common_block_device>.relabel();
+    device_node<common_dir>.watch();
+    device_node<symlink>.watch();
+    device_node<common_named_socket>.watch();
+    device_node<common_character_device>.watch();
+    device_node<common_block_device>.watch();
+
+    etc_t.read();
+    etc_t<dir>.relabelto();
+    // for /etc/mtab
+    etc_t<symlink>.manage();
+
+    etc_runtime_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    home_root_t.relabel();
+    home_root_t.list();
+
+    init_t.runtime.read();
+
+    lockfile<common_file>.manage();
+    lockfile<common_dir>.manage();
+    lockfile<symlink>.manage();
+    lockfile<common_file>.relabel();
+    lockfile<common_dir>.relabel();
+    lockfile<symlink>.relabel();
+
+    lost_found_t.dontaudit_list();
+
+    nss.get_passwd_entry();
+
+    proc_t.getattr_superblock();
+    proc_t.net.read(); proc_t.list();
+
+    runtimefile<common_dir>.manage();
+    runtimefile<common_dir>.relabel();
+
+    // Allow systemd-tmpfiles to enable pstore kernel parameters over sysfs
+    // /sys/module/printk/parameters/always_kmsg_dump
+    // /sys/module/kernel/parameters/crash_kexec_post_notifiers
+    sysfs_t.write();
+
+    sysfs_types.relabel();
+    sysfs_types.setattr();
+    sysfs_types<common_dir>.relabel();
+    sysfs_types<common_dir>.setattr();
+    sysfs_types<symlink>.relabel();
+    sysfs_types<symlink>.setattr();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    systemd_tmpfiles_configfile<common_file>.read();
+
+    // admin == manage perms + relabel perms
+    systemd_tmpfiles_managed<file_type>.admin();
+
+    tmpfile<common_dir>.delete();
+    tmpfile<common_dir>.relabel();
+    tmpfile<common_file>.delete();
+    tmpfile<common_pipe>.delete();
+    tmpfile<common_named_socket>.delete();
+    tmpfile<symlink>.delete();
+
+    tmpfs_t.relabelfrom();
+    tmpfs_t.list();
+
+    urandom_device_t.read();
+
+    usr_t.delete();
+
+    if (systemd_tmpfiles_manage_non_security) {
+        // systemd-tmpfiles can be configured to manage anything.
+        // have a last-resort option for users to do this.
+        file_type.admin(); delete(security_file<file_type>.admin());
+    }
+
+    optional {
+        apt_t.rw_inherited_pipes();
+    }
+
+    //
+    // Functions
+    //
+    fn manager_of(file_type target) {
+        /// Systemd-tmpfiles can manage and relabel the specified file type.
+        // admin == manage perms + relabel perms
+        // This function is temporary until optional inheritance is implemented.
+        target.admin(this);
+    }
+}
+// TODO: remaining systemd_tmpfiles_t.manager_of(this);
+// var_log_t, net_conf_t, syslogd_tmp_t, xfs_tmp_t, xconsole_device_t, xdm_tmp_t, system_dbusd_var_lib_t

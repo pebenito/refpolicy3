@@ -1,0 +1,162 @@
+// SPDX-License-Identifier: GPL-2.0
+
+tunable systemd_nspawn_labeled_namespace {
+    /// Allow systemd-nspawn to create a labelled namespace with the same types as the parent environment.
+    default false;
+}
+
+domain systemd_nspawn_t inherits systemd_app_domain {
+    /// Spawn processes in a namespace.
+
+    //
+    // Resources
+    //
+    @alias(systemd_nspawn_exec_t)
+    extend exec  {
+        file_context("/usr/bin/systemd-nspawn", file);
+    }
+
+    @alias(systemd_nspawn_runtime_t)
+    extend runtime {
+        file_context("/run/systemd/nspawn(/.*)?", any);
+    }
+
+    @alias(systemd_nspawn_tmp_t)
+    extend tmp {}
+
+    //
+    // Policy
+    //
+    allow(this, self, process, [ setcap setrlimit ]);
+    allow(this, self, capability, [ dac_override dac_read_search fsetid mknod net_admin setgid setuid setpcap sys_admin sys_chroot ]);
+    allow(this, self, capability2, wake_alarm);
+
+    // for /run/systemd/nspawn/incoming in chroot
+    this.runtime.mounton();
+
+    this.tmp.mounton();
+
+    cgroup_t.read();
+
+    device_t.getattr();
+
+    devpts_t<common_character_device>.getattr();
+    devpts_t<common_character_device>.setattr();
+    devpts_t.getattr_superblock();
+    devpts_t.mount();
+
+    etc_t.manage();
+
+    fs_t.remount();
+
+    init_t.getrlimit();
+    init_t.runtime<common_named_socket>.write();
+
+    init_script_t.domtrans();
+    init_script_t.send_kill_signals();
+
+    locale_t.manage();
+
+    mnt_t.manage();
+    mnt_t.mounton();
+
+    // for writing inside chroot
+    net_conf_t.manage();
+
+    proc_t.read();
+    proc_t.mount();
+    proc_t.remount();
+    proc_t<common_dir>.mounton();
+    proc_t.kmsg.mounton();
+
+    ptmx_t.rw();
+
+    random_device_t.read();
+
+    root_t.mounton();
+
+    runtime_t.setattr();
+
+    shell_exec_t.exec(); bin_t.list(); usr_t.list();
+
+    systemd_journal_t.list();
+
+    systemd_machined_t.dbus_send();
+
+    sysctl_t.mounton();
+    sysctl_t.kernel.mounton(); sysctl_t.list();
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    sysfs_t<common_dir>.manage();
+    sysfs_t.mounton();
+    sysfs_t.mount();
+
+    system_map_t.read(); boot_t.list();
+
+    tmp_t<dir>.mounton();
+
+    tmpfs_t.getattr_superblock();
+    tmpfs_t.mount();
+    tmpfs_t.remount();
+    tmpfs_t<common_character_device>.manage();
+    tmpfs_t<common_character_device>.rw();
+
+    tun_tap_device_t.rw();
+
+    urandom_device_t.read();
+
+    user_home_dir_t.manage(); home_root_t.list();
+
+    virt_content_t.manage();
+
+    if (systemd_nspawn_labeled_namespace) {
+        bin_t.exec();
+
+        cgroup_t.getattr_superblock();
+        cgroup_t<common_dir>.manage();
+        cgroup_t.mount();
+        cgroup_t.mounton();
+        cgroup_t.remount();
+        cgroup_t.unmount();
+        cgroup_t.write();
+
+        device_t.mounton();
+        device_t.setattr();
+
+        // manage etc symlinks for /etc/localtime
+        etc_t<symlink>.manage();
+
+        init_t.domtrans();
+
+        runtime_t.mounton();
+
+        selinuxfs_t.getattr_superblock();
+        selinuxfs_t.remount();
+
+        shell_exec_t.exec();
+
+        tmpfs_t.manage();
+        tmpfs_t<common_file>.manage();
+        tmpfs_t<symlink>.manage();
+        tmpfs_t.mounton();
+        tmpfs_t<common_file>.mounton();
+
+        var_log_t.list();
+    }
+
+    optional {
+        system_dbusd_t.client();
+
+        systemd_machined_t.dbus_send();
+
+        unconfined_t.dbus_send();
+    }
+
+//if (enable_mcs) {
+//    range_transition systemd_nspawn_t initrc_exec_t:process s0;
+//}
+
+//if (enable_mls) {
+//    range_transition systemd_nspawn_t initrc_exec_t:process s0 - mls_systemhigh;
+//}
+}

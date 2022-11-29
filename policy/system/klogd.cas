@@ -1,0 +1,52 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain klogd_t inherits daemon {
+    /// The kernel log daemon.
+
+    //
+    // Resources
+    //
+    extend exec {
+        file_context("/usr/bin/klogd", file);
+        file_context("/usr/bin/rklogd", file);
+        file_context("/usr/sbin/klogd", file);
+        file_context("/usr/sbin/rklogd", file);
+    }
+
+    extend runtime {
+        file_context("/run/klogd\.pid", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, sys_admin);
+    dontaudit(this, self, capability, [ sys_resource sys_tty_config ]);
+    allow(klogd_t, self, process, [ sigchld sigkill sigstop signull signal ]);
+
+    // read /etc/nsswitch.conf
+    etc_t.read();
+    etc_runtime_t.read();
+
+    file_type<filesystem>.getattr_superblock();
+
+    filesystem.getattr_superblock();
+
+    proc_t.read();
+
+    sysctl_t.kernel.read(); sysctl_t.list();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+    // Control syslog and console logging
+    syslog.change_console_log_level();
+    syslog.configure_kernel_ring_buffer();
+
+    system_map_t.read(); boot_t.list();
+
+//if (allow_raw_memory_access) {
+//    memory_device_t.read(); allow(this, self, capability, sys_rawio);
+//}
+// typeattribute klogd_t mlsfileread;
+}

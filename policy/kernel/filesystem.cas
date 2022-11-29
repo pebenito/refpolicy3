@@ -1,0 +1,695 @@
+// SPDX-License-Identifier: GPL-2.0
+
+virtual resource filesystem {
+    allow(this, self, filesystem, associate);
+
+    fn associate(any_file_type object) {
+        /// Associate a file to this filesystem.
+        /// This will allow files with the object label to exist on this filesystem.
+        allow(object, this, filesystem, [associate]);
+    }
+
+    fn dontaudit_associate(any_file_type object) {
+        /// Do not audit denials for associating a file to this filesystem.
+        dontaudit(object, this, filesystem, [associate]);
+    }
+
+    @alias(statfs)
+    fn getattr_superblock(domain source) {
+        /// Get the attributes of the superblock.
+        allow(object, this, filesystem, [getattr]);
+    }
+
+    @alias(dontaudit_statfs)
+    fn dontaudit_getattr_superblock(domain source) {
+        /// Do not audit denials for getting the attributes of the superblock.
+        dontaudit(object, this, filesystem, [getattr]);
+    }
+
+    fn mount(domain source) {
+        /// Mount this filesystem.
+        allow(source, this, filesystem, [mount]);
+    }
+
+    fn dontaudit_mount(domain source) {
+        /// Do not audit denials for mounting this filesystem.
+        dontaudit(source, this, filesystem, [mount]);
+    }
+
+    @alias(umount)
+    fn unmount(domain source) {
+        /// Unmount this filesystem.
+        allow(source, this, filesystem, [unmount]);
+    }
+
+    @alias(dontaudit_umount)
+    fn dontaudit_unmount(domain source) {
+        /// Do not audit denials for unmounting this filesystem.
+        dontaudit(source, this, filesystem, [unmount]);
+    }
+
+    fn remount(domain source) {
+        /// Change the mount options for this filesystem (remount).
+        allow(source, this, filesystem, remount);
+    }
+
+    fn dontaudit_remount(domain source) {
+        /// Do not audit denials for changing the mount options for this filesystem (remount).
+        dontaudit(source, this, filesystem, remount);
+    }
+
+    @alias(quotamod, change_quotas)
+    fn set_quotas(domain source) {
+        /// Set the filesystem quotas.
+        allow(source, this, filesystem, [quotamod]);
+    }
+
+    @alias(dontaudit_quotamod, dontaudit_change_quotas)
+    fn dontaudit_set_quotas(domain source) {
+        /// Do not audit denials for changing the filesystem quotas.
+        dontaudit(source, this, filesystem, [quotamod]);
+    }
+
+    @alias(quotaget)
+    fn get_quotas(domain source) {
+        /// Get the filesystem quotas.
+        allow(source, this, filesystem, [quotaget]);
+    }
+
+    @alias(dontaudit_quotaget)
+    fn dontaudit_get_quotas(domain source) {
+        /// Do not audit denials for getting the filesystem quotas.
+        dontaudit(source, this, filesystem, [quotaget]);
+    }
+
+    // FSNOTIFY_OBJ_TYPE_SB
+    fn fs_watch(domain source) {
+        /// Watch this file's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        allow(source, this, filesystem, [watch]);
+    }
+
+    fn dontaudit_fs_watch(domain source) {
+        /// Do not audit denials for watching this file's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        dontaudit(source, this, filesystem, [watch]);
+    }
+
+    fn fs_relabelfrom(domain source) {
+        /// Relabel the full filesystem from this type.
+        /// Uses the context= mount option.
+        allow(source, this, filesystem, relabelfrom);
+    }
+
+    fn fs_relabelto(domain source) {
+        /// Relabel the full filesystem to this type.
+        /// Uses the context= mount option.
+        allow(source, this, filesystem, relabelto);
+    }
+
+    fn fs_relabel(domain source) {
+        /// Relabel the full filesystem to and from this type.
+        /// Uses the context= mount option.
+        allow(source, this, filesystem, [relabelfrom relabelto]);
+    }
+
+    fn unconfined(domain source) {
+        /// Unconfined access (all permissions) to this filesystem.
+        allow(source, this, filesystem, [getattr mount unmount remount quotamod quotaget watch]);
+    }
+}
+
+//
+// Groupings
+//
+
+virtual resource filesystem_image inherits common_file {
+    /// Virtual for filesystem image files.
+}
+
+virtual resource noxattr_filesystem inherits filesystem, mountpoint, common_file_api {
+    /// Virtual for persistent/network filesystems without extended attribute support, e.g. vfat.
+    xattr_filesystem.associate(this);
+    noxattr_filesystem.associate(this);
+}
+
+virtual resource proc_entry inherits common_file_api {
+    /// Virtual for /proc entries.
+}
+
+virtual resource pseudo_filesystem inherits filesystem, common_file_api {
+    /// Pseudo filesystems that have missing or partial extended attribute support.
+}
+
+virtual resource sysctl_entry inherits common_file_api {
+    /// Virtual for sysctls.
+}
+
+// persistent/network filesystems with xattr handlers
+virtual resource xattr_filesystem inherits filesystem, mountpoint {
+    /// Virtual for persistent and network filesystems with full extended attribute support.
+}
+
+//
+// Concrete resources
+//
+
+resource anon_inodefs_t inherits pseudo_filesystem, mountpoint {
+    /// Anonymous inodes pseudo filesystem.
+    genfscon("anon_inodefs", "/", any);
+}
+
+resource autofs_t inherits noxattr_filesystem {
+    /// Automount pseudo filesystem.
+    genfscon("autofs", "/", any);
+    genfscon("automount", "/", any);
+}
+
+resource bdev_t inherits pseudo_filesystem {
+    /// Block device inode filesystem.
+    genfscon("bdev", "/", any);
+}
+
+resource binfmt_misc_fs_t inherits pseudo_filesystem, mountpoint {
+    /// Miscellaneous binary format filesystem.
+    genfscon("binfmt_misc", "/", any);
+}
+
+resource bpf_t inherits pseudo_filesystem, mountpoint {
+    /// Extended Berkeley Packet Filter (eBPF) filesystem.
+
+    sysfs_t.associate(this);
+
+    // TODO add back in when we figure out what to do with none GLOBAL
+    // file_context("/sys/fs/bpf(/.*)?", any, <<none>>);
+
+    genfscon("bpf", "/", any);
+}
+
+resource capifs_t inherits pseudo_filesystem, mountpoint {
+    /// ISDN CAPI 2.0 filesystem.
+    genfscon("capifs", "/", any);
+}
+
+resource cgroup_t inherits noxattr_filesystem {
+    /// Control group filesystem (v1 and v2).
+
+    syfs_t.associate(this);
+
+    file_context("/cgroup", dir);
+    // file_context("/cgroup/.*", any, <<none>>);
+
+    file_context("/sys/fs/cgroup", dir);
+    // file_context("/sys/fs/cgroup/.*", any, <<none>>);
+    file_context("/sys/fs/cgroup/[^/]+", symlink);
+
+    genfscon("cgroup", "/", any);
+    genfscon("cgroup2", "/", any);
+}
+
+resource cifs_t inherits noxattr_filesystem {
+    /// Windows server filesystems (SMB/CIFS).
+    genfscon("cifs", "/", any);
+    genfscon("smbfs", "/", any);
+}
+
+resource configfs_t inherits pseudo_filesystem {
+    /// Kernel object configuration filesystem.
+    genfscon("configfs", "/", any);
+}
+
+resource cpusetfs_t inherits pseudo_filesystem {
+    /// CPU set filesystem.
+    genfscon("cpuset", "/", any);
+}
+
+resource debugfs inherits pseudo_filesystem {
+    /// Kernel debug filesystem.
+    file_context("/sys/kernel/debug", dir);
+    // file_context("/sys/kernel/debug/.*", any, <<none>>);
+
+    genfscon("debugfs", "/", any);
+}
+
+//
+// devpts_t is the type of the devpts file system and
+// the type of the root directory of the file system.
+//
+@hint(class=[file fifo_file sock_file lnk_file blk_file], hint="Only directories should have this label.")
+@hint(class=chr_file, hint="This is a generic context. A different type should use used, e.g. foo_t.pty that inherits pty, login_pty, or user_pty. The login program should use term.open_pty(), to keep data private.")
+@derive(strategy=common_dir)
+resource devpts_t inherits common_dir, pseudo_filesystem, mountpoint {
+    file_context("/dev/pts", dir, system_u:object_r:devpts_t:s0-mls_systemhigh);
+    // file_context("/dev/pts(/.*)?", any, <<none>>);
+
+    fs_use_trans(devpts);
+}
+
+resource dosfs_t inherits noxattr_filesystem {
+    /// DOS/Windows and Mac OS filesystems.
+    genfscon("fat", "/", any);
+    genfscon("hfs", "/", any);
+    genfscon("hfsplus", "/", any);
+    genfscon("msdos", "/", any);
+    genfscon("ntfs-3g", "/", any);
+    genfscon("ntfs", "/", any);
+    genfscon("vfat", "/", any);
+}
+
+resource ecryptfs_t inherits noxattr_filesystem {
+    /// eCryptfs stacked encryption filesystem.
+    genfscon("ecryptfs", "/", any);
+}
+
+resource efivarfs_t inherits noxattr_filesystem {
+    /// (U)EFI variable filesystem.
+    genfscon("efivarfs", "/", any);
+}
+
+//
+// fs_t is the default type for persistent
+// filesystems with extended attributes
+//
+resource fs_t inherits xattr_filesystem {
+    /// Filesystems that support extended attributes.
+
+    initial_context(fs);
+
+    // Use xattrs for the following filesystem types.
+    // Requires that a security xattr handler exist for the filesystem.
+    fs_use_xattr(btrfs);
+    fs_use_xattr(encfs);
+    fs_use_xattr(ext2);
+    fs_use_xattr(ext3);
+    fs_use_xattr(ext4);
+    fs_use_xattr(ext4dev);
+    fs_use_xattr(f2fs);
+    fs_use_xattr(gfs);
+    fs_use_xattr(gfs2);
+    fs_use_xattr(gpfs);
+    fs_use_xattr(jffs2);
+    fs_use_xattr(jfs);
+    fs_use_xattr(lustre);
+    fs_use_xattr(overlay);
+    fs_use_xattr(squashfs);
+    fs_use_xattr(ubifs);
+    fs_use_xattr(xfs);
+    fs_use_xattr(zfs);
+
+
+    //
+    // Process (task) context filesystems
+    //
+    // Use the allocating process context to label inodes in the following filesystem
+    // types, and label the filesystem itself with the specified context.
+    // This is appropriate for pseudo filesystems that represent objects
+    // like pipes and sockets, so that these objects are labeled with the same
+    // type as the creating task.
+    //
+    fs_use_task(eventpollfs);
+    fs_use_task(pipefs);
+    fs_use_task(sockfs);
+}
+
+resource fusefs_t inherits noxattr_filesystem {
+    /// Filesystem in Userspace (FUSE) filesystem.
+    genfscon("fuse", "/", any);
+    genfscon("fuseblk", "/", any);
+    genfscon("fusectl", "/", any);
+}
+
+resource futexfs_t inherits pseudo_filesystem {
+    /// Fast Userspace Mutex (futex) filesystem.
+    genfscon("futexfs", "/", any);
+}
+
+@hint(class=[file fifo_file sock_file], hint="Hugetlbfs is shared. A different type should use used, e.g. foo_t.runtime, to keep data private.")
+@hint(class=dir, perm=create, hint="Hugetlbfs is shared. A different type should use used, e.g. foo_t.runtime, to keep data private.")
+resource hugetlbfs_t inherits xattr_filesystem, mountpoint, common_file {
+    /// HugeTLB pages filesystem.
+    device_t.associate(this);
+
+    file_context("/dev/hugepages", dir);
+    // file_context("/dev/hugepages(/.*)?", any, <<none>>);
+    file_context("/usr/lib/udev/devices/hugepages", dir);
+    // file_context("/usr/lib/udev/devices/hugepages/.*", any, <<none>>);
+
+    fs_use_trans(hugetlbfs);
+}
+
+resource ibmasmfs_t inherits pseudo_filesystem {
+    /// IBM ASM service processor filesystem.
+    genfscon("ibmasmfs", "/", any);
+}
+
+resource infinibandeventfs_t inherits pseudo_filesystem {
+    /// Infiniband events filesystem.
+    genfscon("infinibandeventfs", "/", any);
+}
+
+resource inotifyfs_t inherits pseudo_filesystem {
+    /// Inotify file change notification filesystem.
+    genfscon("inotifyfs", "/", any);
+}
+
+resource iso9660_t inherits noxattr_filesystem {
+    /// Optical media filesystems, iso9660 and UDF.
+    genfscon("iso9660", "/", any);
+    genfscon("udf", "/", any);
+}
+
+resource kvmfs_t inherits pseudo_filesystem {
+    /// Kernel Virtual Machine (KVM) control filesystem.
+    genfscon("kvmfs", "/", any);
+}
+
+resource mvfs_t inherits noxattr_filesystem {
+    /// MultiVersion File System (MVFS).
+    genfscon("mvfs", "/", any);
+}
+
+resource nfs_t inherits noxattr_filesystem {
+    /// Network File System (NFS).
+    genfscon("afs", "/", any);
+    genfscon("coda", "/", any);
+    genfscon("dazukofs", "/", any);
+    genfscon("gadgetfs", "/", any);
+    genfscon("lustre", "/", any);
+    genfscon("ncpfs", "/", any);
+    genfscon("nfs", "/", any);
+    genfscon("nfs4", "/", any);
+    genfscon("panfs", "/", any);
+    genfscon("reiserfs", "/", any);
+}
+
+resource nfsd_fs_t inherits pseudo_filesystem {
+    /// Kernel nfsd control filesystem.
+    genfscon("nfsd", "/", any);
+}
+
+resource nsfs_t inherits pseudo_filesystem {
+    /// Namespace filesystem.
+    genfscon("nsfs", "/", any);
+}
+
+resource oprofilefs_t inherits pseudo_filesystem {
+
+    genfscon("oprofilefs", "/", any);
+}
+
+resource proc_t inherits pseudo_filesystem, mountpoint, proc_entry {
+    /// The /proc filesystem.
+
+    // file_context("/proc", dir, any, <<none>>);
+    // file_context("/proc/.*", any, <<none>>);
+
+    genfscon("proc", "/", any);
+    genfscon("proc", "/sysvipc", any);
+
+    //
+    // Proc entries
+    //
+
+    @alias(proc_afs_t)
+    resource afs inherits proc_entry {
+        /// OpenAFS interfaces.
+        genfscon("proc", "/fs/openafs", any);
+    }
+
+    resource kmsg inherits proc_entry {
+        /// Kernel message interface.
+        genfscon("proc", "/kmsg", any, system_u:object_r:proc_t.kmsg:mls_systemhigh)
+
+//        optional_policy(`
+//            init_mountpoint(proc_kmsg_t)
+//        ')
+    }
+
+    @alias(proc_kcore_t)
+    resource kcore inherits proc_entry, cap_sys_rawio_checks {
+        /// Kernel core image.
+        //neverallow ~{ can_dump_kernel kern_unconfined } proc_kcore_t:file ~{ getattr mounton };
+        genfscon("proc", "/kcore", any, system_u:object_r:proc_kcore_t:mls_systemhigh);
+
+//        optional_policy(`
+//            init_mountpoint(proc_kcore_t)
+//        ')
+    }
+
+    @alias(proc_mdstat_t)
+    resource mdstat inherits proc_entry {
+        /// MD/RAID status.
+        genfscon("proc", "/mdstat", any);
+    }
+
+    @alias(proc_net_t)
+    resource net inherits proc_entry {
+        /// Networking parameters and state.
+        genfscon("proc", "/net", any);
+    }
+
+    @alias(proc_xen_t)
+    type xen inherits proc_entry, mountpoint {
+        /// Xen filesystem (xenfs) mountpoint.
+        genfscon("proc", "/xen", any);
+    }
+}
+
+// TODO: should this be noxattr_filesystem instead?
+resource pstore_t inherits pseudo_filesystem, mountpoint {
+    /// Persistent storage filesystem.
+
+    sysfs_t.associate(this);
+
+    file_context("/sys/fs/pstore", dir);
+    // file_context("/sys/fs/pstore/.*", any, <<none>>);
+
+    genfscon("pstore", "/", any);
+}
+
+@hint(class=[file fifo_file sock_file], hint="A different type should use used, e.g. foo_t.tmp, to keep data private.")
+@hint(class=dir, perm=create, hint="A different type should use used, e.g. foo_t.tmp, to keep data private.")
+resource ramfs_t inherits xattr_filesystem {
+    /// RAM filesystem.
+    genfscon("ramfs", "/", any);
+}
+
+resource removable_t inherits noxattr_filesystem {
+    /// The default type of all removable media.
+    /// If a removable media does not support SELinux labels,
+    /// this will be used.
+}
+
+resource romfs_t inherits noxattr_filesystem {
+    /// ROM filesystem.
+    genfscon("romfs", "/", any);
+    genfscon("cramfs", "/", any);
+}
+
+@derive(strategy=common_pipe)
+resource rpc_pipefs_t inherits pseudo_filesystem, common_pipe, mountpoint {
+    /// RPC filesystem for communication between the kernel and userspace.
+    // file_context("/var/lib/nfs/rpc_pipefs(/.*)?", any, <<none>>);
+
+    genfscon("rpc_pipefs", "/", any);
+}
+
+resource spufs_t inherits pseudo_filesystem, mountpoint {
+    /// PowerPC Synergistic Processor Units (SPU) filesystem.
+    genfscon("spufs", "/", any);
+}
+
+@hint(class=[file, fifo_file, sock_file, chr_file, blk_file], "sysctl_t should only be for the /proc/sys dir.
+    If a sysctl has this type, you should avoid adding access and instead change the label.");
+resource sysctl_t inherits common_dir_api {
+    /// The default type for sysctls.
+
+    initial_context(sysctl);
+    genfscon("proc", "/sys", any);
+
+    @alias(sysctl_crypto_t)
+    resource crypto inherits sysctl_entry {
+        /// crypto.* sysctls.
+        genfscon("proc", "/sys/crypto", any);
+    }
+
+    @alias(sysctl_dev_t)
+    resource dev inherits sysctl_entry {
+        /// dev.* sysctls.
+        genfscon("proc", "/sys/dev", any);
+    }
+
+    @alias(sysctl_fs_t)
+    resource fs inherits sysctl_entry, mountpoint {
+        /// fs.* sysctls.
+        genfscon("proc", "/sys/fs", any);
+    }
+
+    @alias(sysctl_irq_t)
+    resource irq inherits sysctl_entry {
+        /// irq.* sysctls.
+        genfscon("proc", "/irq", any);
+
+//        optional_policy(`
+//            init_mountpoint(sysctl_irq_t)
+//        ')
+    }
+
+    @alias(sysctl_kernel_t)
+    resource kernel inherits sysctl_entry {
+        /// kernel.* sysctls.
+        genfscon("proc", "/sys/kernel", any);
+
+//        optional_policy(`
+//            init_mountpoint(sysctl_kernel_t)
+//        ')
+
+        @alias(sysctl_hotplug_t)
+        resource hotplug inherits sysctl_entry {
+            /// kernel.hotplug sysctl.
+            genfscon("proc", "/sys/kernel/hotplug", file);
+        }
+
+        @alias(sysctl_modprobe_t)
+        resource modprobe inherits sysctl_entry {
+            /// kernel.modprove sysctl.
+            genfscon("proc", "/sys/kernel/modprobe", file);
+        }
+
+        @alias(sysctl_kernel_ns_last_pid_t)
+        resource ns_last_pid inherits sysctl_entry {
+            /// kernel.ns_last_pid sysctl.
+            genfscon("proc", "/sys/kernel/ns_last_pid", file);
+        }
+    }
+
+    @alias(sysctl_net_t)
+    resource net inherits sysctl_entry {
+        /// net.* sysctls.
+        genfscon("proc", "/sys/net", any);
+
+        @alias(sysctl_rpc_t)
+        resource rpc inherits sysctl_entry {
+            /// net.rpc.* sysctls.
+            genfscon("proc", "/net/rpc", any);
+        }
+
+        @alias(sysctl_net_unix_t)
+        resource unix inherits sysctl_entry {
+            /// net.unix.* sysctls.
+            genfscon("proc", "/sys/net/unix", any);
+        }
+    }
+
+    @alias(sysctl_vm_t)
+    resource vm inherits sysctl_entry {
+        /// vm.* sysctls.
+        genfscon("proc", "/sys/vm", any);
+
+        @alias(sysctl_vm_overcommit_t)
+        resource overcommit inherits sysctl_entry {
+            /// vm.overcommit sysctl.overcommit_memory sysctl.
+            genfscon("proc", "/sys/vm/overcommit_memory", any);
+        }
+    }
+}
+
+resource securityfs_t inherits pseudo_filesystem, mountpoint {
+    /// Security filesystem.
+    genfscon("securityfs", "/", any);
+}
+
+resource selinuxfs_t inherits pseudo_filesystem, mountpoint {
+    /// SELinux filesystem.
+    // file_context("/selinux", dir, any, <<none>>);
+    // file_context("/selinux/.*", any, <<none>>);
+    // file_context("/sys/fs/selinux", dir, any, <<none>>);
+    // file_context("/sys/fs/selinux/.*", any, <<none>>);
+
+    genfscon("selinuxfs", "/", any);
+}
+
+resource sysfs_t inherits xattr_filesystem, pseudo_filesystem, sysfs_entry {
+    /// sysfs filesystem.
+
+    file_context("/sys(/.*)?", any);
+
+    genfscon("sysfs", "/", any);
+
+    @alias(cpu_online_t)
+    resource cpu_online inherits sysfs_entry {
+        /// /sys/devices/system/cpu/online.
+        file_context("/sys/devices/system/cpu/online", file);
+
+        genfscon("sysfs", "/devices/system/cpu/online", file);
+    }
+}
+
+resource sysv_t inherits noxattr_filesystem {
+    /// sysv filesystem.
+    genfscon("sysv", "/", any);
+    genfscon("v7", "/", any);
+}
+
+resource tracefs_t inherits pseudo_filesystem {
+    /// TraceFS stackable filesystem for kernel tracing.
+    // file_context("/sys/kernel/tracing(/.*)?", any, <<none>>);
+
+    genfscon("tracefs", "/", any);
+}
+//optional_policy(`
+//    init_mountpoint(tracefs_t)
+//')
+
+resource vmblock_t inherts noxattr_filesystem {
+    /// Virtualization block device filesystem.
+    genfscon("vmblock", "/", any);
+    genfscon("vboxsf", "/", any);
+    genfscon("vmhgfs", "/", any);
+}
+
+resource vxfs_t inherits noxattr_filesystem {
+    /// VERITAS filesystem (VxFS).
+    genfscon("vxfs", "/", any);
+}
+
+@hint(class=[file fifo_file sock_file], hint="Tmpfs directories are shared. A different type should use used, e.g. foo_t.tmpfs, to keep data private.")
+@hint(class=dir, perm=create, hint="Tmpfs directories are shared. A different type should use used, e.g. foo_t.tmpfs, to keep data private.")
+@derive(strategy=common_dir)
+resource tmpfs_t inherits xattr_filesystem, common_dir, polyinstantiate_parent {
+    /// tmpfs filesystem.
+
+    device_t.associate(this);
+    noxattr_filesystem.associate(this);
+
+    file_context("/dev/shm", dir);
+    // file_context("/dev/shm/.*", any, <<none>>);
+    file_context("/usr/lib/udev/devices/shm", dir);
+    // file_context("/usr/lib/udev/devices/shm/.*", any, <<none>>);
+    // file_context("/dev/mqueue(/.*)?", any, <<none>>);
+
+    if (distro_debian,
+        file_context("/run/shm", dir);
+        //file_context("/run/shm/.*", any, <<none>>);
+    ')
+
+    // Use a transition SID based on the allocating task SID and the
+    // filesystem SID to label inodes in the following filesystem types,
+    // and label the filesystem itself with the specified context.
+    // This is appropriate for pseudo filesystems like devpts and tmpfs
+    // where we want to label objects with a derived type.
+    fs_use_trans(mqueue);
+    fs_use_trans(shm);
+    fs_use_trans(tmpfs);
+}
+
+resource usbfs_t inherits pseudo_filesystem {
+    /// USB filesystem, /proc/bus/usb.
+    genfscon("usbfs", "/", any);
+    genfscon("usbdevfs", "/", any);
+}
+
+resource xenfs_t inherits pseudo_filesystem {
+    /// Xen filesystem.
+    genfscon("xenfs", "/", any);
+}

@@ -1,0 +1,236 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//
+// Concrete Types
+//
+@alias(init_t)
+domain sysvinit_t {
+    /// SysV init program (pid 1)
+
+    //
+    // Resources
+    //
+
+    @alias(initctl_t)
+    resource initctl inherits common_pipe {
+        /// The /dev/initctl pipe.
+    }
+
+    @alias(init_runtime_t)
+    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+        /// Runtime files in /run and /var/run.
+    }
+
+    @alias(init_tmp_t)
+    resource tmp inherits tmpfile, common_fifo_file, common_named_socket {
+        /// Temporary files in /tmp and /var/tmp.
+    }
+
+    @alias(init_tmpfs_t)
+    resource tmpfs inherits tmpfsfile, common_fifo_file, common_named_socket {
+        /// POSIX shared memory segments (tmpfs files)
+    }
+
+    //
+    // Policy
+    //
+
+    // Use capabilities. old rule:
+    allow(this, self, capability, [ chown dac_override dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice sys_resource sys_time sys_tty_config mknod lease audit_write audit_control setfcap ]);
+    allow(this, self, capability2, [ wake_alarm block_suspend ]);
+    // is ~sys_module really needed? observed:
+    // sys_boot
+    // sys_tty_config
+    // kill
+    // setuid (from /sbin/shutdown)
+    // sys_chroot (from /usr/bin/chroot)
+
+    allow(this, self, fifo_file, rw_fifo_file_perms);
+
+    this.initctl.manage();
+    device_t.filetrans(this, initctl_t, fifo_file);
+    var_run_t.filetrans(this, initctl_t, fifo_file); var_t.list();
+
+    this.runtime.manage();
+    runtime_t.filetrans(this, this.runtime, dir_notdevfile_class_set); var_t.list();
+
+    this.tmpfs.manage();
+    tmpfs_t.filetrans(this, this.tmpfs, file);
+
+    // Re-exec itself
+    this.exec.exec();
+
+    bin_t.exec();
+
+    chroot_exec_t.exec();
+
+    default_context_t.read(); selinux_config_t.list(); etc_t.list();
+
+    // Early devtmpfs
+    device_t<common_character_device>.rw_inherited();
+
+    devlog_t.manage();
+    device_t.filetrans(this, devlog_t, sock_file);
+    this.runtime.filetrans(this, devlog_t, sock_file, "syslog"); runtime_t.list(); var_t.list();
+
+    etc_runtime_t.manage(); etc_t<dir>.rw();
+    etc_t.filetrans(this, etc_runtime_t, file, );
+
+    fs_t.getattr_superblock();
+
+    // Modify utmp.
+    init_script_t.runtime.rw();
+    init_script_t.runtime.setattr();
+
+    inotifyfs_t.list();
+
+    kernel_t.share_unsafe_state();
+
+    kernel_module_t.mmap_read();
+
+    ld_so_cache_t.rw();
+
+    proc_t.read();
+
+    // cjp: this may be related to /dev/log
+    ramfs_t<common_named_socket>.write();
+
+    // file descriptors inherited from the rootfs:
+    root_t<common_file>.dontaudit_rw_inherited();
+    root_t<character_device>.dontaudit_rw_inherited();
+
+    runtime_t<common_file>.rw(); var_t.list();
+
+    selinux.set_all_booleans();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    terminal.rw(); devpts_t.list();
+
+    dontaudit(this, unlabeled_t, dir, list_dir_perms);
+
+    var_log_t.rw(); var_t.list();
+
+// allow(this, initrc_t, unix_stream_socket, connectto);
+
+// Mostly for systemd. Allow init to link to various keyrings
+//allow this init_linkable_keyring_type:key link;
+
+// typeattribute init_t mcssetcats;
+// typeattribute init_t mlsfileread;
+// typeattribute init_t mlsfilewrite;
+// typeattribute init_t mlsprocwrite;
+// typeattribute init_t mlsfduse;
+// typeattribute init_t mlsprocsetsl;
+
+    //
+    // Functions
+    //
+    fn telinit(domain source) {
+        /// Change system runlevel using telinit.
+
+        this.ps(source);
+        this.send_general_signals(source);
+
+        this.exec.exec(source);
+
+        this.initctl.rw(source);
+
+        // upstart uses a datagram socket instead of initctl pipe
+        allow(source, self, unix_dgram_socket, create_socket_perms);
+        allow(source, this, unix_dgram_socket, sendto);
+        //576913
+        allow(source, this, unix_stream_socket, connectto);
+
+        bin_t.exec(source);
+
+        runtime_t.search(source);
+    }
+}
+
+//
+// Extends
+//
+extend daemon {
+    // Cases where the daemon receives a fd
+    // to the console from init:
+    console_device_t.dontaudit_rw_inherited()
+
+    // init script ptys are the stdin/out/err
+    // when using run_init
+    init_script_t.pty.rw_inherited();
+
+    // direct sysadm
+    login_domain.dontaudit_inherit_file_descriptors();
+
+    user_home_dir_t.dontaudit_list();
+
+    user_devpts_t.dontaudit_rw_inherited();
+
+    user_tty_device_t.dontaudit_rw_inherited();
+
+//dontaudit privfd:fd use.
+//domain_entry_file(initrc_t, auditd_initrc_exec_t)
+//domtrans_pattern(init_run_all_scripts_domain, auditd_initrc_exec_t, initrc_t)
+
+    //
+    // Concrete member functions
+    //
+    fn admin(domain source) {
+        /// Administrate this daemon.
+        allow(source, this, process, admin_process_perms);
+        this.ps(source);
+        this.startstop(source);
+
+        this.conf.admin(source);
+
+        this.runtime.admin(source);
+
+        this.tmp.admin(source);
+
+        this.tmpfs.admin(source);
+    }
+
+    fn start(domain source) {
+        /// Start this daemon.
+        this.startstop(source);
+    }
+
+    fn startstop(domain source) {
+        /// Start and stop this daemon.
+        // TODO: direct daemon or run_init or gentoo/openrc
+    }
+
+    fn status(domain source) {
+        /// Get the status of this daemon.
+        this.startstop(source)
+    }
+
+    fn stop(domain source) {
+        /// Stop this daemon.
+        this.startstop(source);
+    }
+}
+
+extend init_script_t {
+    @alias(initrc_devpts_t)
+    resource pty inherits pty {
+        /// The pty for init scripts.
+    }
+}
+
+extend system_app_domain {
+    // Cases where the app receives a fd
+    // to the console from init:
+    console_device_t.dontaudit_rw_inherited()
+
+    // init script ptys are the stdin/out/err
+    // when using run_init
+    init_script_t.pty.rw_inherited();
+}
+
+extend udev_t {
+    init_script_t.domtrans();
+}
