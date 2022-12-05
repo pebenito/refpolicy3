@@ -345,7 +345,7 @@ domain systemd_t inherits init {
     }
 
     @alias(init_runtime_t)
-    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+    resource runtime inherits runtimefile, common_pipe, common_named_socket {
         /// Runtime files in /run and /var/run.
     }
 
@@ -357,12 +357,12 @@ domain systemd_t inherits init {
     }
 
     @alias(init_tmp_t)
-    resource tmp inherits tmpfile, common_fifo_file, common_named_socket {
+    resource tmp inherits tmpfile, common_pipe, common_named_socket {
         /// Temporary files in /tmp and /var/tmp.
     }
 
     @alias(init_tmpfs_t)
-    resource tmpfs inherits tmpfsfile, common_fifo_file, common_named_socket {
+    resource tmpfs inherits tmpfsfile, common_pipe, common_named_socket {
         /// POSIX shared memory segments (tmpfs files)
     }
 

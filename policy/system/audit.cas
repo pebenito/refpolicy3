@@ -232,7 +232,7 @@ domain audisp_remote_t inherits common_domain {
     }
 
     @alias(audisp_runtime_t)
-    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+    resource runtime inherits runtimefile, common_pipe, common_named_socket {
         /// Runtime files in /run and /var/run.
     }
 

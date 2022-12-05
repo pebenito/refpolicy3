@@ -148,7 +148,7 @@ domain lvm_t inherits system_app_domain {
     }
 
     @alias(lvm_runtime_t)
-    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+    resource runtime inherits runtimefile, common_pipe, common_named_socket {
         /// Runtime files in /run and /var/run.
         file_context("/run/multipathd\.sock", socket);
         file_context("/run/dmevent.*", any);

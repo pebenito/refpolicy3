@@ -12,7 +12,7 @@ domain systemd_passwd_agent_t inherits systemd_app_domain {
     }
 
     @alias(systemd_passwd_runtime_t)
-    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+    resource runtime inherits runtimefile, common_pipe, common_named_socket {
         /// Runtime files in /run and /var/run.
         file_context("/run/systemd/ask-password(/.*)?", any);
         file_context("/run/systemd/ask-password-block(/.*)?", any);

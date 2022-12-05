@@ -12,7 +12,7 @@ domain systemd_resolved_t inherits systemd_app_domain {
     }
 
     @alias(systemd_resolved_runtime_t)
-    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {
+    resource runtime inherits runtimefile, common_pipe, common_named_socket {
         /// Runtime files in /run/systemd/resolve.
         file_context("/run/systemd/resolve(/.*)?", any);
     }

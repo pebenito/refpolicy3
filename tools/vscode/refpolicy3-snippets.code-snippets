@@ -212,7 +212,7 @@
         "prefix": ["nest-run", "run-decl", "decl-run"],
         "body": [
             "    @alias()",
-            "    resource runtime inherits runtimefile, common_fifo_file, common_named_socket {",
+            "    resource runtime inherits runtimefile, common_pipe, common_named_socket {",
             "        /// Runtime files in /run and /var/run.",
             "        $0",
             "    }"
@@ -231,7 +231,7 @@
         "prefix": ["nest-tmp", "tmp-decl", "decl-tmp"],
         "body": [
             "    @alias()",
-            "    resource tmp inherits tmpfile, common_fifo_file, common_named_socket {",
+            "    resource tmp inherits tmpfile, common_pipe, common_named_socket {",
             "        /// Temporary files in /tmp and /var/tmp.",
             "        $0",
             "    }"
@@ -250,7 +250,7 @@
         "prefix": ["nest-tmpfs", "tmpfs-decl", "decl-tmpfs"],
         "body": [
             "    @alias()",
-            "    resource tmpfs inherits tmpfsfile, common_fifo_file, common_named_socket {",
+            "    resource tmpfs inherits tmpfsfile, common_pipe, common_named_socket {",
             "        /// POSIX shared memory segments (tmpfs files)",
             "        $0",
             "    }",
