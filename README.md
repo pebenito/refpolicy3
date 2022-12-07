@@ -13,7 +13,12 @@ Please send any discussion to the refpolicy mail list.  If you would like to
 contribute, pull requests on GitHub are strongly preferred, but patches on
 the refpolicy mail list are also accepted.
 
+See [HowToContribute](doc/HowToContribute.md) for more details.  Also see
+[StyleGuide](doc/StyleGuide.md) for details on current policy style guidelines.
+
 ## Development Notes
+
+See also [design documents](doc/design/README.md).
 
 ### Multi-call Lines
 
