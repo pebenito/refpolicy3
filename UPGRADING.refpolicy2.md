@@ -60,6 +60,13 @@ least privilege access is required.
   * port_t -> unreserved_port_t
   * readable_t -> public_content_t
   * smartcard_device_t -> cmx_device_t
+  * systemd_activate_exec_t -> bin_t
+  * systemd_analyze_exec_t -> bin_t
+  * systemd_cgtop_exec_t -> bin_t
+  * systemd_conf_t -> etc_t
+  * systemd_detect_virt_exec_t -> bin_t
+  * systemd_run_exec_t -> bin_t
+  * systemd_stdio_bridge_exec_t -> bin_t
   * systemd_unit_command_t -> init_script_t
   * var_run_t -> runtime_t
 * Split types:

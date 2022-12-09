@@ -819,6 +819,9 @@ resource systemd_user_tmpfs_t inherits tmpfsfile {
 //
 // Extends
 //
+@alias(systemd_activate_exec_t, systemd_analyze_exec_t, systemd_cgtop_exec_t, systemd_detect_virt_exec_t, systemd_run_exec_t, systemd_stdio_bridge_exec_t)
+extend bin_t {}
+
 extend daemon {
     resource unit inherits systemdunit {
         /// The systemd unit for this daemon.
@@ -885,6 +888,9 @@ extend daemon {
         this.unit.stop(source);
     }
 }
+
+@alias(systemd_conf_t)
+extend etc_t {}
 
 extend init_script_file inherits systemd_unit_api {}
 
