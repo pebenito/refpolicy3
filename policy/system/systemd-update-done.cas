@@ -32,6 +32,11 @@ domain systemd_update_done_t inherits systemd_app_domain {
 
     filesystem.getattr_superblock(systemd_update_done_t);
 
+    libs.libselinux_linked();
+
+    selinux.use_status_page();
+    selinux.file_contexts_setfscreate();
+
     sysctl_t.kernel.read(systemd_update_done_t); sysctl_t.list(systemd_update_done_t);
 
     sysfs_t.list(systemd_update_done_t);

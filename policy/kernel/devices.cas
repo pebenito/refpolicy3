@@ -189,6 +189,7 @@ resource device_t inherits filesystem, mountpoint, common_dir {
 
     systemd_tmpfiles_t.manager_of(this);
 }
+// container_mountpoint(device_t)
 
 resource devtty_t inherits common_character_device {
     /// The /dev/tty devices.
@@ -242,6 +243,7 @@ resource fixed_disk_device_t inherits common_block_device, common_character_devi
     file_context(/dev/mtd.*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
     file_context(/dev/mtd.*, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
     file_context(/dev/nb[^/]+, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
+    file_context("/dev/ng[0-9]+n[0-9]+", chardev, system_u:object_r:fixed_disk_device_t,mls_systemhigh);
     file_context(/dev/nvme[0-9]+, chardev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
     file_context(/dev/nvme[0-9]n[^/]+, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
     file_context(/dev/pmem[0-9]*, blockev, system_u:object_r:fixed_disk_device_t:mls_systemhigh);
@@ -312,6 +314,24 @@ resource ipmi_device_t inherits common_character_device {
     /// IPMI devices, /dev/ipmi/*
     file_context(/dev/ipmi[0-9]+, chardev);
     file_context(/dev/ipmi/[0-9]+, chardev);
+}
+
+
+Types for Hyper-V guest devices
+
+resource hyperv_kvp_device_t inherits common_character_device {
+    /// Hyper-V key-value pair device.
+    file_context("/dev/vmbus/hv_kvp", chardev);
+}
+
+resource hyperv_vss_device_t inherits common_character_device {
+    /// Hyper-V Volume Shadow Copy Service device.
+    file_context("/dev/vmbus/hv_vss", chardev);
+}
+
+resource infiniband_device_t inherits common_character_device {
+    /// Type for /dev/infiniband/*
+    file_context("/dev/infiniband/.*", chardev);
 }
 
 resource kmsg_device_t inherits common_character_device {
@@ -399,6 +419,11 @@ resource mouse_device_t inherits common_character_device {
     file_context(/dev/input/js.*, chardev);
     file_context(/dev/touchscreen/ucb1x00, chardev);
     file_context(/dev/touchscreen/mk712, chardev);
+}
+
+resource mptctl_device_t inherits common_character_device {
+    /// Serial Attached SCSI Management device.
+    file_context("/dev/mpt[2-9]*ctl", chardev);
 }
 
 resource mtrr_device_t inherits common_character_device {
@@ -721,6 +746,7 @@ resource vhost_device_t inherits common_character_device {
     file_context(/dev/vhci, chardev);
     file_context(/dev/vhost-net, chardev);
     file_context(/dev/vhost-scsi, chardev);
+    file_context("/dev/vhost-vsock", chardev);
 }
 
 // TODO: Change vmnet into virtio_device_t ?

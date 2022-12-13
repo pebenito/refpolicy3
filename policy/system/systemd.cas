@@ -99,8 +99,6 @@ virtual domain systemd_common {
     selinux.use_status_page();
     selinux.file_contexts_setfscreate();
 
-    sysctl_t.crypto.read(); sysctl_t.list();
-
     syslog.send_messages();
 }
 
@@ -151,11 +149,13 @@ virtual domain systemd_user inherits common_domain, systemd_common {
     systemd_user_runtime_unit_t.manage();
     systemd_user_runtime_t.filetrans(this, systemd_user_runtime_unit_t, dir, "generator.early");
     systemd_user_runtime_t.filetrans(this, systemd_user_runtime_unit_t, dir, "generator.late");
-    systemd_user_runtime_t.filetrans(this, systemd_user_runtime_unit_t, dir, "transient");
     systemd_user_runtime_t.filetrans(this, systemd_user_runtime_unit_t, dir, "user");
 
     systemd_user_tmpfs_t.manage();
     tmpfs_t.filetrans(this, systemd_user_tmpfs_t, file);
+
+    systemd_user_transient_unit_t.manage();
+    systemd_user_runtime_t.filetrans(this, systemd_user_transient_unit_t, dir, "transient");
 
     audit.send_messages();
 
@@ -167,6 +167,7 @@ virtual domain systemd_user inherits common_domain, systemd_common {
     entrypoint.getattr();
 
     etc_t.read();
+    etc_t<dir>.watch();
     // /etc/localtime
     etc_t<symlink>.watch();
 
@@ -176,6 +177,7 @@ virtual domain systemd_user inherits common_domain, systemd_common {
 
     init_t.send_general_signals();
     init_t.link_keys();
+    init_t.state.list();
     // for /run/systemd/notify
     init_t.unix_datagram_send();
     // container engines will move container processes to different slices
@@ -186,6 +188,10 @@ virtual domain systemd_user inherits common_domain, systemd_common {
     // these should be handled by domtrans:
     init_t.rw_inherited_pipes();
     init_t.rw_inherited_unix_stream_sockets();
+
+    // if systemd exists in the initrd, the journal socket stays labeled kernel_t
+    // without this access, user services cannot log to the journal
+    kernel_t.abstract_stream_connect();
 
     locale_t.watch();
 
@@ -231,7 +237,13 @@ virtual domain systemd_user inherits common_domain, systemd_common {
 
     user_bin_t.exec();
 
+    user_systemdunit.read();
+    user_systemdunit.startstop();
+    user_systemdunit.reload();
+
     usr_t.list();
+
+    xattr_filesystem.getattr_superblock();
 
     xdg_config_t.mmap_read();
     xdg_config_t<common_dir>.create();
@@ -341,6 +353,7 @@ domain systemd_t inherits init {
     resource journal inherits logfile, systemd_tmpfiles_managed {
         /// Systemd journal data.
         file_context("/run/log/journal(/.*)?", any, system_u:object_r:systemd_journal_t:mls_systemhigh);
+        file_context("/var/lib/systemd/catalog(/.*)?", any, system_u:object_r:systemd_journal_t:mls_systemhigh);
         file_context("/var/log/journal(/.*)?", any, system_u:object_r:systemd_journal_t:mls_systemhigh);
     }
 
@@ -435,7 +448,11 @@ domain systemd_t inherits init {
 
     bin_t.exec();
 
+    boot_t.read();
     boot_t<filesystem>.remount();
+
+    // for systemd-boot-update
+    bootloader_t.domtrans();
 
     cert_t.read();
 
@@ -494,6 +511,7 @@ domain systemd_t inherits init {
 
     efivarfs_t.read();
 
+    etc_t<filesystem>.remount();
     // If /etc/localtime is missing, a watch on /etc is added.
     etc_t<dir>.watch();
     etc_t<symlink>.watch();
@@ -677,6 +695,8 @@ domain systemd_t inherits init {
     tmpfs_t<common_named_socket>.relabelfrom();
     tmpfs_t<symlink>.manage();
 
+    tty_device_t.watch_reads();
+
     allow(this, unlabeled_t, dir, list_dir_perms);
 
     urandom_device_t.create();
@@ -702,6 +722,8 @@ domain systemd_t inherits init {
 
 //typeattribute init_t can_load_kernmodule);
 
+// required by calico
+//kubernetes_mountpoint(init_t)
 
 // handle instances where an old labeled init script is encountered.
 //typeattribute init_t init_run_all_scripts_domain;
@@ -780,10 +802,14 @@ resource systemd_data_home_t inherits user_home_content {
 // TBD systemd_data_home_t polymember for particular types
 }
 
+resource systemd_unit_t inherits systemdunit {
+    /// General system units.
+    file_context("/usr/lib/dracut/modules\.d/[^/]+/.*\.service", file);
+}
+
 resource systemd_transient_unit_t inherits systemdunit {
     /// Transient units for systemd pid 1.
 }
-
 
 resource systemd_user_manager_unit_t inherits systemdunit {
     /// The user@.service unit for systemd --user instances.
@@ -803,8 +829,11 @@ resource systemd_user_runtime_unit_t inherits user_runtime_content, user_systemd
     file_context("/run/user/%{USERID}/systemd/generator(/.*)?", any);
     file_context("/run/user/%{USERID}/systemd/generator\.early(/.*)?", any);
     file_context("/run/user/%{USERID}/systemd/generator\.late(/.*)?", any);
-    file_context("/run/user/%{USERID}/systemd/transient(/.*)?", any);
     file_context("/run/user/%{USERID}/systemd/user(/.*)?", any);
+}
+
+resource systemd_user_transient_unit_t inherits user_runtime_content, user_systemdunit {
+    file_context("/run/user/%{USERID}/systemd/transient(/.*)?", any);
 }
 
 resource systemd_user_unit_t inherits user_systemdunit, common_file {
@@ -819,7 +848,12 @@ resource systemd_user_tmpfs_t inherits tmpfsfile {
 //
 // Extends
 //
-@alias(systemd_activate_exec_t, systemd_analyze_exec_t, systemd_cgtop_exec_t, systemd_detect_virt_exec_t, systemd_run_exec_t, systemd_stdio_bridge_exec_t)
+extend app_domain {
+    // Needed for console/serial logins.
+    systemd_t.inherit_file_descriptors();
+}
+
+@alias(systemd_activate_exec_t, systemd_analyze_exec_t, systemd_cgtop_exec_t, systemd_stdio_bridge_exec_t)
 extend bin_t {}
 
 extend daemon {
@@ -897,7 +931,11 @@ extend init_script_file inherits systemd_unit_api {}
 extend init_script_t {
     extend runtime inherits systemd_tmpfiles_managed {}
 
+    this.state<character_device>.dontaudit_manage();
+
     boot_t.read();
+
+    allow(this, init_t, system, [ start stop status reboot halt reload ]};
 
     allow(this, null_device_t, service, [ status start stop reload ]);
 
@@ -906,6 +944,11 @@ extend init_script_t {
     shell_exec_t.entrypoint();
 
     usbfs_t.read();
+
+    if (distro_redhat) {
+        tmpfs_t.manage();
+        tmpfs_t<common_file>.manage();
+    }
 
     fn bin_domtrans(domain source, role src_role) {
         bin_t.mmap_exec(source);
@@ -990,6 +1033,7 @@ extend syslogd_t {
     syslog.send_messages();
 
     systemd_t.journal.mmap_manage();
+    systemd_t.journal.watch();
 
     systemd_user_runtime_t.list(); user_runtime_t.list(); user_runtime_root_t.list();
 
@@ -1043,6 +1087,9 @@ extend udev_t {
 
     systemd_login_t.runtime.read();
     systemd_login_t.inherit_file_descriptors();
+
+    // udev searches for .link files and applies custom udev rules
+    systemd_networkd_t.runtime.read();
 
     systemdunit.startstop(udev_t);
 }

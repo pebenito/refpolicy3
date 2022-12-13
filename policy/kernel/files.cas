@@ -324,9 +324,11 @@ resource bin_t inherits executable {
     file_context(/usr/lib/bluetooth/.*, file);
     file_context(/usr/lib/bridge-utils/.*\.sh, file);
     file_context(/usr/lib/ccache/bin(/.*)?, any);
+    file_context("/usr/lib/cloud-init(/.*)?", any);
     file_context(/usr/lib/dhcpcd/dhcpcd-hooks(/.*)?, any);
     file_context(/usr/lib/dhcpcd/dhcpcd-run-hooks, file);
     file_context(/usr/lib/dovecot/.+, any);
+    file_context("/usr/lib/dracut(/.*)?", any);
     file_context(/usr/lib/fence(/.*)?, any);
     file_context(/usr/lib/pgsql/test/regress/.*\.sh, file);
     file_context(/usr/lib/qt.*/bin(/.*)?, any);
@@ -691,8 +693,6 @@ resource etc_runtime_t inherits configfile {
     file_context(/etc/sysconfig/hwconf, file);
     file_context(/etc/sysconfig/iptables\.save, file);
     file_context(/etc/sysconfig/firstboot, file);
-
-    file_context(/etc/zfs/zpool\.cache, file);
 
     if (distro_gentoo) {
         file_context(/etc/profile\.env, file);
@@ -1276,6 +1276,8 @@ resource var_log_t inherits common_file, logfile, mountpoint {
     file_context("/var/spool/plymouth/boot\.log", any, system_u:object_r:var_log_t:mls_systemhigh);
     file_context("/var/spool/rsyslog(/.*)?", any);
     file_context("/var/tinydns/log/main(/.*)?", any);
+
+    systemd_tmpfiles_t.manager_of(this);
 }
 
 @hint(class=[file fifo_file sock_file], hint="Spool directories are shared. A different type should use used, e.g. foo_t.spool, to keep data private.")

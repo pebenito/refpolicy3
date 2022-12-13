@@ -59,7 +59,6 @@ domain fsadm_t inherits system_app_domain {
         file_context("/usr/bin/swapon.*", file);
         file_context("/usr/bin/tune2fs", file);
         file_context("/usr/bin/zdb", file);
-        file_context("/usr/bin/zfs-auto-snapshot", file);
         file_context("/usr/bin/zhack", file);
         file_context("/usr/bin/zinject", file);
         file_context("/usr/bin/zpios", file);
@@ -207,8 +206,6 @@ domain fsadm_t inherits system_app_domain {
 
     // for /run/mount/utab
     mount_t.runtime.getatr();
-    // for zfs/zpool
-    mount_t.exec.exec();
 
     proc_t.read();
     proc_t.kcore.getattr();
@@ -221,6 +218,10 @@ domain fsadm_t inherits system_app_domain {
     random_device_t.read();
 
     removable_device_t.rw();
+
+    // resize2fs will create a .ismount-test-file temp file
+    // in the root of a filesystem to resize
+    root_t.filetrans(this, this.tmp, file)
 
     scsi_generic_device_t.read();
 
@@ -284,6 +285,16 @@ domain fsadm_t inherits system_app_domain {
 
         modules_conf_t.read();
         modules_dep_t.read();
+    }
+
+    optional {
+        exports_t.read();
+
+        nfsd_t.state.manage(); var_lib_t.list(); var_t.list();
+
+        nfsd_fs_t.rw();
+
+        sysctl_t.net.rpc.rw(); sysctl_t.net.list(); sysctl_t.list();
     }
 
     optional {

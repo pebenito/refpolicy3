@@ -185,6 +185,7 @@ resource bpf_t inherits pseudo_filesystem, mountpoint {
 
     genfscon("bpf", "/", any);
 }
+// kubernetes_mountpoint(bpf_t)
 
 resource capifs_t inherits pseudo_filesystem, mountpoint {
     /// ISDN CAPI 2.0 filesystem.

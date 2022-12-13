@@ -119,6 +119,10 @@ domain systemd_logind_t inherits systemd_daemon {
     tmpfs_t.mount();
     tmpfs_t.unmount();
 
+    // Getattr all shm segments as part of cleaning up the
+    // segments of deleted ephemeral users.
+    tmpfsfile.getattr();
+
     tty_device_t.rw();
     tty_device_t.setattr();
 

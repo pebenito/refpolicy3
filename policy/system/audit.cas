@@ -33,11 +33,13 @@ domain auditctl_t inherits system_app_domain {
     kernel_t.set_scheduler(auditctl_t);
 
     proc_t.dontaudit_getattr_superblock(auditctl_t);
-    proc_t<symlink>.read(auditctl_t);
+    proc_t.read();
 
     sysctl_t.kernel.read(auditctl_t); sysctl_t.list(auditctl_t); proc_t.list(auditctl_t);
 
     syslog.send_messages(auditctl_t);
+
+    systemd_userdbd_t.unix_stream_connect();
 
     user_devpts_t.rw_inherited();
 

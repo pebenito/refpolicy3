@@ -30,12 +30,10 @@ domain systemd_rfkill_t inherits systemd_app_domain {
     this.state.manage();
     init_t.state.filetrans(this, this.state, dir); var_lib_t.list(); var_t.list();
 
-    cgroup_t.getattr_superblock();
-
     // Allow reading /etc/udev/udev.conf
     etc_t.read();
 
-    fs_t.getattr_superblock();
+    filesystem.getattr_superblock();
 
     proc_t.getattr_superblock();
 

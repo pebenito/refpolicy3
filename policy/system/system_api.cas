@@ -469,14 +469,15 @@ final api nss {
 
         lsassd_t.stream_connect(source);
 
-        nscd_t.lookup();
+        nscd_t.lookup(source);
 
         nss.get_entry(source);
 
         // This seems needed when the mymachines NSS module is used
-        systemd_machined_t.runtime.read();
+        systemd_machined_t.runtime.read(source);
 
-        systemd_resolved_t.dbus_chat(source);
+        systemd_resolved_t.dbus_send(source);
+        systemd_resolved_t.unix_stream_connect(source);
 
         if(nss_dns) {
             network.use_dns(source);
@@ -924,6 +925,42 @@ api final selinux {
     }
 }
 
+final api services {
+    fn systemctl(domain source) {
+        /// Execute the systemctl program.
+        /// Caller will still need to provide service/system permissions
+        /// to control specific units.
+
+        dontaudit(source, self, capability, [ net_admin sys_resource ]);
+        allow(this, self, process, signal);
+
+        // the command is a regular bin
+        bin_t.exec(source);
+
+        services.telinit(source);
+
+        systemd_t.dbus_send(source);
+
+        systemd_passwd_agent_t.domtrans(source);
+        systemd_passwd_agent_t.send_general_signals(source);
+    }
+
+    fn telinit(domain source) {
+        /// Use the telinit program to change runlevels.
+
+        bin_t.exec(source);
+
+        init_t.ps(source);
+        init_t.send_general_signals(source);
+        init_t.initctl.rw(source);
+        init_t.exec.exec(source);
+
+        init_t.unix_stream_connect(source);
+        // upstart uses a datagram socket instead of initctl pipe
+        init_t.unix_datagram_send(source);
+    }
+}
+
 final api syslog {
     /// System log (syslog) API.
 
@@ -1013,7 +1050,7 @@ final api unconfined {
     fn domain(domain source) {
         // Use most Linux capabilities
         allow(source, self, [ capability cap_userns ], [ chown dac_override dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice sys_resource sys_time sys_tty_config mknod lease audit_write audit_control setfcap ]);
-        allow(source, self, [ capability2 cap2_userns ], [ syslog wake_alarm ];
+        allow(source, self, [ capability2 cap2_userns ], [ syslog wake_alarm bpf perfmon ];
         // Use most namespace capabilities
         allow(source, self, cap_userns, [ audit_write chown dac_override dac_read_search fowner fsetid ipc_lock ipc_owner kill lease linux_immutable mknod net_admin net_bind_service net_raw setfcap setgid setpcap setuid sys_admin sys_boot sys_chroot sys_module sys_nice sys_pacct sys_ptrace sys_rawio sys_resource sys_time sys_tty_config ]);
         allow(source, self, cap2_userns, [ audit_read bpf block_suspend mac_admin mac_override perfmon syslog wake_alarm ]);

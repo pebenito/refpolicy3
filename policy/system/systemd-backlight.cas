@@ -28,13 +28,17 @@ domain systemd_backlight_t inherits systemd_app_domain {
     this.state.manage();
     init_t.state.filetrans(this, this.state, dir); var_lib_t.list();
 
+    cgroup_t.list();
+
     // for udev.conf
     etc_t.read();
+
+    filesystem.getattr_superblock();
 
     // Allow systemd-backlight to write to /sys/class/backlight/*/brightness
     sysfs_t.rw();
 
-    sysctl_t.kernel.dontaudit_list(); sysctl_t.dontaudit_list(); proc_t.dontaudit_list();
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
 
     // for /run/udev/data/+backlight*
     udev_t.runtime.read(); runtime_t.list(); var_t.list();

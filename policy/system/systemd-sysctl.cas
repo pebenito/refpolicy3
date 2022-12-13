@@ -27,6 +27,7 @@ domain systemd_sysctl_t inherits systemd_app_domain {
     file_type<filesystem>.getattr_superblock(systemd_sysctl_t);
 
     filesystem.getattr_superblock(systemd_sysctl_t);
+    filesystem<common_dir>.list();
 
     kernel.request_module_load();
 

@@ -40,8 +40,6 @@ domain sulogin_t inherits system_app_domain {
 
     sysadm_t.shell_domtrans();
 
-    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
-
     syslog.send_messages();
 
     tmpfs_t<common_character_device>.rw(); tmpfs_t.list();

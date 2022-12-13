@@ -57,7 +57,6 @@ domain systemd_homed_t inherits systemd_daemon {
     proc_t.read();
 
     sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
-    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
 
     // Entries such as /sys/devices/virtual/block/loop1/uevent:
     sysfs_t.read();
@@ -127,7 +126,6 @@ domain systemd_homework_t inherits common_domain {
     kernel_t.write_keys();
 
     sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
-    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
 
     // Entries such as /sys/devices/virtual/block/loop1/uevent:
     sysfs_t.read();

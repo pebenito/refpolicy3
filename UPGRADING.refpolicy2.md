@@ -64,8 +64,6 @@ least privilege access is required.
   * systemd_analyze_exec_t -> bin_t
   * systemd_cgtop_exec_t -> bin_t
   * systemd_conf_t -> etc_t
-  * systemd_detect_virt_exec_t -> bin_t
-  * systemd_run_exec_t -> bin_t
   * systemd_stdio_bridge_exec_t -> bin_t
   * systemd_unit_command_t -> init_script_t
   * var_run_t -> runtime_t

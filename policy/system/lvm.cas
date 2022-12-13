@@ -38,6 +38,7 @@ domain lvm_t inherits system_app_domain {
         file_context("/usr/bin/lvresize", file);
         file_context("/usr/bin/lvs", file);
         file_context("/usr/bin/lvscan", file);
+        file_context("/usr/bin/multipath", file);
         file_context("/usr/bin/multipathd", file);
         file_context("/usr/bin/multipath\.static", file);
         file_context("/usr/bin/pvchange", file);
@@ -188,7 +189,7 @@ domain lvm_t inherits system_app_domain {
     // net_admin for multipath
     allow(this, self, capability, [ chown dac_override fowner ipc_lock mknod net_admin sys_admin sys_nice sys_rawio sys_resource ]);
     dontaudit(this, self, capability, sys_tty_config);
-    allow(this, self, process, setfscreate);
+    allow(this, self, process, [ setfscreate setrlimit ]);
     // LVM will complain a lot if it cannot set its priority.
     allow(this, self, process, setsched);
     allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
@@ -244,6 +245,7 @@ domain lvm_t inherits system_app_domain {
     domain.ps(lvm_t)
 
     etc_t.read();
+    etc_t.watch();
 
     etc_runtime_t.read();
 
@@ -279,6 +281,9 @@ domain lvm_t inherits system_app_domain {
 
     mnt_t.list();
 
+    // multipath
+    net_conf_t.rw();
+
     proc_t.read();
     // it has no reason to need this
     proc_t.kcore.dontaudit_getattr();
@@ -295,6 +300,9 @@ domain lvm_t inherits system_app_domain {
 
     // Read system variables in /proc/sys
     sysctl_t.kernel.read(); sysctl_t.list();
+    sysctl_t.fs.read();
+    // multipath
+    sysctl_t.vm.overcommit.read();
 
     // Read /sys/block. Device mapper metadata is kept there.
     // Write read_ahead_kb

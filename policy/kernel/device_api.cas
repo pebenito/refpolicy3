@@ -67,7 +67,7 @@ let manage_blk_file_perms = [ create open getattr setattr rename link unlink loc
 let relabelfrom_blk_file_perms = [ getattr relabelfrom ];
 let relabelto_blk_file_perms = [ getattr relabelto ];
 let relabel_blk_file_perms = [ getattr relabelfrom relabelto ];
-let unconfined_blk_file_perms = [ manage_blk_file_perms relabel_blk_file_perms read write append ioctl map execute quotaon mounton audit_access execmod watch ];
+let unconfined_blk_file_perms = [ manage_blk_file_perms relabel_blk_file_perms read write append ioctl map execute quotaon mounton execmod watch ];
 
 api block_device_api {
     /// The low-level API for block device files (blk_file object class).
@@ -274,9 +274,9 @@ api block_device_api {
         dontaudit(source, this, blk_file, relabel_blk_file_perms);
     }
 
-    fn audit_access(domain source) {
-        /// Enable auditing on access() use for this block device.
-        allow(source, this, blk_file, audit_access);
+    fn dontaudit_access(domain source) {
+        /// Do not audit denials on access() use on this block device.
+        dontaudit(source, this, blk_file, audit_access);
     }
 
     fn unconfined(domain source) {
@@ -302,7 +302,7 @@ let manage_chr_file_perms = [ create open getattr setattr rename link unlink loc
 let relabelfrom_chr_file_perms = [ getattr relabelfrom ];
 let relabelto_chr_file_perms = [ getattr relabelto ];
 let relabel_chr_file_perms = [ getattr relabelfrom relabelto ];
-let unlabeled_chr_file_perms = [ manage_chr_file_perms relabel_chr_file_perms read write append map execute quotaon mounton execmod audit_access watch ];
+let unlabeled_chr_file_perms = [ manage_chr_file_perms relabel_chr_file_perms read write append map execute quotaon mounton execmod watch ];
 
 api character_device_api {
     /// The low-level API for character device files (chr_file object class)
@@ -509,9 +509,9 @@ api character_device_api {
         dontaudit(source, this, chr_file, relabel_chr_file_perms);
     }
 
-    fn audit_access(domain source) {
-        /// Enable auditing on access() use for this character device.
-        allow(source, this, chr_file, audit_access);
+    fn dontaudit_access(domain source) {
+        /// Do not audit denials on access() use on this character device.
+        dontaudit(source, this, chr_file, audit_access);
     }
 
     fn unconfined(domain source) {

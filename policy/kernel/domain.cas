@@ -79,6 +79,8 @@ virtual domain common_domain inherits network_peer {
 
     root_t.list();
 
+    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
+
     textrel_shlib_t.textrel_mmap_exec();
 
     zero_device_t.rw();

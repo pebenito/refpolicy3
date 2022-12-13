@@ -80,8 +80,6 @@ domain iscsid_t inherits daemon {
     proc_t.read();
     proc_t.net.read();
 
-    sysctl_t.crypto.read(); sysctl_t.list();
-
     sysfs_t.rw();
 
     syslog.send_messages();

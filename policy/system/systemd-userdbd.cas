@@ -31,6 +31,8 @@ domain systemd_userdbd_t inherits daemon {
 
     cgroup_t.list(systemd_userdbd_t);
 
+    default_context_t.list();
+
     etc_runtime_t.read(systemd_userdbd_t);
 
     file_type<filesystem>.getattr_superblock(systemd_userdbd_t);

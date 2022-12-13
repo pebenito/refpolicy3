@@ -24,6 +24,7 @@ extend kernel_t {
 
     nfsd_t.rw_inherited_tcp_sockets();
     nfsd_t.rw_inherited_udp_sockets();
+    nfsd_t.state.list(); var_lib_t.list();
 
     shadow_t.dontaudit_getattr();
 
@@ -46,4 +47,12 @@ extend kernel_t {
     }
 }
 
+extend systemd_t {
+    // var-lib-nfs-rpc_pipefs.mount creates /var/lib/nfs/rpc_pipefs
+    // if it does not exist
+    nfsd_t.state.manage(); var_lib_t.list(); var_t.list();
 
+    nfsd_fs_t.rw();
+
+    rpc_pipefs_t.rw();
+}

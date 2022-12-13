@@ -89,6 +89,7 @@ domain systemd_tmpfiles_t inherits systemd_daemon {
     etc_runtime_t.read();
 
     file_type<filesystem>.getattr_superblock();
+    file_type<common_dir>.dontaudit_list();
 
     filesystem.getattr_superblock();
 
@@ -104,8 +105,6 @@ domain systemd_tmpfiles_t inherits systemd_daemon {
     lockfile<common_dir>.relabel();
     lockfile<symlink>.relabel();
 
-    lost_found_t.dontaudit_list();
-
     nss.get_passwd_entry();
 
     proc_t.getattr_superblock();
@@ -113,6 +112,8 @@ domain systemd_tmpfiles_t inherits systemd_daemon {
 
     runtimefile<common_dir>.manage();
     runtimefile<common_dir>.relabel();
+
+    screen_t.runtime.dontaudit_getattr();
 
     // Allow systemd-tmpfiles to enable pstore kernel parameters over sysfs
     // /sys/module/printk/parameters/always_kmsg_dump

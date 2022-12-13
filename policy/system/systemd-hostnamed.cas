@@ -18,7 +18,7 @@ domain systemd_hostnamed_t inherits systemd_daemon {
 
     cgroup_t.getattr_superblock();
 
-    fs_t.getattr_superblock();
+    filesystem.getattr_superblock();
 
     NetworkManager_t.dbus_send();
 

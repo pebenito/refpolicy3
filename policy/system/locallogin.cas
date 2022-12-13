@@ -52,7 +52,7 @@ domain local_login_t inherits bin_login_domain, local_login_domain {
 
     fs_t.getattr_superblock();
 
-    init_t.dontaudit_inherit_file_descriptors();
+    init_t.inherit_file_descriptors();
 
     kernel_t.search_keys();
     kernel_t.link_keys();

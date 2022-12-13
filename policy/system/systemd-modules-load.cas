@@ -20,7 +20,8 @@ domain systemd_modules_load_t inherits systemd_app_domain {
 
     etc_t.read();
 
-    fs_t.getattr_superblock();
+    filesystem.getattr_superblock();
+    filesystem<common_dir>.list();
 
     kernel.insert_modules();
     kernel.request_module_load();

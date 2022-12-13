@@ -14,18 +14,21 @@ domain systemd_networkd_t inherits systemd_app_domain {
     @alias(systemd_networkd_exec_t)
     extend exec  {
        file_context("/usr/lib/systemd/systemd-networkd", file);
+       file_context("/usr/lib/systemd/systemd-network-generator", file);
     }
 
     @alias(systemd_networkd_runtime_t)
     resource runtime inherits runtimefile, systemd_mountpoint {
         /// Runtime files in /run and /var/run.
         file_context("/run/systemd/netif(/.*)?", any);
+        file_context("/run/systemd/network(/.*)?", any);
     }
 
     @alias(systemd_networkd_unit_t)
     resource unit inherits common_file, systemdunit {
         /// The systemd unit.
         file_context("/usr/lib/systemd/system/systemd-networkd.*", any);
+        file_context("/usr/lib/systemd/system/systemd-network-generator.*", any);
     }
 
     //
@@ -56,7 +59,6 @@ domain systemd_networkd_t inherits systemd_app_domain {
 
     filesystem.getattr_superblock();
 
-    init_t.unix_datagram_send();
 
     kernel.request_module_load();
 
@@ -80,6 +82,10 @@ domain systemd_networkd_t inherits systemd_app_domain {
     sysctl_t.net.rw();
 
     sysfs_t.read();
+
+    systemd_t.unix_datagram_send();
+    systemd_t.runtime.read();
+    systemd_t.runtime.filetrans(this, this.runtime, dir)
 
     tun_tap_device_t.rw();
 

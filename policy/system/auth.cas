@@ -50,7 +50,6 @@ resource chkpwd_t inherits app_domain {
 
     shadow_t.read(); etc_t.list();
 
-    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
     sysctl_t.kernel.dontaudit_read(); sysctl_t.dontaudit_list(); proc_t.dontaudit_list();
 
     sysfs_t.list();

@@ -17,18 +17,25 @@ domain systemd_generator_t inherits systemd_app_domain {
     //
     // Policy
     //
-    allow(this, self, capability, dac_override);
+    allow(this, self, capability, [ dac_override sys_admin ]);
     allow(this, self, process, setfscreate);
 
     bin_t.exec();
 
     boot_t.read();
 
+    cloud_init_t.state.getattr();
+    cloud_init_t.runtime.create();
+    runtime_t.filetrans(this, cloud_init_t.runtime, dir "cloud-init");
+
     efivarfs_t.list();
 
     etc_t.read();
 
+    etc_runtime_t.dontaudit_read();
+
     file_type<filesystem>.getattr_superblock();
+    file_type<common_dir>.dontaudit_getattr();
 
     filesystem.getattr_superblock();
 
@@ -55,8 +62,12 @@ domain systemd_generator_t inherits systemd_app_domain {
 
     mountpoint<dir>.list();
 
+    nss.get_hosts_entry();
+
     proc_t.read();
     proc_t.dontaudit_getattr_superblock();
+
+    removable_device_t.read();
 
     shell_exec_t.exec();
 
@@ -66,7 +77,7 @@ domain systemd_generator_t inherits systemd_app_domain {
     sysfs_t<common_dir>.write();
 
     // Units are in /etc/systemd/system, /usr/lib/systemd/system and /run/systemd
-    systemd_unit_t.list();
+    systemd_unit_t.getattr();
 
     tmpfs_t.list();
 
@@ -81,7 +92,16 @@ domain systemd_generator_t inherits systemd_app_domain {
 
     usr_t.list();
 
+    // needed by zfs-mount-generator
+    zfs_config_t.read();
+
     if (distro_gentoo) {
         shell_exec_t.entrypoint();
+    }
+
+    optional_policy {
+        exports_t.read();
+
+        nfsd_fs_t.rw();
     }
 }

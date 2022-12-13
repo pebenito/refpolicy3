@@ -20,15 +20,21 @@ domain systemd_coredump_t inherits systemd_app_domain {
     //
     // Policy
     //
-    allow(this, self, capability, [ setgid setuid setpcap ]);
-    allow(this, self, cap_userns, sys_ptrace);
+    allow(this, self, capability, [ setgid setuid setpcap sys_ptrace ]);
+    dontaudit(this, self, capability net_admin);
+    allow(this, self, cap_userns, [ sys_admin sys_ptrace ]);
     allow(this, self, process, setcap);
 
-    this.state.manage(); var_lib_t.list(systemd_coredump_t); var_t.list(systemd_coredump_t);
+    this.state.mmap_manage(); var_lib_t.list(systemd_coredump_t); var_t.list(systemd_coredump_t);
 
     bin_t.exec(systemd_coredump_t);
 
+    cgroup_t.getattr_superblock();
+    cgroup_t.list();
+
     default_context_t.list(systemd_coredump_t); selinux_config_t.list(systemd_coredump_t);
+
+    domain.ps();
 
     etc_t.read(systemd_coredump_t);
 
@@ -48,7 +54,11 @@ domain systemd_coredump_t inherits systemd_app_domain {
 
     mountpoint<dir>.getattr(systemd_coredump_t);
 
+    nsfs_t.getattr();
+
     proc_t.read(systemd_coredump_t);
+
+    root_t.mounton()
 
     selinuxfs_t.getattr_superblock(systemd_coredump_t); sysfs_t.getattr_superblock(systemd_coredump_t); sysfs_t.list(systemd_coredump_t);
 

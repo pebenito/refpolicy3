@@ -26,6 +26,8 @@ domain systemd_resolved_t inherits systemd_app_domain {
     this.runtime.manage();
     init_t.runtime.filetrans(this, this.runtime, dir); runtime_t.list(); var_t.list();
 
+    cert_t.read();
+
     cgroup_t.list();
 
     dns_port_t.tcp_bind();
@@ -36,6 +38,8 @@ domain systemd_resolved_t inherits systemd_app_domain {
     filesystem.getattr_superblock();
 
     init_t.unix_datagram_send();
+
+    libs.libselinux_linked();
 
     llmnr_port_t.tcp_bind();
     llmnr_port_t.udp_bind();

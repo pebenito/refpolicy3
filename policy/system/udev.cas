@@ -62,6 +62,8 @@ domain udev_t inherits daemon {
     allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
     allow(this, self, netlink_generic_socket, manage_socket_perms);
     allow(this, self, rawip_socket, manage_socket_perms);
+    // rdma_rename
+    allow(this, self, netlink_rdma_socket, manage_socket_perms);
 
     this.rules.manage();
     this.rules.watch();
@@ -176,6 +178,7 @@ domain udev_t inherits daemon {
 
     kernel.request_module_load();
     kernel.insert_modules();
+    kernel.get_sysv_ipc_info();
 
     kernel_t.userspace_entrypoint();
     kernel_t.send_general_signals();
@@ -230,7 +233,6 @@ domain udev_t inherits daemon {
     sysctl_t.kernel.modprobe.read(); sysctl_t.kernel.list(); sysctl_t.list();
     sysctl_t.kernel.hotplug.rw(); sysctl_t.kernel.list(); sysctl_t.list();
     sysctl_t.net.rw(); sysctl_t.list(); proc_t.list();
-    sysctl_t.crypto.read(); sysctl_t.list(); proc_t.list();
 
     sysfs_t.rw();
 
@@ -262,6 +264,8 @@ domain udev_t inherits daemon {
     wtmp_t.dontaudit_write();
 
     xdm_t.runtime.read();
+
+    zfs_config_t.read();
 
     if (distro_debian) {
         // for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=851933
@@ -322,6 +326,8 @@ domain udev_t inherits daemon {
         xen_image_t.read(); xend_t.state.list();
     }
 
+//kubernetes_mountpoint(udev_runtime_t)
+
 //if (enable_mcs) {
 //range_transition udev_t initrc_exec_t:process s0;
 //}
@@ -360,9 +366,15 @@ domain udevadm_t inherits app_domain {
     allow(this, self, capability, dac_read_search);
     allow(this, self, netlink_kobject_uevent_socket, manage_socket_perms);
 
+    common_character_device.getattr();
+
+    device_t<common_character_device>.getattr();
+
     etc_t.read();
 
     file_context_t.mmap_read(); default_context_t.list(); selinux_config_t.list();
+
+    fixed_disk_device_t.getattr();
 
     fs_t.getattr_superblock();
 
@@ -370,10 +382,12 @@ domain udevadm_t inherits app_domain {
     init_t.runtime.list(); runtime_t.list(); var_t.list();
 
     proc_t.read();
+    proc_t.dontaudit_getattr_superblock();
 
     sysctl_t.kernel.read(); sysctl_t.list();
 
     sysfs_t.rw();
+    sysfs_t.getattr_superblock();
 
     udev_t.unix_stream_connect();
     udev_t.exec.entrypoint();

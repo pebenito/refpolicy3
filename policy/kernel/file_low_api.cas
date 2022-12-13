@@ -63,7 +63,7 @@ let relabelto_file_perms = [ getattr relabelto ];
 let relabel_file_perms = [ getattr relabelfrom relabelto ];
 let admin_file_perms = [ manage_file_perms relabel_file_perms ];
 let mmap_admin_file_perms = [ mmap_manage_file_perms relabel_file_perms ];
-let unconfined_file_perms = [ manage_file_perms relabel_file_perms exec_file_perms quotaon mounton audit_access watch ];
+let unconfined_file_perms = [ manage_file_perms relabel_file_perms exec_file_perms quotaon mounton watch ];
 
 api file_api {
     /// The low-level API for regular files (file object class).
@@ -862,9 +862,9 @@ api file_api {
         dontaudit(source, this, file, [getattr quotaon]);
     }
 
-    fn audit_access(domain source) {
-        /// Enable audits on this file for access() use.
-        allow(source, this, file, audit_access);
+    fn dontaudit_access(domain source) {
+        /// Do not audit denials on access() use on this file.
+        dontaudit(source, this, file, audit_access);
     }
 
     fn unconfined(domain source) {
@@ -905,7 +905,7 @@ let relabelfrom_dir_perms = [ getattr relabelfrom ];
 let relabelto_dir_perms = [ getattr relabelto ];
 let relabel_dir_perms = [ getattr relabelfrom relabelto ];
 let admin_dir_perms = [ manage_dir_perms relabel_dir_perms ];
-let unconfined_dir_perms = [ manage_dir_perms relabel_dir_perms append map execute quotaon mounton add_name remove_name reparent search rmdir audit_access execmod watch ];
+let unconfined_dir_perms = [ manage_dir_perms relabel_dir_perms append map execute quotaon mounton add_name remove_name reparent search rmdir execmod watch ];
 
 api dir_api {
     /// The low-level API for directories (dir object class).
@@ -1145,9 +1145,9 @@ api dir_api {
         dontaudit(source, this, dir, mounton_dir_perms);
     }
 
-    fn audit_access(domain source) {
-        /// Enable audits on this directory for access() use.
-        allow(source, this, dir, audit_access);
+    fn dontaudit_access(domain source) {
+        /// Do not audit denials on access() use on this directory.
+        dontaudit(source, this, dir, audit_access);
     }
 
     fn add_entry_filetrans(domain source, resource default, [class]obj_classes, string name=None) {
@@ -1186,7 +1186,7 @@ let relabelfrom_lnk_file_perms = [ getattr relabelfrom ];
 let relabelto_lnk_file_perms = [ getattr relabelto ];
 let relabel_lnk_file_perms = [ getattr relabelfrom relabelto ];
 let admin_lnk_file_perms = [ manage_lnk_file_perms relabel_lnk_file_perms ];
-let unconfined_lnk_file_perms = [ manage_lnk_file_perms relabel_lnk_file_perms append map execute quotaon mounton open audit_access execmod watch ];
+let unconfined_lnk_file_perms = [ manage_lnk_file_perms relabel_lnk_file_perms append map execute quotaon mounton open execmod watch ];
 
 api symlink_api {
     /// The low-level API for symbolic links (symlinks, lnk_file object class).
@@ -1323,9 +1323,9 @@ api symlink_api {
         dontaudit(source, this, lnk_file, relabel_lnk_file_perms);
     }
 
-    fn audit_access(domain source) {
-        /// Enable audits on this symbolic link for access() use.
-        allow(source, this, lnk_file, audit_access);
+    fn dontaudit_access(domain source) {
+        /// Do not audit denials on access() use on this symbolic link.
+        dontaudit(source, this, lnk_file, audit_access);
     }
 
     fn unconfined(domain source) {
@@ -1353,7 +1353,7 @@ let relabelfrom_fifo_file_perms = [ getattr relabelfrom ];
 let relabelto_fifo_file_perms = [ getattr relabelto ];
 let relabel_fifo_file_perms = [ getattr relabelfrom relabelto ];
 let admin_fifo_file_perms = [ manage_fifo_file_perms relabel_fifo_file_perms ];
-let unconfined_fifo_file_perms = [ manage_fifo_file_perms relabel_fifo_file_perms map execute quotaon mounton audit_access execmod watch ];
+let unconfined_fifo_file_perms = [ manage_fifo_file_perms relabel_fifo_file_perms map execute quotaon mounton execmod watch ];
 
 api pipe_api {
     /// The low-level API for pipes (FIFOs, fifo_file object class).
@@ -1523,9 +1523,9 @@ api pipe_api {
         dontaudit(source, this, fifo_file, relabel_fifo_file_perms);
     }
 
-    fn audit_access(domain source) {
-        /// Enable audits on this pipe for access() use.
-        allow(source, this, fifo_file, audit_access);
+    fn dontaudit_access(domain source) {
+        /// Do not audits denials for access() use on this pipe.
+        dontaudit(source, this, fifo_file, audit_access);
     }
 
     fn unconfined(domain source) {
@@ -1550,7 +1550,7 @@ let relabelfrom_sock_file_perms = [ getattr relabelfrom ];
 let relabelto_sock_file_perms = [ getattr relabelto ];
 let relabel_sock_file_perms = [ getattr relabelfrom relabelto ];
 let admin_sock_file_perms = [ manage_sock_file_perms relabel_sock_file_perms ];
-let unconfined_sock_file_perms = [ manage_sock_file_perms relabel_sock_file_perms map execute quotaon mounton audit_access execmod watch ];
+let unconfined_sock_file_perms = [ manage_sock_file_perms relabel_sock_file_perms map execute quotaon mounton execmod watch ];
 
 api named_socket_api {
     /// The low-level API for named UNIX sockets (sock_file object class).
@@ -1687,9 +1687,9 @@ api named_socket_api {
         dontaudit(source, this, sock_file, relabel_sock_file_perms);
     }
 
-    fn audit_access(domain source) {
-        /// Enable audits on this named UNIX socket for access() use.
-        allow(source, this, sock_file, audit_access);
+    fn dontaudit_access(domain source) {
+        /// Do not audit denials for using access() on this named UNIX socket.
+        dontaudit(source, this, sock_file, audit_access);
     }
 
     fn unconfined(domain source) {

@@ -94,6 +94,8 @@ domain kmod_t inherits system_app_domain {
 
     kernel_module_t.mmap_manage();
 
+    kmsg_device_t.write();
+
     kvmfs_t.mount();
 
     mount_t.domtrans();
