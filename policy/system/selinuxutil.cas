@@ -321,7 +321,7 @@ domain semanage_t inherits user_app_domain {
 
     @alias(semanage_trans_lock_t)
     resource trans_lock inherits common_file {
-        file_context("/etc/selinux/([^/]*/)?modules/semanage\.trans\.LOCK", file); // semanage_trans_lock_t
+        file_context("/etc/selinux/([^/]*/)?modules/semanage\.trans\.LOCK", file);
         file_context("/var/lib/selinux/[^/]+/semanage\.trans\.LOCK", file);
     }
 
@@ -453,12 +453,12 @@ domain setfiles_t inherits system_app_domain {
     pstore_t<common_dir>.getattr();
 
     proc_t.read();
-    proc_type.dontaudit_getattr(setfiles_t);
+    proc_type.dontaudit_getattr();
 
     selinux.file_contexts_setfscreate();
 
-    sysctl_t.kernel.read(setfiles_t); sysctl_t.list(setfiles_t);
-    sysctl_entry.dontaudit_list(setfiles_t);
+    sysctl_t.kernel.read(); sysctl_t.list();
+    sysctl_entry.dontaudit_list();
 
     syslog.send_messages();
 

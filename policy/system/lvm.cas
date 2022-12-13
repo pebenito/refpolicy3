@@ -242,7 +242,7 @@ domain lvm_t inherits system_app_domain {
     device_node<common_character_device>.dontaudit_read();
     device_node<common_block_device>.dontaudit_read();
 
-    domain.ps(lvm_t)
+    domain.ps()
 
     etc_t.read();
     etc_t.watch();
@@ -257,7 +257,7 @@ domain lvm_t inherits system_app_domain {
     // and links from /dev/<vg> to /dev/mapper/<vg>-<lv>
     fixed_disk_device_t.manage();
     fixed_disk_device_t.relabel();
-    device_t.filetrans(lvm_t, fixed_disk_device_t, blk_file);
+    device_t.filetrans(this, fixed_disk_device_t, blk_file);
     // Access raw devices and old /dev/lvm (c 109,0).  Is this needed?
     //fixed_disk_device_t.rw();
 

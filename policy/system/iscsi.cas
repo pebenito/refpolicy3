@@ -56,11 +56,11 @@ domain iscsid_t inherits daemon {
     allow(this, self, netlink_route_socket, nlmsg_write);
 
     this.lock.manage();
-    var_lock_t.filetrans(this, this.lock, [ dir file ]); var_t.list(iscsid_t);
+    var_lock_t.filetrans(this, this.lock, [ dir file ]); var_t.list();
 
     this.log.create();
     this.log.setattr();
-    var_log_t.filetrans(this, this.log, file); var_t.list(iscsid_t);
+    var_log_t.filetrans(this, this.log, file); var_t.list();
     delete(allow(this, this.log, file, write));
 
     this.var_lib.manage();

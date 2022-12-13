@@ -25,44 +25,44 @@ domain systemd_coredump_t inherits systemd_app_domain {
     allow(this, self, cap_userns, [ sys_admin sys_ptrace ]);
     allow(this, self, process, setcap);
 
-    this.state.mmap_manage(); var_lib_t.list(systemd_coredump_t); var_t.list(systemd_coredump_t);
+    this.state.mmap_manage(); var_lib_t.list(); var_t.list();
 
-    bin_t.exec(systemd_coredump_t);
+    bin_t.exec();
 
     cgroup_t.getattr_superblock();
     cgroup_t.list();
 
-    default_context_t.list(systemd_coredump_t); selinux_config_t.list(systemd_coredump_t);
+    default_context_t.list(); selinux_config_t.list();
 
     domain.ps();
 
-    etc_t.read(systemd_coredump_t);
+    etc_t.read();
 
-    executable.read(systemd_coredump_t);
+    executable.read();
 
-    fs_t.getattr_superblock(systemd_coredump_t);
+    fs_t.getattr_superblock();
 
-    init_t.ps(systemd_coredump_t);
-    init_t.runtime.list(systemd_coredump_t);
-    init_t.runtime<common_named_socket>.write(systemd_coredump_t);
-    init_t.state.list(systemd_coredump_t);
+    init_t.ps();
+    init_t.runtime.list();
+    init_t.runtime<common_named_socket>.write();
+    init_t.state.list();
 
-    kernel_t.userspace_entrypoint(systemd_coredump_t);
-    kernel_t.rw_inherited_pipes(systemd_coredump_t);
+    kernel_t.userspace_entrypoint();
+    kernel_t.rw_inherited_pipes();
 
-    kmsg_device_t.write(systemd_coredump_t);
+    kmsg_device_t.write();
 
-    mountpoint<dir>.getattr(systemd_coredump_t);
+    mountpoint<dir>.getattr();
 
     nsfs_t.getattr();
 
-    proc_t.read(systemd_coredump_t);
+    proc_t.read();
 
     root_t.mounton()
 
-    selinuxfs_t.getattr_superblock(systemd_coredump_t); sysfs_t.getattr_superblock(systemd_coredump_t); sysfs_t.list(systemd_coredump_t);
+    selinuxfs_t.getattr_superblock(); sysfs_t.getattr_superblock(); sysfs_t.list();
 
-    sysctl_t.kernel.read(systemd_coredump_t); sysctl_t.list(systemd_coredump_t); proc_t.list(systemd_coredump_t);
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
 
-    syslog.send_messages(systemd_coredump_t);
+    syslog.send_messages();
 }

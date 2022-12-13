@@ -26,18 +26,18 @@ domain systemd_update_done_t inherits systemd_app_domain {
     etc_t.filetrans(this, this.runtime, file);
     var_t.filetrans(this, this.runtime, file);
 
-    cgroup_t.list(systemd_update_done_t);
+    cgroup_t.list();
 
-    file_type<filesystem>.getattr_superblock(systemd_update_done_t);
+    file_type<filesystem>.getattr_superblock();
 
-    filesystem.getattr_superblock(systemd_update_done_t);
+    filesystem.getattr_superblock();
 
     libs.libselinux_linked();
 
     selinux.use_status_page();
     selinux.file_contexts_setfscreate();
 
-    sysctl_t.kernel.read(systemd_update_done_t); sysctl_t.list(systemd_update_done_t);
+    sysctl_t.kernel.read(); sysctl_t.list();
 
-    sysfs_t.list(systemd_update_done_t);
+    sysfs_t.list();
 }

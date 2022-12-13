@@ -46,7 +46,7 @@ domain unconfined_t inherits userdomain {
 
     prelink_t.domtrans();
 
-    root_t.filetrans(unconfined_t, etc_runtime_t, file);
+    root_t.filetrans(this, etc_runtime_t, file);
 
     rpm_t.domtrans();
 
@@ -58,8 +58,8 @@ domain unconfined_t inherits userdomain {
 
     sysadm_passwd_t.domtrans();
 
-    systemd_t.runtime.filetrans(unconfined_t, systemd_passwd_runtime_t, dir, "ask-password-block");
-    systemd_t.runtime.filetrans(unconfined_t, systemd_passwd_runtime_t, dir, "ask-password");
+    systemd_t.runtime.filetrans(this, systemd_passwd_runtime_t, dir, "ask-password-block");
+    systemd_t.runtime.filetrans(this, systemd_passwd_runtime_t, dir, "ask-password");
 
     tzdata_t.domtrans();
 
@@ -69,7 +69,7 @@ domain unconfined_t inherits userdomain {
 
     unconfined_mount_t.domtrans();
 
-    user_home_dir_t.filetrans(unconfined_t, user_home_t, { dir file lnk_file fifo_file sock_file }, );
+    user_home_dir_t.filetrans(this, user_home_t, { dir file lnk_file fifo_file sock_file }, );
 
     vpnc_t.domtrans();
 

@@ -143,10 +143,10 @@ domain fsadm_t inherits system_app_domain {
 
     this.log.manage();
     this.log<dir>.setattr();
-    var_log_t.filetrans(fsadm_t, fsadm_log_t, file); var_t.list();
+    var_log_t.filetrans(this, fsadm_log_t, file); var_t.list();
 
     this.runtime.manage();
-    var_run_t.filetrans(fsadm_t, fsadm_run_t, dir); var_t.list();
+    var_run_t.filetrans(this, fsadm_run_t, dir); var_t.list();
 
     autofs_t.list();
 
@@ -168,7 +168,7 @@ domain fsadm_t inherits system_app_domain {
 
     // Write to /etc/mtab.
     etc_runtime_t.manage();
-    etc_t.filetrans(fsadm_t, etc_runtime_t, file);
+    etc_t.filetrans(this, etc_runtime_t, file);
 
     etc_t.read();
 
@@ -244,9 +244,9 @@ domain fsadm_t inherits system_app_domain {
     tmpfs_t<common_file>.rw();
 
     // Access to /initrd devices
-    allow(fsadm_t, unlabeled_t, dir, manage_dir_perms);
-    allow(fsadm_t, unlabeled_t, blk_file rw_blk_file_perms);
-    allow(fsadm_t, unlabeled_t, file, read_file_perms);
+    allow(this, unlabeled_t, dir, manage_dir_perms);
+    allow(this, unlabeled_t, blk_file rw_blk_file_perms);
+    allow(this, unlabeled_t, file, read_file_perms);
 
     urandom_device_t.read();
 

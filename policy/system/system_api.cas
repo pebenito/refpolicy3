@@ -69,7 +69,7 @@ final api auth {
 
         audit.send_messages(source);
 
-        auth.use_pam_systemd();
+        auth.use_pam_systemd(source);
 
         auth_cache_t.list(source);
 
@@ -90,7 +90,7 @@ final api auth {
         lastlog_t.rw(source);
         lastlog_t.setattr(source);
 
-        nss.get_passwd_entry();
+        nss.get_passwd_entry(source);
 
         random_device_t.read(source);
 
@@ -218,13 +218,13 @@ final api kernel {
             dontaudit(source, self, capability, sys_module);
             dontaudit(source, self, system, module_load);
 
-            kernel_module_t.dontaudit_read();
+            kernel_module_t.dontaudit_read(source);
             dontaudit(source, kernel_module_t, system, module_load);
         } else {
             allow(source, self, capability, sys_module);
             allow(source, self, system, module_load);
 
-            kernel_module_t.read();
+            kernel_module_t.read(source);
             allow(source, kernel_module_t, system, module_load);
         }
     }
@@ -251,7 +251,7 @@ final api lang {
     @alias(golang)
     fn go(domain source) {
         // Go reads /sys/kernel/mm/transparent_hugepage/hpage_pmd_size
-        sysfs_t.read();
+        sysfs_t.read(source);
     }
 }
 
@@ -323,7 +323,7 @@ final api network {
         allow(source, self, tcp_socket, create_stream_socket_perms);
 
         // Certificates for TLS
-        cert_t.read();
+        cert_t.read(source);
 
         netif_t.sendrecv(source);
 
@@ -499,13 +499,13 @@ final api nss {
 
         // kerberos_use()
 
-        nscd_t.lookup();
+        nscd_t.lookup(source);
 
-        nslcd_t.unix_stream_connect();
+        nslcd_t.unix_stream_connect(source);
 
-        sssd_t.unix_stream_connect();
+        sssd_t.unix_stream_connect(source);
 
-        winbind_t.unix_stream_connect();
+        winbind_t.unix_stream_connect(source);
     }
 
     @alias(getspnam)
@@ -514,7 +514,7 @@ final api nss {
 
         shadow_t.read(source);
 
-        sssd_t.unix_stream_connect();
+        sssd_t.unix_stream_connect(source);
     }
 
     fn get_entry(domain source) {

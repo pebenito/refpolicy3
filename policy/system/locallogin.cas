@@ -21,7 +21,7 @@ domain local_login_t inherits bin_login_domain, local_login_domain {
     allow(this, self, key, [ search write link ]);
 
     this.lock.manage();
-    var_lock_t.filetrans(local_login_t, local_login_t.lock, file);
+    var_lock_t.filetrans(this, this.lock, file);
 
     acpi_bios_t.dontaudit_getattr();
     acpi_bios_t.dontaudit_setattr();
@@ -114,7 +114,7 @@ domain local_login_t inherits bin_login_domain, local_login_domain {
     wtmp_t.rw(); var_t.list();
 
     if (allow_polyinstantiation) {
-        setfiles_t.domtrans(local_login_t);
+        setfiles_t.domtrans();
     }
 
     if (console_login) {
@@ -123,7 +123,7 @@ domain local_login_t inherits bin_login_domain, local_login_domain {
     }
 
     if (distro_debian) {
-        auth_use_pam_motd_dynamic(local_login_t)
+        auth_use_pam_motd_dynamic()
     }
 
     optional {
@@ -134,9 +134,9 @@ domain local_login_t inherits bin_login_domain, local_login_domain {
         systemd_t.dbus_send();
 
         systemd_logind_t.inhibit_logins();
-        systemd_logind_t.runtime<common_pipe>.manage(local_login_t);
+        systemd_logind_t.runtime<common_pipe>.manage();
 
-        systemd_machined_t.abstract_stream_connect(local_login_t);
+        systemd_machined_t.abstract_stream_connect();
     }
 
     //optional {
@@ -145,7 +145,7 @@ domain local_login_t inherits bin_login_domain, local_login_domain {
 
     //optional {
     // Search for mail spool file.
-    //mail_spool_t.getattr(); var_spool_t.list(local_login_t); var_t.list(local_login_t);
+    //mail_spool_t.getattr(); var_spool_t.list(); var_t.list();
     //}
 
     //allow local_login_t userdomain:key { create link read search setattr view write } ;

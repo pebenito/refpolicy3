@@ -111,7 +111,7 @@ domain syslogd_t inherits daemon {
     console_device_t.write();
 
     cron_log_t<common_file>.manage();
-    var_log_t.filetrans(syslogd_t, cron_log_t, file, "cron.log");
+    var_log_t.filetrans(this, cron_log_t, file, "cron.log");
 
     etc_t.read();
 
@@ -122,9 +122,9 @@ domain syslogd_t inherits daemon {
     filesystem.getattr_superblock();
 
     innd_log_t<common_file>.manage();
-    var_log_t.filetrans(syslogd_t, innd_log_t, file, "news.crit");
-    var_log_t.filetrans(syslogd_t, innd_log_t, file, "news.err");
-    var_log_t.filetrans(syslogd_t, innd_log_t, file, "news.notice");
+    var_log_t.filetrans(this, innd_log_t, file, "news.crit");
+    var_log_t.filetrans(this, innd_log_t, file, "news.err");
+    var_log_t.filetrans(this, innd_log_t, file, "news.notice");
 
     mysqld_t.unix_stream_connect();
     mysqld_t.port.tcp_connect();

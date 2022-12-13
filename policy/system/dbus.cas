@@ -187,7 +187,7 @@ domain system_dbusd_t inherits daemon {
 
     console_device_t.dontaudit_rw();
 
-    domain.ps(system_dbusd_t)
+    domain.ps()
 
     file_type<filesystem>.getattr_superblock();
 
@@ -233,7 +233,7 @@ domain system_dbusd_t inherits daemon {
     }
 
     if (dbus_broker_system_bus) {
-        allow(system_dbusd_t, init_t, system, [ start status ]);
+        allow(this, init_t, system, [ start status ]);
 
         policykit_t.state.read();
         policykit_t.startstop();
@@ -300,7 +300,7 @@ domain system_dbusd_t inherits daemon {
     fn unconfined(domain source) {
         /// Unconfined access to dbus (system bus and user session buses).
         domain.send_msg();
-        allow(source, [ system_dbusd_t session_dbus ], dbus, acquire_svc);
+        allow(source, [ this session_dbus ], dbus, acquire_svc);
     }
 }
 

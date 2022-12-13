@@ -25,29 +25,29 @@ domain systemd_userdbd_t inherits daemon {
     //
     // Policy
     //
-    allow(this, systemd_userdbd_t, self, capability, dac_read_search);
+    allow(this, self, capability, dac_read_search);
 
     auth.read_shadow_passwords();
 
-    cgroup_t.list(systemd_userdbd_t);
+    cgroup_t.list();
 
     default_context_t.list();
 
-    etc_runtime_t.read(systemd_userdbd_t);
+    etc_runtime_t.read();
 
-    file_type<filesystem>.getattr_superblock(systemd_userdbd_t);
+    file_type<filesystem>.getattr_superblock();
 
-    filesystem.getattr_superblock(systemd_userdbd_t);
+    filesystem.getattr_superblock();
 
-    init_t.unix_stream_connect(systemd_userdbd_t);
+    init_t.unix_stream_connect();
 
     nss.get_passwd_entry();
 
-    sysctl_t.kernel.read(systemd_userdbd_t); sysctl_t.list(systemd_userdbd_t);
+    sysctl_t.kernel.read(); sysctl_t.list();
 
     systemd_homed_t.unix_stream_connect();
 
-    urandom_device_t.read(systemd_userdbd_t);
+    urandom_device_t.read();
 
-    usr_t.read(systemd_userdbd_t);
+    usr_t.read();
 }

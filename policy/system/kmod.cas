@@ -58,7 +58,7 @@ domain kmod_t inherits system_app_domain {
     this.conf.read();
 
     this.dep.mmap_manage();
-    kernel_module_t.filetrans(kmod_t, this.dep, file);
+    kernel_module_t.filetrans(this, this.dep, file);
 
     // for /run/tmpfiles.d/kmod.conf
     this.tmpfiles_conf.manage();
@@ -125,7 +125,7 @@ domain kmod_t inherits system_app_domain {
 
     // kmod needs to create /run/tmpdiles.d
     systemd_tmpfiles_t.conf<common_dir>.create();
-    runtime_t.filetrans(kmod_t, systemd_tmpfiles_t.conf, dir, "tmpfiles.d");
+    runtime_t.filetrans(this, systemd_tmpfiles_t.conf, dir, "tmpfiles.d");
 
     tmp_t.list();
 

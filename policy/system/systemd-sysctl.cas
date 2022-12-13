@@ -20,20 +20,20 @@ domain systemd_sysctl_t inherits systemd_app_domain {
     // net_admin for network sysctls
     allow(this, self, capability, [ net_admin sys_admin sys_ptrace ]);
 
-    cgroup_t.list(systemd_sysctl_t);
+    cgroup_t.list();
 
-    etc_t.read(systemd_sysctl_t);
+    etc_t.read();
 
-    file_type<filesystem>.getattr_superblock(systemd_sysctl_t);
+    file_type<filesystem>.getattr_superblock();
 
-    filesystem.getattr_superblock(systemd_sysctl_t);
+    filesystem.getattr_superblock();
     filesystem<common_dir>.list();
 
     kernel.request_module_load();
 
-    proc_t.dontaudit_getattr_superblock(systemd_sysctl_t);
+    proc_t.dontaudit_getattr_superblock();
 
-    sysctl_t.kernel.read(systemd_sysctl_t);
+    sysctl_t.kernel.read();
 
-    sysctl_entry.rw(systemd_sysctl_t); sysctl_t.list(systemd_sysctl_t); proc_t.net.list(systemd_sysctl_t); proc_t.list(systemd_sysctl_t);
+    sysctl_entry.rw(); sysctl_t.list(); proc_t.net.list(); proc_t.list();
 }

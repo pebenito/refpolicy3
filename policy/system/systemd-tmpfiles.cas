@@ -48,7 +48,7 @@ domain systemd_tmpfiles_t inherits systemd_daemon {
     //
     // Policy
     //
-    allow(this, systemd_tmpfiles_t, self, capability, [ chown dac_override dac_read_search fowner fsetid mknod net_admin sys_admin ]);
+    allow(this, self, capability, [ chown dac_override dac_read_search fowner fsetid mknod net_admin sys_admin ]);
 
     cgroup_t.list();
 

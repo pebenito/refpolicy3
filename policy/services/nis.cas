@@ -38,7 +38,7 @@ domain ypbind_t inherits daemon {
     //
     // Policy
     //
-    dontaudit(ypbind_t, self, capability, [ net_admin sys_tty_config ]);
+    dontaudit(this, self, capability, [ net_admin sys_tty_config ]);
 
     autofs_t.list();
 
@@ -150,7 +150,7 @@ domain yppasswdd_t inherits daemon {
 
     shadow_t.manage();
     shadow_t.relabel();
-    etc_t.filetrans(yppasswdd_t, shadow_t, file);
+    etc_t.filetrans(this, shadow_t, file);
 
     shell_exec_t.exec();
 
@@ -298,9 +298,6 @@ domain ypxfr_t inherits daemon {
     ypserv_t.dontaudit_rw_inherited_tcp_sockets();
     ypserv_t.dontaudit_rw_inherited_udp_sockets();
     ypserv_t.conf.read();
-
-// server_packet_t.sendrecv(ypxfr_t);
-// client_packet_type.sendrecv(ypxfr_t);
 }
 
 module nis_base {

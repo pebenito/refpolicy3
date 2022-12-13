@@ -47,7 +47,7 @@ domain sulogin_t inherits system_app_domain {
     tty_device_t.rw();
 
     // because file systems are not mounted:
-    dontaudit(sulogin_t, unlabeled_t, dir, list_dir_perms);
+    dontaudit(this, unlabeled_t, dir, list_dir_perms);
 
     user_home_dir_t.list(); home_root_t.list();
 

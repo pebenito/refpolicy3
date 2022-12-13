@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 
-domain hostname inherits system_app_domain {
+domain hostname_t inherits system_app_domain {
     /// Command line tool to get and set the system hostname.
 
     @alias(hostname_exec_t)

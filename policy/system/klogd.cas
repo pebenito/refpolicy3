@@ -22,7 +22,7 @@ domain klogd_t inherits daemon {
     //
     allow(this, self, capability, sys_admin);
     dontaudit(this, self, capability, [ sys_resource sys_tty_config ]);
-    allow(klogd_t, self, process, [ sigchld sigkill sigstop signull signal ]);
+    allow(this, self, process, [ sigchld sigkill sigstop signull signal ]);
 
     // read /etc/nsswitch.conf
     etc_t.read();

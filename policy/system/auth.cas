@@ -21,10 +21,10 @@ resource chkpwd_t inherits app_domain {
         file_context("/usr/sbin/validate", file);
     }
 
-    allow(chkpwd_t, self, capability, [dac_override setuid ]);
-    dontaudit(chkpwd_t, self, capability, sys_tty_config);
-    allow(chkpwd_t, self, process, [getattr signal]);
-    dontaudit(chkpwd_t, self, process, getcap);
+    allow(this, self, capability, [dac_override setuid ]);
+    dontaudit(this, self, capability, sys_tty_config);
+    allow(this, self, process, [getattr signal]);
+    dontaudit(this, self, process, getcap);
 
     audit.send_messages();
 
@@ -267,7 +267,7 @@ domain pam_console_t inherits system_app_domain {
     tty_device_t.setattr();
     tty_device_t.rw();
 
-    dontaudit(pam_console_t, unlabeled_t, dir, list_dir_perms);
+    dontaudit(this, unlabeled_t, dir, list_dir_perms);
 
     urandom_device_t.read();
 

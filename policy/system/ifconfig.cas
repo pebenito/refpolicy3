@@ -59,7 +59,7 @@ domain ifconfig_t inherits system_app_domain {
     allow(this, self, tcp_socket manage_stream_socket_perms);
 
     this.runtime.manage();
-    runtime_t.filetrans(ifconfig_t, ifconfig_runtime_t, dir);
+    runtime_t.filetrans(this, ifconfig_runtime_t, dir);
     // Allow "ip netns" to remount /var/run/netns and to mount network namespace files on /var/run/netns/$NSNAME
     this.runtime.mounton();
 

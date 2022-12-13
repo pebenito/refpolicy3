@@ -62,9 +62,9 @@ domain sysadm_t inherits admin_userdomain, common_user {
 
     kmod_t.domtrans();
 
-    kmsg_device_t.read(sysadm_t);
+    kmsg_device_t.read();
 
-    logfile.watch(sysadm_t);
+    logfile.watch();
 
     noxattr_filesystem.exec();
 
@@ -120,7 +120,7 @@ domain sysadm_t inherits admin_userdomain, common_user {
     wireless_device_t.rw();
 
     if (distro_gentoo) {
-        rc_exec_t.exec(sysadm_t);
+        rc_exec_t.exec();
     }
 
     if (!enable_mls) {

@@ -118,7 +118,7 @@ domain dhcpc_t inherits daemon {
     // Allow read/write to /etc/resolv.conf and /etc/ntp.conf. Note that any files
     // in /etc created by dhcpcd will be labelled net_conf_t.
     net_conf_t.manage();
-    etc_t.filetrans(dhcpc_t, net_conf_t, file);
+    etc_t.filetrans(this, net_conf_t, file);
 
     netutils_t.domtrans();
 

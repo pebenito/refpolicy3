@@ -18,26 +18,26 @@ domain auditctl_t inherits system_app_domain {
     allow(this, self, capability, [ dac_override dac_read_search fsetid ]);
     allow(this, self, netlink_audit_socket, nlmsg_readpriv);
 
-    audit.set_parameters(auditctl_t);
+    audit.set_parameters();
 
     auditd_t.conf.read();
     dontaudit(this, auditd_t.conf, file, map);
 
-    domain.ps(auditctl_t);
+    domain.ps();
 
-    etc_t.read(auditctl_t);
+    etc_t.read();
 
     // Needed for adding watches
-    file_type<common_file>.getattr(auditctl_t);
+    file_type<common_file>.getattr();
 
-    kernel_t.set_scheduler(auditctl_t);
+    kernel_t.set_scheduler();
 
-    proc_t.dontaudit_getattr_superblock(auditctl_t);
+    proc_t.dontaudit_getattr_superblock();
     proc_t.read();
 
-    sysctl_t.kernel.read(auditctl_t); sysctl_t.list(auditctl_t); proc_t.list(auditctl_t);
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
 
-    syslog.send_messages(auditctl_t);
+    syslog.send_messages();
 
     systemd_userdbd_t.unix_stream_connect();
 

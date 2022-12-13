@@ -23,7 +23,7 @@ domain systemd_hostnamed_t inherits systemd_daemon {
     NetworkManager_t.dbus_send();
 
     net_conf_t.manage();
-    etc_t.filetrans(systemd_hostnamed_t, net_conf_t, file);
+    etc_t.filetrans(this, net_conf_t, file);
 
     proc_t.dontaudit_getattr_superblock();
 
