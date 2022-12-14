@@ -412,30 +412,30 @@ final api network {
         node_t.sendrecv(source);
     }
 
-    fn use_nis(domain source) {
-        /// IP network perms for NIS connections
+    @alias(use_nis)
+    fn use_portmap(domain source) {
+        /// IP network perms for portmap connections.
 
-        allow(source, self, tcp_socket, create_stream_socket_perms);
-        allow(source, self, udp_socket, create_socket_perms);
-
-        netif_t.sendrecv(source);
-
-        netlabel_peer_t.tcp_recvfrom(source);
-        netlabel_peer_t.udp_recvfrom(source);
-
-        network.read_dns_server_config(source);
+        network.tcp_client(source);
+        network.tcp_server(source);
+        network.udp_client(source);
+        network.udp_server(source);
 
         network_port.dontaudit_tcp_bind(source);
         network_port.dontaudit_tcp_connect(source);
         network_port.dontaudit_udp_bind(source);
 
-        node_t.sendrecv(source);
-        node_t.tcp_bind(source);
-        node_t.udp_bind(source);
-
         portmap_port_t.tcp_connect(source);
 
+        reserved_network_port.dontaudit_tcp_bind(source);
+        reserved_network_port.dontaudit_udp_bind(source);
+
         reserved_port_t.tcp_connect(source);
+        reserved_port_t.tcp_bind(source);
+        reserved_port_t.udp_bind(source);
+
+        rpc_network_port.tcp_bind(source);
+        rpc_network_port.udp_bind(source);
 
         unreserved_port_t.tcp_bind(source);
         unreserved_port_t.tcp_connect(source);

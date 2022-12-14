@@ -47,6 +47,14 @@ extend kernel_t {
     }
 }
 
+extend mount_t {
+    network.use_portmap();
+
+    rpc_pipefs_t.list();
+
+    rpcd_t.domtrans();
+}
+
 extend systemd_t {
     // var-lib-nfs-rpc_pipefs.mount creates /var/lib/nfs/rpc_pipefs
     // if it does not exist

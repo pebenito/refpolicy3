@@ -1,0 +1,165 @@
+// SPDX-License-Identifier: GPL-2.0
+
+@alias(allow_mount_anyfile)
+tunable mount_on_non_security {
+    /// Mount on any non-security dir or file.
+    default false;
+}
+
+type mount_loopback_t; // customizable
+// mount_loopback_t inherits filesystem_image
+
+domain mount_t inherits system_app_domain {
+    /// The mount program for mounting filesystems.
+
+    //
+    // Resources
+    //
+    @alias(mount_exec_t)
+    extend exec {
+        file_context("/usr/bin/fusermount", file);
+        file_context("/usr/bin/fusermount3", file);
+        file_context("/usr/bin/mount(\.[^/]+)?", file);
+        file_context("/usr/bin/umount(\.[^/]+)?", file);
+        file_context("/usr/sbin/mount(\.[^/]+)?", file);
+        file_context("/usr/sbin/umount(\.[^/]+)?", file);
+    }
+
+    @alias(mount_runtime_t)
+    resource runtime inherits runtimefile {
+        /// Runtime files in /run and /var/run.
+        file_context("/run/mount(/.*)?", any);
+    }
+
+    @alias(mount_tmp_t)
+    resource tmp inherits tmpfile {
+        /// Temporary files in /tmp and /var/tmp.
+
+    }
+
+    //
+    // Policy
+    //
+
+    // setuid/setgid needed to mount cifs
+    allow(this, self, capability, [ chown dac_override dac_read_search ipc_lock setgid setuid sys_admin sys_rawio sys_tty_config ]);
+    dontaudit(this, self, capability, [ kill net_admin ]);
+    dontaudit(this, self, process, setrlimit);
+
+    this.runtime.manage();
+    runtime_t.filetrans(this, this.runtime, [ dir file ]); var_t.list();
+
+    this.tmp.manage();
+    tmp_t.filetrans(this, this.tmp, [ file dir ]);
+
+    debugfs_t.dontaudit_write();
+
+    device_t<common_character_device>.getattr();
+    // Early devtmpfs, before udev relabel
+    device_t<common_character_device>.dontaudit_rw();
+
+    device_node<common_character_device>.getattr();
+
+    device_node<block_device>.getattr();
+
+    etc_t.read();
+
+    etc_runtime_t.manage();
+    etc_t.filetrans(mount_t, etc_runtime_t, file, );
+
+    file_type<common_dir>.list();
+    file_type<filesystem>.getattr_superblock();
+    // These rules need to be generalized.  Only admin, initrc should have it:
+    file_type<filesystem>.fs_relabelto();
+    file_type<filesystem>.mount();
+    file_type<filesystem>.unmount();
+
+    filesystem.getattr_superblock();
+    filesystem.mount();
+    filesystem.unmount();
+    filesystem.remount();
+    filesystem.fs_relabelfrom();
+
+    filesystem_image.read();
+    filesystem_image.dontaudit_write();
+
+    fixed_disk_device_t.read();
+    fixed_disk_device_t.dontaudit_write();
+
+    fuse_device_t.rw();
+
+    // To load binfmt_misc kernel module
+    kernel.request_module_load();
+
+    kernel_t.set_scheduler();
+
+    // kubelet bind-mounts its own fds into containers
+    kubelet_t.ps();
+
+    libs.libselinux_linked();
+
+    loop_control_device_t.rw();
+
+    lvm_control_t.rw();
+
+    modules_dep_t.read(); modules_object_t.list();
+
+    mountpoint<common_file>.mounton();
+    mountpoint<dir>.dontaudit_write();
+    mountpoint<dir>.dontaudit_setattr();
+
+    nss.get_passwd_entry();
+
+    proc_t.read();
+    proc_t.kcore.dontaudit_getattr();
+    proc_t<common_dir>.dontaudit_write();
+
+    // for a bug in the X server
+    ptmx_t.dontaudit_rw();
+
+    removable_device_t.read();
+    removable_device_t.dontaudit_write();
+
+    root_t.unmount();
+
+    selinux.get_enforce_mode();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.read();
+    sysfs_t<common_dir>.dontaudit_write();
+
+    syslog.send_messages();
+
+    tmpfs_t<common_character_device>.rw(); tmpfs_t.list();
+    tmpfs_t<symlink>.read();
+    tmpfs_t.dontaudit_write();
+
+    // For reading cert files
+    usr_t.read();
+
+    if (mount_on_non_security) {
+        file_type<common_dir>.list();
+        file_type<common_file>.read();
+        file_type<common_file>.mounton();
+        delete(security_file<common_dir>.list(mount_t));
+        delete(security_file<common_file>.read(mount_t));
+        delete(security_file<common_file>.mounton(mount_t));
+    }
+
+    if (distro_redhat) {
+        // mount config by default sets fscontext=removable_t
+        dosfs_t.fs_relabelfrom();
+
+        pam_console_t.runtime.read(); runtime_t.list(); var_t.list();
+    }
+
+// typeattribute mount_t mlsfileread;
+// typeattribute mount_t mlsfilewrite;
+
+// these should be fixed by domtrans
+// allow mount_t acpid_t:fd use;
+// allow mount_t puppet_tmp_t:file rw_file_perms;
+// for kernel package installation
+// allow mount_t rpm_t:fifo_file rw_fifo_file_perms;
+}
