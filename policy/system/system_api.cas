@@ -118,20 +118,16 @@ final api auth {
             nss.get_shadow_entry(source);
         }
 
-        // optional {
+        optional {
             system_dbusd_t.client(source);
 
             fprintd_t.dbus_send(source);
-        // }
+        }
 
         // optional {
         // kerberos_manage_host_rcache($1)
         // kerberos_read_config($1)
         // kerberos_read_keytab()
-        // }
-
-        // optional {
-        // nis_authenticate();
         // }
 
         // optional {
@@ -272,7 +268,7 @@ final api libs {
 }
 
 final api network {
-    /// Common network accesses.
+    /// Common network access patterns.
 
     @alias(read_resolv_conf)
     fn read_dns_server_config(domain source) {
@@ -280,14 +276,10 @@ final api network {
 
         net_conf_t.read(source); etc_t.list(source); runtime_t.list(source); var_t.list(source);
 
-        //optional {
-            // for /etc/resolv.conf symlink
-            NetworkManager_t.runtime<common_file>.read(source); runtime_t.list(source); var_t.list(source);
-        //}
+        // for /etc/resolv.conf symlink
+        NetworkManager_t.runtime<common_file>.read(source); runtime_t.list(source); var_t.list(source);
 
-        //optional {
-            systemd_resolved_t.runtime<common_file>.read(source);
-        //}
+        systemd_resolved_t.runtime<common_file>.read(source);
     }
 
     fn tcp_client(domain source) {
@@ -380,8 +372,6 @@ final api network {
         allow(source, self, udp_socket, manage_socket_perms);
         allow(source, self, netlink_route_socket, [ manage_socket_perms nlmsg_read ]);
 
-        //dns_client_packet_t.sendrecv(source);
-
         dns_port_t.tcp_connect(source);
 
         netif_t.sendrecv(source);
@@ -398,8 +388,6 @@ final api network {
     fn use_ldap(domain source) {
         /// IP network perms for LDAP connections
         allow(source, self, tcp_socket, manage_socket_perms);
-
-        //ldap_client_packet_t.sendrecv(source);
 
         ldap_port_t.tcp_connect(source);
 
@@ -593,7 +581,7 @@ api final selinux {
     @alias(getenforce)
     fn get_enforce_mode(domain source) {
         /// Get the enforcing mode.
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         selinuxfs_t.read(source); sysfs_t.list(source);
     }
@@ -611,7 +599,7 @@ api final selinux {
         // TODO:
         // neverallow ~{ selinux_unconfined_type can_setenforce } security_t:security setenforce;
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         selinuxfs_t.read(source); sysfs_t.list(source);
 
@@ -635,7 +623,7 @@ api final selinux {
     fn read_policy(domain source) {
         /// Read the running policy from kernel memory.
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         allow(source, security_t, security, read_policy);
 
@@ -659,7 +647,7 @@ api final selinux {
         // TODO:
         // neverallow ~{ selinux_unconfined_type can_load_policy } security_t:security load_policy;
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         selinuxfs_t.rw(source); sysfs_t.list(source);
 
@@ -687,7 +675,7 @@ api final selinux {
         allow(source, security_t, security, setsecparam);
         auditallow(source, security_t, security, setsecparam);
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         selinuxfs_t.rw(source); sysfs_t.list(source);
     }
@@ -708,7 +696,7 @@ api final selinux {
     fn set_generic_booleans(domain source) {
         boolean_t.get(source); selinuxfs_t.list(source); sysfs_t.list(source);
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         if (!secure_mode_setbool) {
             boolean_t.set(source);
@@ -724,13 +712,13 @@ api final selinux {
     fn get_all_booleans(domain source) {
         booleans.get(source); selinuxfs_t.list(source); sysfs_t.list(source);
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
        }
 
     fn set_all_booleans(domain source) {
         booleans.read(source); selinuxfs_t.list(source); sysfs_t.list(source);
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         if (!secure_mode_setbool) {
             allow(source, security_t, security, setbool);
@@ -758,7 +746,7 @@ api final selinux {
     @alias(validate_labels)
     fn validate_contexts(domain source) {
         /// Validate contexts.
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         allow(source, security_t, security, check_context);
 
@@ -781,7 +769,7 @@ api final selinux {
         /// This is typically used by userspace object managers.
         allow(source, self, netlink_selinux_socket, create_socket_perms);
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         allow(source, security_t, security, compute_av);
 
@@ -803,7 +791,7 @@ api final selinux {
         /// Get the context of a new object.
         allow(source, security_t, security, compute_create);
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         selinuxfs_t.rw(source); sysfs_t.list(source);
     }
@@ -819,7 +807,7 @@ api final selinux {
     @alias(get_member_labels, compute_member)
     fn get_member_contexts(domain source) {
         /// Get polyinstantiated directory member contexts.
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         allow(source, security_t, security, compute_member);
 
@@ -839,7 +827,7 @@ api final selinux {
         /// Get the new context for relabeling.
         allow(source, security_t, security, compute_relabel);
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         selinuxfs_t.rw(source); sysfs_t.list(source);
     }
@@ -857,7 +845,7 @@ api final selinux {
         /// Get user login contexts.
         default_context_t.read(source); selinux_config_t.list(source); etc_t.list(source);
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         allow(source, security_t, security, compute_user);
 
@@ -881,7 +869,7 @@ api final selinux {
 
         file_context_t.mmap_read(source); default_context_t.list(source); selinux_config_t.list(source); etc_t.list(source);
 
-        libs.libselinux_linked(domain source);
+        libs.libselinux_linked(source);
 
         selinux.validate_contexts(source);
     }
