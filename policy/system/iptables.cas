@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
 domain iptables_t inherits system_app_domain {
-    /// description_text
+    /// Iptables tools for configuring netfilter.
 
     //
     // Resources
