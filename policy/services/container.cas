@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: GPL-2.0
+
+resource container_file_t inherits common_file, common_pipe, common_named_socket {
+
+}
+
+//
+// Extends
+//
+extend kernel_t {
+    if(container_spc_create_nfs_servers) {
+        container_file_t.manage();
+        container_file_t<common_character_device>.rw();
+        container_file_t<common_character_device>.manage();
+
+        spc_t.unix_stream_connect();
+        spc_t.rw_inherited_tcp_sockets();
+    }
+}

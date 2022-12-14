@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: GPL-2.0
+
+extend load_policy_t {
+    if (glusterfs_modify_policy) {
+        glusterd_t.inherit_file_descriptors();
+    }
+}
+
+extend mount_t {
+    glusterd_t.domtrans(mount_t); bin_t.list(mount_t); usr_t.list(mount_t);
+
+    // required for mount.glusterfs
+    shell_exec_t.exec(mount_t);
+}
+
+extend setfiles_t {
+    if (glusterfs_modify_policy) {
+        glusterd_t.inherit_file_descriptors();
+    }
+}

@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0
+
+extend mount_t {
+    // required for mount.smbfs
+    bin_t.exec(); usr_t.list();
+
+    smbmount_t.domtrans();
+}

@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
+
+extend systemd_t {
+    // kubelet systemd unit reads env files in
+    // /etc/kubernetes and /var/lib/kubelet
+    container.state.read();
+
+    kubernetes_t.config.read();
+}

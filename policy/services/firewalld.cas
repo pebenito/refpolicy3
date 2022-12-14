@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
+
+extend iptables_t {
+    firewalld_etc_rw_t<common_file>.read();
+
+    firewalld_t.runtime<common_file>.read();
+
+    firewalld_t.tmp.dontaudit_rw_inherited();
+}

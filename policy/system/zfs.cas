@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//
+// Extends
+//
+extend kernel_t {
+    zfs_t.zpool_cache.rw();
+}
