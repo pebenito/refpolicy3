@@ -1,0 +1,161 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain iptables_t inherits system_app_domain {
+    /// description_text
+
+    //
+    // Resources
+    //
+    @alias(iptables_conf_t)
+    resource config inherits configfile {
+        /// Configuration files.
+        file_context("/etc/sysconfig/ip6?tables.*", file);
+        file_context("/etc/sysconfig/system-config-firewall.*", file);
+    }
+
+    @alias(iptables_exec_t)
+    extend exec {
+        file_context("/usr/bin/conntrack", file);
+        file_context("/usr/bin/ebtables", file);
+        file_context("/usr/bin/ebtables-restore", file);
+        file_context("/usr/bin/ipchains.*", file);
+        file_context("/usr/bin/ipset", file);
+        file_context("/usr/bin/ip6?tables", file);
+        file_context("/usr/bin/ip6?tables-multi", file);
+        file_context("/usr/bin/ip6?tables-restore", file);
+        file_context("/usr/bin/ipvsadm", file);
+        file_context("/usr/bin/ipvsadm-restore", file);
+        file_context("/usr/bin/ipvsadm-save", file);
+        file_context("/usr/bin/nft", file);
+        file_context("/usr/bin/xtables-compat-multi", file);
+        file_context("/usr/bin/xtables-legacy-multi", file);
+        file_context("/usr/bin/xtables-multi", file);
+        file_context("/usr/bin/xtables-nft-multi", file);
+
+        file_context("/usr/sbin/conntrack", file);
+        file_context("/usr/sbin/ebtables", file);
+        file_context("/usr/sbin/ebtables-restore", file);
+        file_context("/usr/sbin/ipchains.*", file);
+        file_context("/usr/sbin/ipset", file);
+        file_context("/usr/sbin/ip6?tables", file);
+        file_context("/usr/sbin/ip6?tables-multi", file);
+        file_context("/usr/sbin/ip6?tables-restore", file);
+        file_context("/usr/sbin/ipvsadm", file);
+        file_context("/usr/sbin/ipvsadm-restore", file);
+        file_context("/usr/sbin/ipvsadm-save", file);
+        file_context("/usr/sbin/nft", file);
+        file_context("/usr/sbin/xtables-compat-multi", file);
+        file_context("/usr/sbin/xtables-legacy-multi", file);
+        file_context("/usr/sbin/xtables-multi", file);
+        file_context("/usr/sbin/xtables-nft-multi", file);
+    }
+
+    @alias(iptables_initrc_exec_t)
+    resource initrc_exec inherits init_script_file {
+        /// The sysvinit script for this domain.
+
+        file_context("/etc/rc\.d/init\.d/ip6?tables", file);
+        file_context("/etc/rc\.d/init\.d/ebtables", file);
+        file_context("/etc/rc\.d/init\.d/nftables", file);
+    }
+
+    @alias(iptables_runtime_t)
+    resource runtime inherits runtimefile {
+        /// Runtime files in /run and /var/run.
+        file_context("/run/ebtables\.lock", file);
+        file_context("/run/xtables.*", file);
+    }
+
+    @alias(iptables_tmp_t)
+    resource tmp inherits tmpfile {
+        /// Temporary files in /tmp and /var/tmp.
+    }
+
+    @alias(iptables_unit_t)
+    resource unit inherits common_file {
+        /// The systemd unit for this domain.
+        file_context("/usr/lib/systemd/system/[^/]*arptables.*", file);
+        file_context("/usr/lib/systemd/system/[^/]*ebtables.*", file);
+        file_context("/usr/lib/systemd/system/[^/]*ip6tables.*", file);
+        file_context("/usr/lib/systemd/system/[^/]*iptables.*", file);
+    }
+
+    //
+    // Policy
+    //
+    allow(this, self, capability, [ dac_override dac_read_search net_admin net_raw ]);
+    dontaudit(this, self, capability, sys_tty_config);
+    allow(this, self, cap_userns, [ net_admin net_raw ]);
+    allow(this, self, netlink_netfilter_socket, manage_socket_perms);
+    allow(this, self, rawip_socket, manage_socket_perms);
+
+    this.config.manage();
+    etc_t.filetrans(this, this.config, file);
+
+    this.runtime.manage();
+    runtime_t.filetrans(this, this.runtime, file); var_t.list();
+
+    this.tmp.manage();
+    tmp_t.filetrans(this, this.tmp, [ file dir ]);
+
+    // needed by ipvsadm
+    bin_t.exec(); usr_t.list();
+
+    cgroup_t.list();
+
+    // iptables may try to rw /ptmx in a container
+    container_file_t<character_device>.dontaudit_rw();
+
+    etc_t.read();
+
+    etc_runtime_t.read();
+
+    fs_t.getattr_superblock();
+
+    ifconfig_t.domtrans();
+
+    init_t.inherit_file_descriptors();
+
+    // to allow rules to be saved on reboot:
+    init_script_t.rw_inherited_pipes();
+    init_script_t.tmp.rw();
+    init_script_t.rw_inherited_unix_stream_sockets();
+
+    inotifyfs_t.list();
+
+    kernel.request_module_load();
+
+    kernel_t.inherit_file_descriptors();
+
+    kmod_t.domtrans();
+
+    mtrr_device_t.dontaudit_write();
+
+    network_packet.relabelto();
+
+    nss.get_hosts_entry();
+
+    proc_t.getattr_superblock();
+    proc_t.read();
+    proc_t.net.read();
+
+    shell_exec_t.exec();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+    sysctl_t.kernel.modprobe.read();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    tun_tap_device_t.dontaudit_rw();
+
+// typeattribute iptables_t mlsfileread;
+//domain_entry_file(initrc_t, iptables_initrc_exec_t)
+//domtrans_pattern(init_run_all_scripts_domain, iptables_initrc_exec_t, initrc_t)
+// these should be fixed by passing through domtrans:
+//allow iptables_t fail2ban_log_t:file append_file_perms;
+//allow iptables_t firstboot_t:fd use;
+//allow iptables_t firstboot_t:fifo_file rw_inherited_fifo_file_perms;
+//dontaudit iptables_t pppd_t:fd use;
+}

@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0
+
+extend iptables_t {
+    shorewall_etc_t<common_file>.read();
+    shorewall_tmp_t<common_file>.read();
+    shorewall_var_lib_t<common_file>.rw(); var_lib_t.list(); var_t.list();
+}
