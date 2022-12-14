@@ -6,8 +6,9 @@ tunable mount_on_non_security {
     default false;
 }
 
-type mount_loopback_t; // customizable
-// mount_loopback_t inherits filesystem_image
+resource mount_loopback_t inherits filesystem_image { // customizable
+    /// General filesystem images.
+}
 
 domain mount_t inherits system_app_domain {
     /// The mount program for mounting filesystems.
@@ -34,7 +35,6 @@ domain mount_t inherits system_app_domain {
     @alias(mount_tmp_t)
     resource tmp inherits tmpfile {
         /// Temporary files in /tmp and /var/tmp.
-
     }
 
     //
