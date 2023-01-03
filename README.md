@@ -20,6 +20,13 @@ See [HowToContribute](doc/HowToContribute.md) for more details.  Also see
 
 See also [design documents](doc/design/README.md).
 
+## Cascade Language Info
+
+* [Cascade - A New High Level SELinux Policy Language](https://lssna2022.sched.com/event/11MXS?iframe=no) -
+  Linux Security Summit, 2022
+  * [Recording](https://youtu.be/dLg0ITff0mU) for the above presentation
+* [Cascade repo](https://github.com/dburgener/cascade)
+
 ### Multi-call Lines
 
 Lines that have multiple calls are to handle parent directory access:
