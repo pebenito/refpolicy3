@@ -1035,7 +1035,7 @@ final api term {
 }
 
 final api unconfined {
-    fn domain(domain source) {
+    fn domain_perms(domain source) {
         // Use most Linux capabilities
         allow(source, self, [ capability cap_userns ], [ chown dac_override dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice sys_resource sys_time sys_tty_config mknod lease audit_write audit_control setfcap ]);
         allow(source, self, [ capability2 cap2_userns ], [ syslog wake_alarm bpf perfmon ];

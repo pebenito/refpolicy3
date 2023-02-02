@@ -147,7 +147,7 @@ domain kernel_t inherits network_peer {
     tty_device_t.setattr();
     tty_device_t.delete();
 
-    unconfined.domain();
+    unconfined.domain_perms();
 
     unlabeled_t<dir>.mounton();
     // Kernel-generated traffic e.g., TCP resets on

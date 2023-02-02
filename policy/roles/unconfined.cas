@@ -63,7 +63,7 @@ domain unconfined_t inherits userdomain {
 
     tzdata_t.domtrans();
 
-    unconfined.domain();
+    unconfined.domain_perms();
 
     unconfined_execmem_t.domtrans();
 
@@ -131,7 +131,7 @@ domain unconfined_mount_t inherits common_domain {
 
     mount_t.exec.entrypoint();
 
-    unconfined.domain();
+    unconfined.domain_perms();
 
     //
     // Functions

@@ -332,7 +332,7 @@ domain lvm_t inherits system_app_domain {
     if (distro_redhat) {
         rpm_script_t.tmp<common_file>.manage();
 
-        unconfined.domain();
+        unconfined.domain_perms();
 
         // this is from the initrd:
         unlabeled_t<dir>.rw();

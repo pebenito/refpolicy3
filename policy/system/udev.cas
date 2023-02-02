@@ -308,7 +308,7 @@ domain udev_t inherits daemon {
         tmpfs_t<common_block_device>.relabel(); tmpfs_t.list();
         tmpfs_t<common_character_device>.relabel(); tmpfs_t.list();
 
-        unconfined.domain();
+        unconfined.domain_perms();
     }
 
     optional {
