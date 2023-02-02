@@ -170,6 +170,14 @@
         "prefix": "file_context",
         "body": "file_context(\"${1:path_regex}\", ${2|any,file,pipe,symlink,socket,chardev,blockdev|});"
     },
+    "bare extend block": {
+        "prefix": "extend",
+        "body": [
+            "extend ${1:name} {",
+            "    $0",
+            "}"
+        ]
+    },
     "nested config file declaration": {
         "prefix": "resource",
         "body": [
@@ -187,6 +195,25 @@
             "    extend config {",
             "        $0",
             "    }"
+        ]
+    },
+    "nested init script file declaration": {
+        "prefix": "resource",
+        "body": [
+        "    @alias(${1:alias_name})",
+        "    resource initrc_exec inherits init_script_file {",
+        "        /// The sysvinit script for this domain.",
+        "        ${2:insert_initrc_exec_file_contexts}",
+        "    }"
+        ]
+    },
+    "extend nested init script file": {
+        "prefix": "extend",
+        "body": [
+        "    @alias(${1:alias_name})",
+        "    extend initrc_exec {",
+        "        ${2:insert_initrc_exec_file_contexts}",
+        "    }"
         ]
     },
     "nested lock file declaration": {
@@ -280,6 +307,25 @@
         "body": [
             "    @alias()",
             "    extend state {",
+            "        $0",
+            "    }"
+        ]
+    },
+    "nested unit declaration": {
+        "prefix": "resource",
+        "body": [
+            "    @alias()",
+            "    resource unit inherits common_file {",
+            "        /// The systemd unit for this domain.",
+            "        $0",
+            "    }"
+        ]
+    },
+    "extend unit declaration": {
+        "prefix": "extend",
+        "body": [
+            "    @alias()",
+            "    extend unit {",
             "        $0",
             "    }"
         ]
