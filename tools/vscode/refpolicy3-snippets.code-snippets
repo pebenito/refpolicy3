@@ -9,7 +9,7 @@
 		"description": "SPDX GPL-2.0 header."
 	},
 	"daemon from filename": {
-        "prefix": "daemon",
+        "prefix": "domain",
 		"body": [
 			"domain ${TM_FILENAME_BASE/-/_/g}_t inherits daemon {",
 			"    /// ${1:description_text}",
@@ -66,7 +66,7 @@
 		"description": "Template for refpolicy3 daemons."
 	},
 	"daemon custom name": {
-        "prefix": "daemon",
+        "prefix": "domain",
 		"body": [
 			"domain ${1:name}_t inherits daemon {",
 			"    /// ${2:description_text}",
@@ -122,7 +122,7 @@
 		],
 		"description": "Template for refpolicy3 daemons."
 	},
-    "common_domain from filename": {
+    "domain from filename": {
         "prefix": "domain",
 		"body": [
 			"domain ${TM_FILENAME_BASE/-/_/g}_t inherits ${1|common_domain,system_app_domain,user_app_domain|} {",
@@ -170,8 +170,8 @@
         "prefix": "file_context",
         "body": "file_context(\"${1:path_regex}\", ${2|any,file,pipe,symlink,socket,chardev,blockdev|});"
     },
-    "nested conf file declaration": {
-        "prefix": ["nest-conf", "tmpfs-conf", "decl-conf"],
+    "nested config file declaration": {
+        "prefix": "resource",
         "body": [
             "    @alias()",
             "    resource config inherits configfile {",
@@ -180,8 +180,8 @@
             "    }"
         ]
     },
-    "extend conf file": {
-        "prefix": ["ext-conf"],
+    "extend config file": {
+        "prefix": "extend",
         "body": [
             "    @alias()",
             "    extend config {",
@@ -190,7 +190,7 @@
         ]
     },
     "nested lock file declaration": {
-        "prefix": ["nest-lock", "tmpfs-lock", "decl-lock"],
+        "prefix": "resource",
         "body": [
             "    @alias()",
             "    resource lock inherits lockfile {",
@@ -200,7 +200,7 @@
         ]
     },
     "extend lock resource": {
-        "prefix": ["ext-lock"],
+        "prefix": "extend",
         "body": [
             "    @alias()",
             "    extend lock {",
@@ -209,7 +209,7 @@
         ]
     },
     "nested runtime declaration": {
-        "prefix": ["nest-run", "run-decl", "decl-run"],
+        "prefix": "resource",
         "body": [
             "    @alias()",
             "    resource runtime inherits runtimefile, common_pipe, common_named_socket {",
@@ -219,7 +219,7 @@
         ]
     },
     "extend runtime resource": {
-        "prefix": ["ext-run"],
+        "prefix": "extend",
         "body": [
             "    @alias()",
             "    extend runtime {",
@@ -228,7 +228,7 @@
         ]
     },
     "nested tmp declaration": {
-        "prefix": ["nest-tmp", "tmp-decl", "decl-tmp"],
+        "prefix": "resource",
         "body": [
             "    @alias()",
             "    resource tmp inherits tmpfile, common_pipe, common_named_socket {",
@@ -238,7 +238,7 @@
         ]
     },
     "extend tmp resource": {
-        "prefix": ["ext-tmp"],
+        "prefix": "extend",
         "body": [
             "    @alias()",
             "    extend tmp {",
@@ -247,17 +247,17 @@
         ]
     },
     "nested tmpfs declaration": {
-        "prefix": ["nest-tmpfs", "tmpfs-decl", "decl-tmpfs"],
+        "prefix": "resource",
         "body": [
             "    @alias()",
             "    resource tmpfs inherits tmpfsfile, common_pipe, common_named_socket {",
             "        /// POSIX shared memory segments (tmpfs files)",
             "        $0",
-            "    }",
+            "    }"
         ]
     },
     "extend tmpfs resource": {
-        "prefix": ["ext-tmpfs"],
+        "prefix": "extend",
         "body": [
             "    @alias()",
             "    extend tmpfs {",
@@ -266,7 +266,7 @@
         ]
     },
     "nested state declaration": {
-        "prefix": ["nest-state", "state-decl", "decl-state"],
+        "prefix": "resource",
         "body": [
             "    @alias()",
             "    resource state inherits common_file {",
@@ -276,7 +276,7 @@
         ]
     },
     "extend state resource": {
-        "prefix": ["ext-state"],
+        "prefix": "extend",
         "body": [
             "    @alias()",
             "    extend state {",
@@ -293,7 +293,7 @@
         ]
     },
     "port": {
-        "prefix": ["port-decl", "decl-port"],
+        "prefix": "resource",
         "body": [
             "    resource port inherits ${1|network_port,reserved_network_port,rpc_network_port|} {",
             "        /// ${2:description_text}",
