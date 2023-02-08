@@ -142,9 +142,9 @@ domain mount_t inherits system_app_domain {
         file_type<common_dir>.list();
         file_type<common_file>.read();
         file_type<common_file>.mounton();
-        delete(security_file<common_dir>.list(mount_t));
-        delete(security_file<common_file>.read(mount_t));
-        delete(security_file<common_file>.mounton(mount_t));
+        drop security_file<common_dir>.list(mount_t);
+        drop security_file<common_file>.read(mount_t);
+        drop security_file<common_file>.mounton(mount_t);
     }
 
     if (distro_redhat) {

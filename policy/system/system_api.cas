@@ -726,7 +726,7 @@ api final selinux {
 
             // was: allow $1 { boolean_type -secure_mode_policyload_t }:file write_file_perms;
             booleans.set(source);
-            delete(secure_mode_policyload_t.set(source));
+            drop secure_mode_policyload_t.set(source);
 
             selinuxfs_t.write(source);
             allow(source, security_t, security, setbool);

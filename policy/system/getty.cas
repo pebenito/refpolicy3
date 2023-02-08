@@ -33,7 +33,7 @@ virtual domain getty_domain inherits system_app_domain {
     // append-only logs
     this.log.create();
     this.log.setattr();
-    delete(allow(this, this.log, file, write));
+    delete allow(this, this.log, file, write);
     var_log_t.filetrans(this, this.log, file); var_t.list();
 
     this.runtime.manage();

@@ -188,18 +188,18 @@ domain restorecond_t inherits daemon, setfiles_t {
     //
 
     // restorecond cannot relabel security files.
-    delete(security_file<common_dir>.relabel());
-    delete(security_file<common_file>.relabel());
-    delete(security_file<symlink>.relabel());
-    delete(security_file<common_pipe>.relabel());
-    delete(security_file<common_named_socket>.relabel());
+    drop security_file<common_dir>.relabel();
+    drop security_file<common_file>.relabel();
+    drop security_file<symlink>.relabel();
+    drop security_file<common_pipe>.relabel();
+    drop security_file<common_named_socket>.relabel();
     // this is only relabelfrom since there should be no
     // device nodes with file types.
-    delete(security_file<common_block_device>.relabelfrom());
-    delete(security_file<common_character_device>.relabelfrom());
+    drop security_file<common_block_device>.relabelfrom();
+    drop security_file<common_character_device>.relabelfrom();
 
     // Watch the filesystem except for security directories.
-    file_type<common_dir>.watch(); delete(security_file<common_dir>.watch());
+    file_type<common_dir>.watch(); drop security_file<common_dir>.watch();
 
 // Delete these perms inherited from setfiles:
 //typeattribute setfiles_t mlsfileread;

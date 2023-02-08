@@ -47,7 +47,7 @@ virtual domain daemon inherits common_domain {
     this.log.create();
     this.log.setattr();
     this.log.watch();
-    delete(allow(this, this.log, file, write));
+    drop allow(this, this.log, file, write);
     var_log_t.list(); var_t.list();
 
     this.runtime.mmap_manage();

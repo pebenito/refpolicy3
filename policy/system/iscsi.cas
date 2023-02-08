@@ -61,7 +61,7 @@ domain iscsid_t inherits daemon {
     this.log.create();
     this.log.setattr();
     var_log_t.filetrans(this, this.log, file); var_t.list();
-    delete(allow(this, this.log, file, write));
+    drop allow(this, this.log, file, write);
 
     this.var_lib.manage();
 

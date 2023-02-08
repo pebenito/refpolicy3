@@ -114,13 +114,13 @@ virtual domain userdomain inherits common_domain {
     file_type<named_socket>.dontaudit_getattr();
     file_type<block_device>.dontaudit_getattr();
     file_type<character_device>.dontaudit_getattr();
-    delete(security_file<dir>.dontaudit_list());
-    delete(security_file<file>.dontaudit_getattr());
-    delete(security_file<symlink>.dontaudit_getattr());
-    delete(security_file<pipe>.dontaudit_getattr());
-    delete(security_file<named_socket>.dontaudit_getattr());
-    delete(security_file<block_device>.dontaudit_getattr());
-    delete(security_file<character_device>.dontaudit_getattr());
+    drop security_file<dir>.dontaudit_list();
+    drop security_file<file>.dontaudit_getattr();
+    drop security_file<symlink>.dontaudit_getattr();
+    drop security_file<pipe>.dontaudit_getattr();
+    drop security_file<named_socket>.dontaudit_getattr();
+    drop security_file<block_device>.dontaudit_getattr();
+    drop security_file<character_device>.dontaudit_getattr();
 
     null_device_t.dontaudit_setattr();
 
@@ -704,12 +704,12 @@ api user_api {
         file_type<common_named_socket>.relabel(source);
         file_type<common_character_device>.relabelfrom(source);
         file_type<common_block_device>.relabelfrom(source);
-        delete(authentication_files<common_dir>.relabel(source));
-        delete(authentication_files<common_file>.relabel(source));
-        delete(authentication_files<common_pipe>.relabel(source));
-        delete(authentication_files<common_named_socket>.relabel(source));
-        delete(authentication_files<common_character_device>.relabelfrom(source));
-        delete(authentication_files<common_block_device>.relabelfrom(source));
+        drop authentication_files<common_dir>.relabel(source);
+        drop authentication_files<common_file>.relabel(source);
+        drop authentication_files<common_pipe>.relabel(source);
+        drop authentication_files<common_named_socket>.relabel(source);
+        drop authentication_files<common_character_device>.relabelfrom(source);
+        drop authentication_files<common_block_device>.relabelfrom(source);
 
         consoletype_t.domtrans(source);
 
