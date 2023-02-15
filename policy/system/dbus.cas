@@ -320,3 +320,13 @@ extend domain {
         }
     }
 }
+
+extend daemon {
+    // Add system dbus activation for all daemons
+    this.domtrans(system_dbusd_t);
+    this.ps(system_dbusd_t);
+
+    dontaudit(this, system_dbusd_t, netlink_selinux_socket, rw_socket_perms);
+    system_dbusd_t.client(this);
+    system_dbusd_t.own_default_service(this);
+}
