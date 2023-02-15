@@ -914,6 +914,14 @@ api final selinux {
 }
 
 final api services {
+    fn subscribe_systemd_events(domain source) {
+        /// Subscribe to systemd events over dbus.
+        system_dbusd_t.client(source);
+
+        systemd_t.dbus_send(source);
+        allow(source, systemd_t, system, status);
+    }
+
     fn systemctl(domain source) {
         /// Execute the systemctl program.
         /// Caller will still need to provide service/system permissions
