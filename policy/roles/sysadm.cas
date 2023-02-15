@@ -47,11 +47,11 @@ domain sysadm_t inherits admin_userdomain, common_user {
 
     file_type<filesystem>.getattr_superblock();
     // Admin (manage+relabel) almost all files
-    file_type.mmap_admin(); delete(authentication_file.mmap_admin());
+    file_type.mmap_admin(); drop authentication_file.mmap_admin();
     // this is only relabelfrom since there should be no
     // device nodes with file types.
-    file_type<common_block_device>.relabelfrom(); delete(authentication_file<common_block_device>.relabelfrom());
-    file_type<common_character_device>.relabelfrom(); delete(authentication_file<common_character_device>.relabelfrom());
+    file_type<common_block_device>.relabelfrom(); drop authentication_file<common_block_device>.relabelfrom();
+    file_type<common_character_device>.relabelfrom(); drop authentication_file<common_character_device>.relabelfrom();
 
     filesystem.getattr_superblock();
     filesystem.set_quota();

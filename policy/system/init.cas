@@ -74,7 +74,7 @@ virtual domain daemon inherits common_domain {
         allow(source, this, unix_stream_socket, [getattr connectto]);
     }
 
-    fn unix_datagram_send(source domain) {
+    fn unix_datagram_send(domain source) {
         /// Send unix datagrams to this daemon.
         runtime_t.list(source);
         this.runtime<common_named_socket>.rw(source);
@@ -112,14 +112,14 @@ virtual domain init inherits common_domain {
     //
     // Concrete member functions
     //
-    fn unix_stream_connect(source domain) {
+    fn unix_stream_connect(domain source) {
         /// Connect to this daemon over a unix stream socket.
         /// The sockets are expected to be in the daemon's runtime directory.
         this.runtime<common_named_socket>.rw(source); runtime_t.list(source);
         allow(source, this, unix_stream_socket, [ getattr connectto ]);
     }
 
-    fn unix_datagram_send(source domain) {
+    fn unix_datagram_send(domain source) {
         /// Send unix datagrams to this daemon.
         /// The sockets are expected to be in the daemon's runtime directory.
         this.runtime<common_named_socket>.rw(source); runtime_t.list(source);

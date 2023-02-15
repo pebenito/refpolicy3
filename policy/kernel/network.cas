@@ -370,37 +370,37 @@ virtual resource reserved_network_port inherits network_port {
     fn sctp_bind(domain source) {
         /// Bind to the port for SCTP.
         allow(source, self, capability, net_bind_service);
-        network_port::sctp_bind(source)
+        this<network_port>.sctp_bind(source);
     }
 
     fn dontaudit_sctp_bind(domain source) {
         /// Do not audit denials for binding to the port for SCTP.
         dontaudit(source, self, capability, net_bind_service);
-        network_port::dontaudit_sctp_bind(source)
+        this<network_port>.dontaudit_sctp_bind(source);
     }
 
     fn tcp_bind(domain source) {
         /// Bind to the port for TCP.
         allow(source, self, capability, net_bind_service);
-        network_port::tcp_bind(source);
+        this<network_port>.tcp_bind(source);
     }
 
     fn dontaudit_tcp_bind(domain source) {
         /// Do not audit denials for binding to the port for TCP.
         dontaudit(source, self, capability, net_bind_service);
-        network_port::dontaudit_tcp_bind(source);
+        this<network_port>.dontaudit_tcp_bind(source);
     }
 
     fn udp_bind(domain source) {
         /// Bind to the port for UDP.
         allow(source, self, capability, net_bind_service);
-        network_port::udp_bind(source);
+        this<network_port>.udp_bind(source);
     }
 
     fn dontaudit_udp_bind(domain source) {
         /// Do not audit denials for binding to the port for UDP.
         dontaudit(source, self, capability, net_bind_service);
-        network_port::dontaudit_udp_bind(source);
+        this<network_port>.dontaudit_udp_bind(source);
     }
 }
 

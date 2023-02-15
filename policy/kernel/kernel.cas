@@ -54,7 +54,7 @@ domain kernel_t inherits network_peer {
     device_t<character_device>.rw();
 
     devpts_t.getattr_superblock();
-    devpts_t.rw(this)
+    devpts_t.rw();
 
     domain.signal();
     domain.ps();
@@ -66,8 +66,8 @@ domain kernel_t inherits network_peer {
 
     // Mount root file system. Used when loading a policy
     // from initrd, then mounting the root filesystem
-    filesystem.mount(kernel_t)
-    filesystem.unmount(kernel_t)
+    filesystem.mount();
+    filesystem.unmount();
 
     filesystem_image.read_inherited();
 
@@ -114,7 +114,7 @@ domain kernel_t inherits network_peer {
 
     root_t.mounton();
     root_t.getattr_superblock();
-    root_t.manage(this)
+    root_t.manage();
     root_t<file>.delete();
     root_t<file>.exec();
     root_t<character_device>.delete();

@@ -56,7 +56,7 @@ domain ifconfig_t inherits system_app_domain {
     allow(this, self, netlink_generic_socket, manage_socket_perms);
     allow(this, self, netlink_route_socket, [ manage_socket_perms nlmsg_read nlmsg_write ]);
     allow(this, self, netlink_xfrm_socket, [ manage_socket_perms nlmsg_read nlmsg_write ]);
-    allow(this, self, tcp_socket manage_stream_socket_perms);
+    allow(this, self, tcp_socket, manage_stream_socket_perms);
 
     this.runtime.manage();
     runtime_t.filetrans(this, ifconfig_runtime_t, dir);

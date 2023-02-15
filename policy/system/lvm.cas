@@ -242,7 +242,7 @@ domain lvm_t inherits system_app_domain {
     device_node<common_character_device>.dontaudit_read();
     device_node<common_block_device>.dontaudit_read();
 
-    domain.ps()
+    domain.ps();
 
     etc_t.read();
     etc_t.watch();

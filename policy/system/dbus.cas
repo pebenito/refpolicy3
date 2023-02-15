@@ -68,7 +68,7 @@ virtual domain session_dbus inherits common_domain {
     @associated_call
     fn user_derived_domain(userdomain source) {
         allow(source, this, unix_stream_socket, connectto);
-        allow(source, this, dbus, [ send_msg acquire_svc ];
+        allow(source, this, dbus, [ send_msg acquire_svc ]);
         allow(source, this, fd, use);
 
         dontaudit(source, this, netlink_selinux_socket, rw_socket_perms);
@@ -175,7 +175,7 @@ domain system_dbusd_t inherits daemon {
     //
     // Policy
     //
-    allow(this, self, capability { dac_override setgid setpcap setuid sys_resource };
+    allow(this, self, capability, [ dac_override setgid setpcap setuid sys_resource ]);
     // net_admin for changing buffer sizes
     dontaudit(this, self, capability, [ net_admin sys_tty_config ]);
     allow(this, self, process, [ setpgid setcap setrlimit ]);
@@ -309,7 +309,7 @@ domain system_dbusd_t inherits daemon {
 //
 // TODO add builtin back in when its a keyword
 extend domain {
-    fn dbus_send(source domain) {
+    fn dbus_send(domain source) {
         /// Send dbus messages to this domain.
         allow(source, this, dbus, send_msg);
 

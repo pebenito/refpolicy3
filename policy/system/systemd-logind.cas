@@ -192,7 +192,7 @@ domain systemd_logind_t inherits systemd_daemon {
     //
     // Functions
     //
-    fn inhibit_logins(domain source)
+    fn inhibit_logins(domain source) {
         /// Use login inhibit functions.
         this.inherit_file_descriptors();
         systemd_sessions_t.runtime<pipe>.write_inherited();

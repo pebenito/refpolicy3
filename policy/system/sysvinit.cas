@@ -156,7 +156,7 @@ domain sysvinit_t {
 extend daemon {
     // Cases where the daemon receives a fd
     // to the console from init:
-    console_device_t.dontaudit_rw_inherited()
+    console_device_t.dontaudit_rw_inherited();
 
     // init script ptys are the stdin/out/err
     // when using run_init
@@ -205,7 +205,7 @@ extend daemon {
 
     fn status(domain source) {
         /// Get the status of this daemon.
-        this.startstop(source)
+        this.startstop(source);
     }
 
     fn stop(domain source) {
@@ -224,7 +224,7 @@ extend init_script_t {
 extend system_app_domain {
     // Cases where the app receives a fd
     // to the console from init:
-    console_device_t.dontaudit_rw_inherited()
+    console_device_t.dontaudit_rw_inherited();
 
     // init script ptys are the stdin/out/err
     // when using run_init

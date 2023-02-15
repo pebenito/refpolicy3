@@ -85,7 +85,7 @@ domain systemd_networkd_t inherits systemd_app_domain {
 
     systemd_t.unix_datagram_send();
     systemd_t.runtime.read();
-    systemd_t.runtime.filetrans(this, this.runtime, dir)
+    systemd_t.runtime.filetrans(this, this.runtime, dir);
 
     tun_tap_device_t.rw();
 

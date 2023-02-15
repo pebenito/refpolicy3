@@ -21,7 +21,7 @@ domain systemd_coredump_t inherits systemd_app_domain {
     // Policy
     //
     allow(this, self, capability, [ setgid setuid setpcap sys_ptrace ]);
-    dontaudit(this, self, capability net_admin);
+    dontaudit(this, self, capability, net_admin);
     allow(this, self, cap_userns, [ sys_admin sys_ptrace ]);
     allow(this, self, process, setcap);
 
@@ -58,7 +58,7 @@ domain systemd_coredump_t inherits systemd_app_domain {
 
     proc_t.read();
 
-    root_t.mounton()
+    root_t.mounton();
 
     selinuxfs_t.getattr_superblock(); sysfs_t.getattr_superblock(); sysfs_t.list();
 

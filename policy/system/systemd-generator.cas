@@ -26,7 +26,7 @@ domain systemd_generator_t inherits systemd_app_domain {
 
     cloud_init_t.state.getattr();
     cloud_init_t.runtime.create();
-    runtime_t.filetrans(this, cloud_init_t.runtime, dir "cloud-init");
+    runtime_t.filetrans(this, cloud_init_t.runtime, dir, "cloud-init");
 
     efivarfs_t.list();
 

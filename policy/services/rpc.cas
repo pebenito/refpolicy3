@@ -36,14 +36,14 @@ extend kernel_t {
         noxattr_filesystem.getattr_superblock();
         noxattr_filesystem<common_file>.read();
 
-        file_type<common_file>.read(); delete(security_file<file_type>.read());
+        file_type<common_file>.read(); drop security_file<file_type>.read();
     }
 
     if (nfs_export_all_rw) {
         noxattr_filesystem.getattr_superblock();
         noxattr_filesystem<common_file>.read();
 
-        file_type<common_file>.manage(); delete(security_file<file_type>.manage());
+        file_type<common_file>.manage(); drop security_file<file_type>.manage();
     }
 }
 

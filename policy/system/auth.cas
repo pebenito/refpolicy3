@@ -128,10 +128,8 @@ domain pam_timestamp_t inherits common_domain {
         /// Temporary files in /tmp and /var/tmp.
     }
 
-    allow pam_t self:process { transition setsched setpgid setcap share noatsecure siginh rlimitinh dyntransition setkeycreate setsockcreate };
-    dontaudit pam_t self:capability sys_tty_config;
-
-    allow pam_t self:fd use;
+    allow(this, self, process, [ setsched setpgid setcap share setkeycreate setsockcreate ]);
+    dontaudit(this, self, capability, sys_tty_config);
 
     this.runtime.read();
     this.runtime.delete();

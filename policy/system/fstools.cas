@@ -221,7 +221,7 @@ domain fsadm_t inherits system_app_domain {
 
     // resize2fs will create a .ismount-test-file temp file
     // in the root of a filesystem to resize
-    root_t.filetrans(this, this.tmp, file)
+    root_t.filetrans(this, this.tmp, file);
 
     scsi_generic_device_t.read();
 
@@ -245,7 +245,7 @@ domain fsadm_t inherits system_app_domain {
 
     // Access to /initrd devices
     allow(this, unlabeled_t, dir, manage_dir_perms);
-    allow(this, unlabeled_t, blk_file rw_blk_file_perms);
+    allow(this, unlabeled_t, blk_file, rw_blk_file_perms);
     allow(this, unlabeled_t, file, read_file_perms);
 
     urandom_device_t.read();

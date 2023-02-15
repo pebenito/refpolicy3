@@ -18,27 +18,27 @@ virtual resource booleans inherits file_api {
     fn get(domain source) {
         sysfs_t.list(source);
         selinuxfs_t.list(source);
-        file_api::read(source);
+        this<file_api>.read(source);
     }
 
     fn dontaudit_get(domain source) {
         sysfs_t.dontaudit_list(source);
         selinuxfs_t.dontaudit_list(source);
-        file_api::dontaudit_read(source);
+        this<file_api>.dontaudit_read(source);
     }
 
     fn set(domain source) {
         sysfs_t.list(source);
         selinuxfs_t.list(source);
-        file_api::read(source);
+        this<file_api>.read(source);
 
         if(secure_mode_setbool) {
             selinuxfs_t.dontaudit_write(source);
-            file_api::dontaudit_write(source);
+            this<file_api>.dontaudit_write(source);
             dontaudit(source, security_t, security, setbool);
         } else {
             selinuxfs_t.write(source);
-            file_api::write(source);
+            this<file_api>.write(source);
             allow(source, security_t, security, setbool);
         }
     }
@@ -46,7 +46,7 @@ virtual resource booleans inherits file_api {
     fn dontaudit_set(domain source) {
         sysfs_t.dontaudit_list(source);
         selinuxfs_t.dontaudit_list(source);
-        file_api::dontaudit_rw(source);
+        this<file_api>.dontaudit_rw(source);
         dontaudit(source, security_t, security, setbool);
     }
 }
@@ -56,7 +56,7 @@ virtual resource booleans inherits file_api {
 //
 
 resource boolean_t inherits booleans {
-    genfscon(selinuxfs, /booleans/, file, this);
+    genfscon(selinuxfs, "/booleans/", file);
 }
 
 // SELinux security server
@@ -88,15 +88,15 @@ resource secure_mode_policyload_t inherits booleans {
     fn set(domain source) {
         sysfs_t.list(source);
         selinuxfs_t.list(source);
-        file_api::read(source);
+        this<file_api>.read(source);
 
         if(!secure_mode_policyload && !secure_mode_setbool) {
             selinuxfs_t.dontaudit_write(source);
-            file_api::dontaudit_write(source);
+            this<file_api>.dontaudit_write(source);
             dontaudit(source, security_t, security, setbool);
         } else {
             selinuxfs_t.write(source);
-            file_api::write(source);
+            this<file_api>.write(source);
             allow(source, security_t, security, setbool);
         }
     }

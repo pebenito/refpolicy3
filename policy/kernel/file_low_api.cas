@@ -65,7 +65,7 @@ let admin_file_perms = [ manage_file_perms relabel_file_perms ];
 let mmap_admin_file_perms = [ mmap_manage_file_perms relabel_file_perms ];
 let unconfined_file_perms = [ manage_file_perms relabel_file_perms exec_file_perms quotaon mounton watch ];
 
-api file_api {
+trait resource file_api {
     /// The low-level API for regular files (file object class).
 
     @alias(stat)
@@ -907,7 +907,7 @@ let relabel_dir_perms = [ getattr relabelfrom relabelto ];
 let admin_dir_perms = [ manage_dir_perms relabel_dir_perms ];
 let unconfined_dir_perms = [ manage_dir_perms relabel_dir_perms append map execute quotaon mounton add_name remove_name reparent search rmdir execmod watch ];
 
-api dir_api {
+trait resource dir_api {
     /// The low-level API for directories (dir object class).
 
     @alias(stat)
@@ -1188,7 +1188,7 @@ let relabel_lnk_file_perms = [ getattr relabelfrom relabelto ];
 let admin_lnk_file_perms = [ manage_lnk_file_perms relabel_lnk_file_perms ];
 let unconfined_lnk_file_perms = [ manage_lnk_file_perms relabel_lnk_file_perms append map execute quotaon mounton open execmod watch ];
 
-api symlink_api {
+trait resource symlink_api {
     /// The low-level API for symbolic links (symlinks, lnk_file object class).
 
     @alias(stat)
@@ -1355,7 +1355,7 @@ let relabel_fifo_file_perms = [ getattr relabelfrom relabelto ];
 let admin_fifo_file_perms = [ manage_fifo_file_perms relabel_fifo_file_perms ];
 let unconfined_fifo_file_perms = [ manage_fifo_file_perms relabel_fifo_file_perms map execute quotaon mounton execmod watch ];
 
-api pipe_api {
+trait resource pipe_api {
     /// The low-level API for pipes (FIFOs, fifo_file object class).
 
     @alias(stat)
@@ -1385,13 +1385,13 @@ api pipe_api {
     fn read_inherited(domain source) {
         /// Read this pipe only if it is inherited.
         /// The pipe cannot be directly opened.
-        allow(source, this, fifo_file, read_inherited_fifo_file_perms)
+        allow(source, this, fifo_file, read_inherited_fifo_file_perms);
     }
 
     fn dontaudit_read_inherited(domain source) {
         /// Read this pipe only if it is inherited.
         /// Denials for opening the pipe will still be audited.
-        dontaudit(source, this, fifo_file, read_inherited_fifo_file_perms)
+        dontaudit(source, this, fifo_file, read_inherited_fifo_file_perms);
     }
 
     fn read(domain source) {
@@ -1552,7 +1552,7 @@ let relabel_sock_file_perms = [ getattr relabelfrom relabelto ];
 let admin_sock_file_perms = [ manage_sock_file_perms relabel_sock_file_perms ];
 let unconfined_sock_file_perms = [ manage_sock_file_perms relabel_sock_file_perms map execute quotaon mounton execmod watch ];
 
-api named_socket_api {
+trait resource named_socket_api {
     /// The low-level API for named UNIX sockets (sock_file object class).
 
     @alias(stat)

@@ -101,7 +101,7 @@ domain iscsid_t inherits daemon {
 
     fn admin(domain source) {
         /// Administrate iscsd.
-        daemon::admin(source);
+        this<daemon>.admin(source);
 
         this.log.admin(source); var_log_t.list(source);
         this.lock.admin(source); var_lock_t.list(source);
@@ -109,7 +109,7 @@ domain iscsid_t inherits daemon {
         var_t.list(source);
     }
 
-    fn unix_stream_connect(source domain) {
+    fn unix_stream_connect(domain source) {
         /// Connect to this daemon over a unix stream socket.
         // TODO cannot verify socket is in /var/lib/iscsid/*
         // this was in refpolicy2.

@@ -151,11 +151,7 @@ domain systemd_tmpfiles_t inherits systemd_daemon {
     if (systemd_tmpfiles_manage_non_security) {
         // systemd-tmpfiles can be configured to manage anything.
         // have a last-resort option for users to do this.
-        file_type.admin(); delete(security_file<file_type>.admin());
-    }
-
-    optional {
-        apt_t.rw_inherited_pipes();
+        file_type.admin(); drop security_file<file_type>.admin();
     }
 
     //

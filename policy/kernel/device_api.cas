@@ -10,7 +10,7 @@ let devfile_class_set = [ blk_file chr_file ];
 //
 // Lowest-level API and virtuals
 //
-api cap_sys_rawio_checks {
+trait resource cap_sys_rawio_checks {
     /// API for types that have CAP_SYS_RAWIO checks on read and write.
 
     fn read_inherited(domain source) {
@@ -69,7 +69,7 @@ let relabelto_blk_file_perms = [ getattr relabelto ];
 let relabel_blk_file_perms = [ getattr relabelfrom relabelto ];
 let unconfined_blk_file_perms = [ manage_blk_file_perms relabel_blk_file_perms read write append ioctl map execute quotaon mounton execmod watch ];
 
-api block_device_api {
+trait resource block_device_api {
     /// The low-level API for block device files (blk_file object class).
     /// This should not be used directly, but instead inherited into virtuals
     /// and concrete resources.
@@ -98,30 +98,30 @@ api block_device_api {
         dontaudit(source, this, blk_file, setattr_blk_file_perms);
     }
 
-    fn ioctl(domain source, ioctl_set ioctls = 0xffff) {
+    fn ioctl(domain source) { //, ioctl_set ioctls = 0xffff) {
         /// Ioctl this block device.
         /// Optionally set the allowed ioctl set.  If not set, all ioctls will be allowed.
         allow(source, this, blk_file, ioctl);
-        allowx(source, this, blk_file, ioctl, ioctls);
+        //allowx(source, this, blk_file, ioctl, ioctls);
     }
 
-    fn dontaudit_ioctl(domain source, ioctl_set ioctls = 0xffff) {
+    fn dontaudit_ioctl(domain source) { //, ioctl_set ioctls = 0xffff) {
         /// Do not audit denials for ioctls on this block device.
         /// Optionally set the dontaudited ioctl set.  If not set, all ioctls will be dontaudited.
         dontaudit(source, this, blk_file, ioctl);
-        dontauditx(source, this, blk_file, ioctl, ioctls);
+        //dontauditx(source, this, blk_file, ioctl, ioctls);
     }
 
     fn read_inherited(domain source) {
         /// Read this block device only if it is inherited.
         /// The device cannot be directly opened.
-        allow(source, this, blk_file, read_inherited_blk_file_perms)
+        allow(source, this, blk_file, read_inherited_blk_file_perms);
     }
 
     fn dontaudit_read_inherited(domain source) {
         /// Do not audit denials for reading this block device only if it is inherited.
         /// Denials for opening the device will still be audited.
-        dontaudit(source, this, blk_file, read_inherited_blk_file_perms)
+        dontaudit(source, this, blk_file, read_inherited_blk_file_perms);
     }
 
     fn read(domain source) {
@@ -304,7 +304,7 @@ let relabelto_chr_file_perms = [ getattr relabelto ];
 let relabel_chr_file_perms = [ getattr relabelfrom relabelto ];
 let unlabeled_chr_file_perms = [ manage_chr_file_perms relabel_chr_file_perms read write append map execute quotaon mounton execmod watch ];
 
-api character_device_api {
+trait resource character_device_api {
     /// The low-level API for character device files (chr_file object class)
     /// This should not be used directly, but instead inherited into virtuals
     /// and concrete objects.
@@ -315,7 +315,7 @@ api character_device_api {
         allow(source, this, chr_file, getattr_chr_file_perms);
     }
 
-    @(dontaudit_stat)
+    @alias(dontaudit_stat)
     fn dontaudit_getattr(domain source) {
         /// Do not audit denials for getting the attributes of this character device.
         dontaudit(source, this, chr_file, getattr_chr_file_perms);
@@ -333,30 +333,30 @@ api character_device_api {
         dontaudit(source, this, chr_file, setattr_chr_file_perms);
     }
 
-    fn ioctl(domain source, ioctl_set ioctls = 0xffff) {
+    fn ioctl(domain source) { //, ioctl_set ioctls = 0xffff) {
         /// Ioctl this character device.
         /// Optionally set the allowed ioctl set.  If not set, all ioctls will be allowed.
         allow(source, this, chr_file, [ioctl]);
-        allowx(source, this, chr_file, ioctl, ioctls);
+        //allowx(source, this, chr_file, ioctl, ioctls);
     }
 
-    fn dontaudit_ioctl(domain source, ioctl_set ioctls = 0xffff) {
+    fn dontaudit_ioctl(domain source) { //, ioctl_set ioctls = 0xffff) {
         /// Do not audit denials for ioctls on this character device.
         /// Optionally set the dontaudit ioctl set.  If not set, all ioctls will be dontaudited.
         dontaudit(source, this, chr_file, [ioctl]);
-        dontauditx(source, this, chr_file, ioctl, ioctls);
+        //dontauditx(source, this, chr_file, ioctl, ioctls);
     }
 
     fn read_inherited(domain source) {
         /// Read this character device only if it is inherited.
         /// The device cannot be directly opened.
-        allow(source, this, chr_file, read_inherited_chr_file_perms)
+        allow(source, this, chr_file, read_inherited_chr_file_perms);
     }
 
     fn dontaudit_read_inherited(domain source) {
         /// Do not audit denials for reading this character device only if it is inherited.
         /// Denials for opening the device will still be audited.
-        dontaudit(source, this, chr_file, read_inherited_chr_file_perms)
+        dontaudit(source, this, chr_file, read_inherited_chr_file_perms);
     }
 
     fn read(domain source) {
@@ -545,28 +545,28 @@ virtual resource common_block_device inherits block_device, dir, symlink {
     @alias(stat)
     fn getattr(domain source) {
         /// Get the attributes of this block device.
-        block_device::getattr(source);
+        this<block_device>.getattr(source);
         device_t.list(source);
     }
 
     @alias(dontaudit_stat)
     fn dontaudit_getattr(domain source) {
         /// Do not audit denials for getting the attributes of this block device.
-        block_device::dontaudit_getattr(source);
+        this<block_device>.dontaudit_getattr(source);
         device_t.dontaudit_list(source);
     }
 
     @alias(chown, chmod)
     fn setattr(domain source) {
         /// Set the attributes of this block device.
-        block_device::setattr(source);
+        this<block_device>.setattr(source);
         device_t.list(source);
     }
 
     @alias(dontaudit_chmod, dontaudit_chown)
     fn dontaudit_setattr(domain source) {
         /// Do not audit denials for setting the attributes of this block device.
-        block_device::dontaudit_setattr(source);
+        this<block_device>.dontaudit_setattr(source);
         device_t.dontaudit_list(source);
     }
 
@@ -582,76 +582,76 @@ virtual resource common_block_device inherits block_device, dir, symlink {
 
     fn read(domain source) {
         /// Read this block device.
-        block_device::read(source);
+        this<block_device>.read(source);
         device_t.list(source);
     }
 
     fn dontaudit_read(domain source) {
         /// Do not audit denials for reading this block device.
-        block_device::dontaudit_read(source);
+        this<block_device>.dontaudit_read(source);
         device_t.dontaudit_list(source);
     }
 
     fn append(domain source) {
         /// Append this block device.
-        block_device::append(source);
+        this<block_device>.append(source);
         device_t.list(source);
     }
 
     fn dontaudit_append(domain source) {
         /// Do not audit denials for appending this block device.
-        block_device::dontaudit_append(source);
+        this<block_device>.dontaudit_append(source);
         device_t.dontaudit_list(source);
     }
 
     fn write(domain source) {
         /// Write this block device.
-        block_device::write(source);
+        this<block_device>.write(source);
         device_t.list(source);
     }
 
     fn dontaudit_write(domain source) {
         /// Do not audit denials for writing this block device.
-        block_device::dontaudit_write(source);
+        this<block_device>.dontaudit_write(source);
         device_t.dontaudit_list(source);
     }
 
     fn rw(domain source) {
         /// Read and write this block device.
-        block_device::rw(source);
+        this<block_device>.rw(source);
         device_t.list(source);
     }
 
     fn dontaudit_rw(domain source) {
         /// Do not audit denials for reading and writing this block device.
-        block_device::dontaudit_rw(source);
+        this<block_device>.dontaudit_rw(source);
         device_t.dontaudit_list(source);
     }
 
     fn create(domain source) {
         /// Create this block device.
-        block_device::create(source);
+        this<block_device>.create(source);
         device_t.add_entry(source);
         device_t.create(source);
     }
 
     fn dontaudit_create(domain source) {
         /// Do not audit denials for creating this block device.
-        block_device::dontaudit_create(source);
+        this<block_device>.dontaudit_create(source);
         device_t.dontaudit_add_entry(source);
         device_t.dontaudit_create(source);
     }
 
     fn rename(domain source) {
         /// Rename this block device.
-        block_device::rename(source);
+        this<block_device>.rename(source);
         device_t.rw(source);
         device_t.rename(source);
     }
 
     fn dontaudit_rename(domain source) {
         /// Do not audit denials for renaming this block device.
-        block_device::dontaudit_rename(source);
+        this<block_device>.dontaudit_rename(source);
         device_t.dontaudit_rw(source);
         device_t.dontaudit_rename(source);
     }
@@ -659,7 +659,7 @@ virtual resource common_block_device inherits block_device, dir, symlink {
     @alias(unlink)
     fn delete(domain source) {
         /// Delete this block device.
-        block_device::delete(source);
+        this<block_device>.delete(source);
         device_t.delete_entry(source);
         device_t.delete(source);
     }
@@ -667,62 +667,62 @@ virtual resource common_block_device inherits block_device, dir, symlink {
     @alias(dontaudit_unlink)
     fn dontaudit_delete(domain source) {
         /// Do not audit denials for deleting this block device.
-        block_device::dontaudit_delete(source);
+        this<block_device>.dontaudit_delete(source);
         device_t.dontaudit_delete_entry(source);
         device_t.dontaudit_delete(source);
     }
 
     fn manage(domain source) {
         /// Create and delete this block device.
-        block_device::manage(source);
+        this<block_device>.manage(source);
         device_t.manage(source);
     }
 
     fn dontaudit_manage(domain source) {
         /// Do not audit denials for creating and deleting this block device.
-        block_device::manage(source);
+        this<block_device>.manage(source);
         device_t.dontaudit_manage(source);
     }
 
     fn relabelfrom(domain source) {
         /// Change block device labels from this type.
-        block_device::relabelfrom(source);
+        this<block_device>.relabelfrom(source);
         device_t.list(source);
     }
 
     fn dontaudit_relabelfrom(domain source) {
         /// Do not audit denials for changing block device labels from this type.
-        block_device::dontaudit_relabelfrom(source);
+        this<block_device>.dontaudit_relabelfrom(source);
         device_t.dontaudit_list(source);
     }
 
     fn relabelto(domain source) {
         /// Change block device labels to this type.
-        block_device::relabelto(source);
+        this<block_device>.relabelto(source);
         device_t.list(source);
     }
 
     fn dontaudit_relabelto(domain source) {
         /// Do not audit denials for changing block device labels to this type.
-        block_device::dontaudit_relabelto(source);
+        this<block_device>.dontaudit_relabelto(source);
         device_t.dontaudit_list(source);
     }
 
     fn relabel(domain source) {
         /// Change block device labels to this type and from this type.
-        block_device::relabel(source);
+        this<block_device>.relabel(source);
         device_t.list(source);
     }
 
     fn dontaudit_relabel(domain source) {
         /// Do not audit denials for changing block device labels to this type and from this type.
-        block_device::dontaudit_relabel(source);
+        this<block_device>.dontaudit_relabel(source);
         device_t.dontaudit_list(source);
     }
 
     fn unconfined(domain source) {
         /// Unconfined (full access) to this block device.
-        block_device::unconfined(source);
+        this<block_device>.unconfined(source);
         device_t.unconfined(source);
     }
 }
@@ -736,28 +736,28 @@ virtual resource common_character_device inherits character_device, dir, symlink
     @alias(stat)
     fn getattr(domain source) {
         /// Get the attributes of this character device.
-        character_device::getattr(source);
+        this<character_device>.getattr(source);
         device_t.list(source);
     }
 
     @alias(dontaudit_stat)
     fn dontaudit_getattr(domain source) {
         /// Do not audit denials for getting the attributes of this character device.
-        character_device::dontaudit_getattr(source);
+        this<character_device>.dontaudit_getattr(source);
         device_t.list(source);
     }
 
     @alias(chmod, chown)
     fn setattr(domain source) {
         /// Set the attributes of this character device.
-        character_device::setattr(source);
+        this<character_device>.setattr(source);
         device_t.list(source);
     }
 
     @alias(dontaudit_chmod, dontaudit_chown)
     fn dontaudit_setattr(domain source) {
         /// Do not audit denials for setting the attributes of this character device.
-        character_device::dontaudit_setattr(source);
+        this<character_device>.dontaudit_setattr(source);
         device_t.dontaudit_list(source);
     }
 
@@ -773,76 +773,76 @@ virtual resource common_character_device inherits character_device, dir, symlink
 
     fn read(domain source) {
         /// Read this character device.
-        character_device::read(source);
+        this<character_device>.read(source);
         device_t.list(source);
     }
 
     fn dontaudit_read(domain source) {
         /// Do not audit denials for reading this character device.
-        character_device::dontaudit_read(source);
+        this<character_device>.dontaudit_read(source);
         device_t.dontaudit_list(source);
     }
 
     fn append(domain source) {
         /// Append this character device.
-        character_device::append(source);
+        this<character_device>.append(source);
         device_t.list(source);
     }
 
     fn dontaudit_append(domain source) {
         /// Do not audit denials for appending this character device.
-        character_device::dontaudit_append(source);
+        this<character_device>.dontaudit_append(source);
         device_t.dontaudit_list(source);
     }
 
     fn write(domain source) {
         /// Write this character device.
-        character_device::write(source);
+        this<character_device>.write(source);
         device_t.list(source);
     }
 
     fn dontaudit_write(domain source) {
         /// Do not audit denials for writing this character device.
-        character_device::dontaudit_write(source);
+        this<character_device>.dontaudit_write(source);
         device_t.dontaudit_list(source);
     }
 
     fn rw(domain source) {
         /// Read and write this character device.
-        character_device::rw(source);
+        this<character_device>.rw(source);
         device_t.list(source);
     }
 
     fn dontaudit_rw(domain source) {
         /// Do not audit denials for reading and for writing this character device.
-        character_device::dontaudit_rw(source);
+        this<character_device>.dontaudit_rw(source);
         device_t.dontaudit_list(source);
     }
 
     fn create(domain source) {
         /// Create this character device.
-        character_device::create(source);
+        this<character_device>.create(source);
         device_t.add_entry(source);
         device_t.create(source);
     }
 
     fn dontaudit_create(domain source) {
         /// Do not audit denials for creating this character device.
-        character_device::dontaudit_create(source);
+        this<character_device>.dontaudit_create(source);
         device_t.dontaudit_add_entry(source);
         device_t.dontaudit_create(source);
     }
 
     fn rename(domain source) {
         /// Rename this character device.
-        character_device::rename(source);
+        this<character_device>.rename(source);
         device_t.rw(source);
         device_t.rename(source);
     }
 
     fn dontaudit_rename(domain source) {
         /// Do not audit denials for renaming this character device.
-        character_device::dontaudit_rename(source);
+        this<character_device>.dontaudit_rename(source);
         device_t.dontaudit_rw(source);
         device_t.dontaudit_rename(source);
     }
@@ -850,7 +850,7 @@ virtual resource common_character_device inherits character_device, dir, symlink
     @alias(unlink)
     fn delete(domain source) {
         /// Delete this block device.
-        character_device::delete(source);
+        this<character_device>.delete(source);
         device_t.delete_entry(source);
         device_t.delete(source);
     }
@@ -858,62 +858,62 @@ virtual resource common_character_device inherits character_device, dir, symlink
     @alias(dontaudit_unlink)
     fn dontaudit_delete(domain source) {
         /// Do not audit denials for deleting this character device.
-        character_device::delete(source);
+        this<character_device>.delete(source);
         device_t.delete_entry(source);
         device_t.delete(source);
     }
 
     fn manage(domain source) {
         /// Create and delete this character device.
-        character_device::manage(source);
+        this<character_device>.manage(source);
         device_t.manage(source);
     }
 
     fn dontaudit_manage(domain source) {
         /// Do not audit denials for creating and deleting this character device.
-        character_device::dontaudit_manage(source);
+        this<character_device>.dontaudit_manage(source);
         device_t.dontaudit_manage(source);
     }
 
     fn relabelfrom(domain source) {
         /// Change character device labels from this type.
-        character_device::relabelfrom(source);
+        this<character_device>.relabelfrom(source);
         device_t.list(source);
     }
 
     fn dontaudit_relabelfrom(domain source) {
         /// Do not audit denials for changing character device labels from this type.
-        character_device::dontaudit_relabelfrom(source);
+        this<character_device>.dontaudit_relabelfrom(source);
         device_t.dontaudit_list(source);
     }
 
     fn relabelto(domain source) {
         /// Change character device labels to this type.
-        character_device::relabelto(source);
+        this<character_device>.relabelto(source);
         device_t.list(source);
     }
 
     fn dontaudit_relabelto(domain source) {
         /// Do not audit denials for changing character device labels to this type.
-        character_device::dontaudit_relabelto(source);
+        this<character_device>.dontaudit_relabelto(source);
         device_t.dontaudit_list(source);
     }
 
     fn relabel(domain source) {
         /// Change character device labels to this type and from this type.
-        character_device::relabel(source);
+        this<character_device>.relabel(source);
         device_t.list(source);
     }
 
     fn dontaudit_relabel(domain source) {
         /// Change character device labels to this type and from this type.
-        character_device::dontaudit_relabel(source);
+        this<character_device>.dontaudit_relabel(source);
         device_t.dontaudit_list(source);
     }
 
     fn unconfined(domain source) {
         /// Unconfined (full access) to this character device.
-        character_device::unconfined(source);
+        this<character_device>.unconfined(source);
         device_t.unconfined(source);
     }
 }

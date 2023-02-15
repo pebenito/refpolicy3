@@ -19,7 +19,7 @@ let unconfined_unit_perms = [ enable disable start stop reload status ];
 let admin_systemd_perms = [ disable enable halt reboot reload start status stop ];
 let unconfined_systemd_perms = [ disable enable halt reboot reload start status stop ];
 
-api systemd_unit_api {
+trait resource systemd_unit_api {
     /// Systemd unit API
 
     fn enable(domain source) {

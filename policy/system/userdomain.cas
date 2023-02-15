@@ -204,7 +204,7 @@ virtual domain userdomain inherits common_domain {
         role_associate(src_role, this.roles);
     }
 
-    fn unix_stream_connect(source domain) {
+    fn unix_stream_connect(domain source) {
         /// Connect to this daemon over a unix stream socket.
         /// This is to handle daemons running in the user's domain.
         /// Sockets are supported in both the user's tmp and
@@ -214,7 +214,7 @@ virtual domain userdomain inherits common_domain {
         allow(source, this, unix_stream_socket, [ getattr connectto ]);
     }
 
-    fn unix_datagram_send(source domain) {
+    fn unix_datagram_send(domain source) {
         /// Send unix datagrams to this daemon.
         /// This is to handle daemons running in the user's domain.
         /// Sockets are supported in both the user's tmp and
@@ -229,7 +229,7 @@ virtual domain restricted_user inherits userdomain {
     /// Virtual for restricted user domains.
 
     allow(this, self, capability, [ chown fowner setgid ]);
-    dontaudit(this, self, capability, [ fsetid sys_nice ]};
+    dontaudit(this, self, capability, [ fsetid sys_nice ]);
     allow(this, self, process, [ transition ptrace setsched setpgid setcap share setfscreate dyntransition setkeycreate setsockcreate ]);
     dontaudit(this, self, process, setrlimit);
     dontaudit(this, self, netlink_route_socket, [ manage_socket_perms nlmsg_read nlmsg_write ]);
