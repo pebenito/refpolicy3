@@ -431,20 +431,14 @@ final api network {
     }
 }
 
-tunable nss_dns {
-    /// Enable DNS lookups for NSS databases
-    default true;
-}
+let nss_dns = true;
+/// Enable DNS lookups for NSS databases
 
-tunable nss_ldap {
-    /// Enable remote LDAP databases for NSS
-    default true;
-}
+let nss_ldap = true;
+/// Enable remote LDAP databases for NSS
 
-tunable nss_nis {
-    /// Enable remote NIS databases for NSS
-    default true;
-}
+let nss_nis = true;
+/// Enable remote NIS databases for NSS
 
 final api nss {
     /// Name service switch

@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 
-tunable secure_mode_policyload {
-    default false;
-}
+@dynamic
+let secure_mode_policyload = false;
 
-tunable secure_mode_setbool {
-    default false;
-}
+@dynamic
+let secure_mode_setbool = false;
 
 //
 // Virtuals

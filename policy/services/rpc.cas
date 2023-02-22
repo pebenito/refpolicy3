@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 
-tunable nfs_export_all_ro {
-    /// Export all non-security files with read-only access.
-    default false;
-}
+let nfs_export_all_ro = false;
+/// Export all non-security files with read-only access.
 
-tunable nfs_export_all_rw {
-    /// Export all non-security files with read-write access.
-    default false;
-}
+let nfs_export_all_rw = false;
+/// Export all non-security files with read-write access.
 
 //
 // Extends

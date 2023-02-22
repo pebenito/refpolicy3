@@ -2,10 +2,8 @@
 
 // TODO: define nscd class and perms
 
-tunable nscd_use_shm {
-    /// Determine whether confined applications can use nscd shared memory.
-    default false;
-}
+let nscd_use_shm = false;
+/// Determine whether confined applications can use nscd shared memory.
 
 domain nscd_t inherits daemon {
     /// Name service cache daemon

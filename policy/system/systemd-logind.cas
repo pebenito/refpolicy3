@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0
 
-tunable systemd_logind_get_bootloader {
-    /// Allow systemd-logind to interact with the bootloader.
-    /// Read which one is installed on fixed disks, enumerate
-    /// entries for dbus property BootLoaderEntries, etc.)
-    default false;
-}
+let systemd_logind_get_bootloader = false;
+/// Allow systemd-logind to interact with the bootloader.
+/// Read which one is installed on fixed disks, enumerate
+/// entries for dbus property BootLoaderEntries, etc.)
 
 domain systemd_logind_t inherits systemd_daemon {
     /// User login management service.

@@ -155,10 +155,8 @@ suffixes, such as `_t`.
 ```
 // SPDX-License-Identifier: GPL-2.0
 
-tunable mydomain_lockdown {
-    /// Set to true to lock out mytool privileged access.
-    default false;
-}
+let mydomain_lockdown = false;
+/// Set to true to lock out mytool privileged access.
 
 resource general_conf_t inherits configfile {
     /// A general configuration file.

@@ -4,10 +4,8 @@
 // Tunables
 //
 @alias(systemd_tmpfiles_manage_all)
-tunable systemd_tmpfiles_manage_non_security {
-    /// Enable support for systemd-tmpfiles to manage all non-security files.
-    default false;
-}
+let systemd_tmpfiles_manage_non_security = false;
+/// Enable support for systemd-tmpfiles to manage all non-security files.
 
 //
 // Groupings

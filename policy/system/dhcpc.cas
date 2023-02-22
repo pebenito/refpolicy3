@@ -188,10 +188,8 @@ domain dhcpc_t inherits daemon {
     }
 
     optional {
-        tunable dhcpc_manage_samba {
-            /// Determine whether DHCP client can manage Samba.
-            default false;
-        }
+        let dhcpc_manage_samba = false;
+        /// Determine whether DHCP client can manage Samba.
 
         if (dhcpc_manage_samba) {
             allow(this, init_t, system, status);

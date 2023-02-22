@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
-tunable systemd_networkd_dhcp_server {
-    /// Allow systemd-networkd to run its DHCPd server component.
-    default false;
-}
+let systemd_networkd_dhcp_server = false;
+/// Allow systemd-networkd to run its DHCPd server component.
 
 domain systemd_networkd_t inherits systemd_app_domain {
     /// Network configuration detection and configuration.

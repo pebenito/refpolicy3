@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
-tunable systemd_nspawn_labeled_namespace {
-    /// Allow systemd-nspawn to create a labelled namespace with the same types as the parent environment.
-    default false;
-}
+let systemd_nspawn_labeled_namespace = false;
+/// Allow systemd-nspawn to create a labelled namespace with the same types as the parent environment.
 
 domain systemd_nspawn_t inherits systemd_app_domain {
     /// Spawn processes in a namespace.

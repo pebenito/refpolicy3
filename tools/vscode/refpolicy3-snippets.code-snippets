@@ -350,10 +350,8 @@
     "tunable": {
         "prefix": "tunable",
         "body": [
-            "tunable ${1:name} {",
-            "    /// ${2:description}",
-            "    default ${3|false,true|};",
-            "}",
+            "let ${1:name} = ${2|false,true|};",
+            "/// ${3:description}",
             "$0"
         ]
     }

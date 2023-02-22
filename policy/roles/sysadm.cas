@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 
 @alias(allow_ptrace)
-tunable sysadm_debug {
-    /// Allow sysadm to debug or ptrace all processes.
-    default false;
-}
+let sysadm_debug = false;
+/// Allow sysadm to debug or ptrace all processes.
 
 @associate([
     session_dbus

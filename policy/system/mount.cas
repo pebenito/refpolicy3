@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 
 @alias(allow_mount_anyfile)
-tunable mount_on_non_security {
-    /// Mount on any non-security dir or file.
-    default false;
-}
+let mount_on_non_security = false;
+/// Mount on any non-security dir or file.
 
 resource mount_loopback_t inherits filesystem_image { // customizable
     /// General filesystem images.

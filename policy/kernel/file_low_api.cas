@@ -1,18 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0
 
 // Loose means mmap, watch, or execmod are more broadly allowed
-tunable files_loose_mmap {
-    default false;
-}
+let files_loose_mmap = false;
 
-tunable files_loose_watch {
-    default false;
-}
+let files_loose_watch = false;
 
-tunable files_loose_execmod {
-    // this is similar to the old allow_execmod, but broader
-    default false;
-}
+let files_loose_execmod = false;
+// this is similar to the old allow_execmod, but broader
 
 //
 // General object class sets

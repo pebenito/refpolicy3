@@ -3,47 +3,31 @@
 //
 // Tunables
 //
-tunable user_direct_mouse {
-    /// Allow regular users direct mouse access
-    default false;
-}
+let user_direct_mouse = false;
+/// Allow regular users direct mouse access
 
-tunable user_dmesg {
-    /// Allow users to read system messages.
-    default false;
-}
+let user_dmesg = false;
+/// Allow users to read system messages.
 
 @alias(allow_user_mysql_connect)
-tunable user_mysql_connect {
-    /// Allow users to connect to mysql
-    default false;
-}
+let user_mysql_connect = false;
+/// Allow users to connect to mysql
 
 @alias(allow_user_postgresql_connect)
-tunable user_postgresql_connect {
-    /// Allow users to connect to PostgreSQL
-    default false;
-}
+let user_postgresql_connect = false;
+/// Allow users to connect to PostgreSQL
 
-tunable user_rw_noexattrfile {
-    /// Allow user to r/w files on filesystems that do not have extended attributes (e.g. FAT32)
-    default false;
-}
+let user_rw_noexattrfile = false;
+/// Allow user to r/w files on filesystems that do not have extended attributes (e.g. FAT32)
 
-tunable user_exec_noexattrfile {
-    /// Allow user to execute files on filesystems that do not have extended attributes (e.g. FAT32)
-    default false;
-}
+let user_exec_noexattrfile = false;
+/// Allow user to execute files on filesystems that do not have extended attributes (e.g. FAT32)
 
-tunable user_write_removable {
-    /// Allow user to write files on removable devices (e.g. external USB memory devices)
-    default false;
-}
+let user_write_removable = false;
+/// Allow user to write files on removable devices (e.g. external USB memory devices)
 
-tunable user_ttyfile_stat {
-    /// Allow w to display everyone
-    default false;
-}
+let user_ttyfile_stat = false;
+/// Allow w to display everyone
 
 //
 // Virtuals

@@ -9,10 +9,9 @@
     /// The role for non-interactive system processes.
 // };
 
-boolean secure_mode_insmod {
-    /// Enabling secure_mode_insmod will deny further kernel module insertion or removal.
-    default false;
-}
+@dynamic
+let secure_mode_insmod = false;
+/// Enabling secure_mode_insmod will deny further kernel module insertion or removal.
 
 domain kernel_t inherits network_peer {
     /// Kernel threads.

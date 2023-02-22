@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0
 
-tunable systemd_socket_proxyd_bind_any {
-    /// Allow systemd-socket-proxyd to bind any port.
-    /// If this is false, systemd-socket-proxyd can only bind to ports
-    /// labeled systemd_socket_proxyd_t.port.
-    default false;
-}
+let systemd_socket_proxyd_bind_any = false;
+/// Allow systemd-socket-proxyd to bind any port.
+/// If this is false, systemd-socket-proxyd can only bind to ports
+/// labeled systemd_socket_proxyd_t.port.
 
-tunable systemd_socket_proxyd_connect_any {
-    /// Allow systemd-socket-proxyd to connect to any port.
-    /// If this is false, systemd-socket-proxyd can only connect to ports
-    /// labeled systemd_socket_proxyd_t.port.
-    default false;
-}
+let systemd_socket_proxyd_connect_any = false;
+/// Allow systemd-socket-proxyd to connect to any port.
+/// If this is false, systemd-socket-proxyd can only connect to ports
+/// labeled systemd_socket_proxyd_t.port.
 
 domain systemd_socket_proxyd_t inherits systemd_daemon {
     /// Network socket proxy/forwarder.
