@@ -99,7 +99,7 @@ domain systemd_generator_t inherits systemd_app_domain {
         shell_exec_t.entrypoint();
     }
 
-    optional_policy {
+    optional {
         exports_t.read();
 
         nfsd_fs_t.rw();

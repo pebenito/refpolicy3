@@ -112,7 +112,7 @@ virtual domain userdomain inherits common_domain {
 
     sysctl_t.kernel.read();
 
-    term.open_pty(this, user_devpts_t)
+    term.open_pty(this, user_devpts_t);
 
     unlabeled_t<dir>.dontaudit_list();
     unlabeled_t<file>.dontaudit_getattr();

@@ -161,7 +161,7 @@ domain pam_timestamp_t inherits common_domain {
 //optional {
 //local_login_t.inherit_file_descriptors();
 //}
-};
+}
 
 domain pam_console_t inherits system_app_domain {
     /// PAM helper to set permissions on the console.

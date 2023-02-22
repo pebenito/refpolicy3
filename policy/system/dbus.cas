@@ -74,7 +74,7 @@ virtual domain session_dbus inherits common_domain {
         dontaudit(source, this, netlink_selinux_socket, rw_socket_perms);
 
         session_dbusd_home_t.admin(source);
-        user_home_dir_t.filetrans(source, session_dbusd_home_t, dir, ".dbus")
+        user_home_dir_t.filetrans(source, session_dbusd_home_t, dir, ".dbus");
 
         session_dbusd_runtime_t.admin(source);
 
@@ -187,7 +187,7 @@ domain system_dbusd_t inherits daemon {
 
     console_device_t.dontaudit_rw();
 
-    domain.ps()
+    domain.ps();
 
     file_type<filesystem>.getattr_superblock();
 

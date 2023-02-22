@@ -1040,7 +1040,7 @@ final api unconfined {
     fn domain_perms(domain source) {
         // Use most Linux capabilities
         allow(source, self, [ capability cap_userns ], [ chown dac_override dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice sys_resource sys_time sys_tty_config mknod lease audit_write audit_control setfcap ]);
-        allow(source, self, [ capability2 cap2_userns ], [ syslog wake_alarm bpf perfmon ];
+        allow(source, self, [ capability2 cap2_userns ], [ syslog wake_alarm bpf perfmon ]);
         // Use most namespace capabilities
         allow(source, self, cap_userns, [ audit_write chown dac_override dac_read_search fowner fsetid ipc_lock ipc_owner kill lease linux_immutable mknod net_admin net_bind_service net_raw setfcap setgid setpcap setuid sys_admin sys_boot sys_chroot sys_module sys_nice sys_pacct sys_ptrace sys_rawio sys_resource sys_time sys_tty_config ]);
         allow(source, self, cap2_userns, [ audit_read bpf block_suspend mac_admin mac_override perfmon syslog wake_alarm ]);
@@ -1109,18 +1109,18 @@ final api unconfined {
         if (allow_execmem) {
             // Allow making anonymous memory executable, e.g.
             // for runtime-code generation or executable stack.
-            allow(source, self, process execmem;
+            allow(source, self, process, execmem);
 
             if (allow_execstack) {
 
                 // Allow making the stack executable via mprotect;
                 // execstack implies execmem;
-                allow(source, self, process execstack;
+                allow(source, self, process, execstack);
             }
 
             if (allow_execheap) {
                 // Allow making the stack executable via mprotect.
-                allow(source, self, process execheap;
+                allow(source, self, process, execheap);
             }
         }
 
