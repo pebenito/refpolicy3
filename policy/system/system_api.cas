@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 
-final api audit {
+collection audit {
     // Auditing API
 
     fn send_messages(domain source) {
@@ -44,7 +44,7 @@ final api audit {
     }
 }
 
-final api auth {
+collection auth {
     fn read_shadow_passwords(domain source) {
         /// Read /etc/shadow.
         shadow_t.read(source);
@@ -163,7 +163,7 @@ final api auth {
     }
 }
 
-final api base_files {
+collection base_files {
     fn read_fonts(domain source) {
         /// Read systemwide fonts.
         fonts_t.read(source);
@@ -192,7 +192,7 @@ final api base_files {
     }
 }
 
-final api kernel {
+collection kernel {
     /// Kernel-related access.
 
     @alias(ipcs)
@@ -237,7 +237,7 @@ final api kernel {
     }
 }
 
-final api lang {
+collection lang {
     /// Access due to programming language.
     /// This is typically implicit access required as part of a
     /// compiler output or interpreter.
@@ -251,7 +251,7 @@ final api lang {
     }
 }
 
-final api libs {
+collection libs {
     /// Access due to library usage.
     /// This is typically implicit access required due to simply being
     /// linked to a library.
@@ -267,7 +267,7 @@ final api libs {
     }
 }
 
-final api network {
+collection network {
     /// Common network access patterns.
 
     @alias(read_resolv_conf)
@@ -440,7 +440,7 @@ let nss_ldap = true;
 let nss_nis = true;
 /// Enable remote NIS databases for NSS
 
-final api nss {
+collection nss {
     /// Name service switch
     /// Local databases, files and UNIX socket connections to local daemons,
     /// are always enabled.  Remote access requires tunable activation.
@@ -534,7 +534,7 @@ final api nss {
     }
 }
 
-api final selinux {
+collection selinux {
 
     // This may be subsumed by other functions
     fn use_status_page(domain source) {
@@ -907,7 +907,7 @@ api final selinux {
     }
 }
 
-final api services {
+collection services {
     fn subscribe_systemd_events(domain source) {
         /// Subscribe to systemd events over dbus.
         system_dbusd_t.client(source);
@@ -951,7 +951,7 @@ final api services {
     }
 }
 
-final api syslog {
+collection syslog {
     /// System log (syslog) API.
 
     //
@@ -1021,7 +1021,7 @@ final api syslog {
     }
 }
 
-final api term {
+collection term {
     fn open_pty(domain source, pty ptydev) {
         /// Open a PTY device.
 
@@ -1036,7 +1036,7 @@ final api term {
     }
 }
 
-final api unconfined {
+collection unconfined {
     fn domain_perms(domain source) {
         // Use most Linux capabilities
         allow(source, self, [ capability cap_userns ], [ chown dac_override dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice sys_resource sys_time sys_tty_config mknod lease audit_write audit_control setfcap ]);
