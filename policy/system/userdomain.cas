@@ -668,7 +668,7 @@ virtual domain admin_userdomain inherits userdomain {
     /// Privileged/administration users
 }
 
-api user_api {
+collection user_api {
 
     fn security_admin(domain source) {
         /// Privileged/sec administration users
