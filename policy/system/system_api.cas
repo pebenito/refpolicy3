@@ -1123,6 +1123,7 @@ collection unconfined {
                 allow(source, self, process, execheap);
             }
         }
+    }
 
 // TODO:
 //allow(source, self, passwd { passwd chfn chsh rootok crontab };
