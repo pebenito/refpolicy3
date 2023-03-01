@@ -500,7 +500,7 @@ resource spufs_t inherits pseudo_filesystem, mountpoint {
     genfscon("spufs", "/", any);
 }
 
-@hint(class=[file, fifo_file, sock_file, chr_file, blk_file], "sysctl_t should only be for the /proc/sys dir.
+@hint(class=[file fifo_file sock_file chr_file blk_file], "sysctl_t should only be for the /proc/sys dir.
     If a sysctl has this type, you should avoid adding access and instead change the label.");
 resource sysctl_t inherits common_dir_api {
     /// The default type for sysctls.

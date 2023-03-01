@@ -935,7 +935,7 @@ extend init_script_t {
 
     boot_t.read();
 
-    allow(this, init_t, system, [ start stop status reboot halt reload ]};
+    allow(this, init_t, system, [ start stop status reboot halt reload ]);
 
     allow(this, null_device_t, service, [ status start stop reload ]);
 
