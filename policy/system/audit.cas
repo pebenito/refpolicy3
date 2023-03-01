@@ -187,8 +187,8 @@ domain audisp_t inherits system_app_domain {
     //
     // Policy
     //
-    allow(this, self, capability { dac_override setpcap sys_nice };
-    allow(this, self, process { setcap setsched };
+    allow(this, self, capability, [ dac_override setpcap sys_nice ]);
+    allow(this, self, process, [ setcap setsched ]);
 
     this.runtime.manage();
     var_run_t.filetrans(this, this.runtime, sock_file); var_t.list();

@@ -520,7 +520,6 @@ module selinuxutil {
     module setfiles;
 }
 
-}
 module semanage {
     domain semanage;
 }

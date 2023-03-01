@@ -123,7 +123,7 @@ domain local_login_t inherits bin_login_domain, local_login_domain {
     }
 
     if (distro_debian) {
-        auth_use_pam_motd_dynamic()
+        auth.use_pam_motd_dynamic();
     }
 
     optional {

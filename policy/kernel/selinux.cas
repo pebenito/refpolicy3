@@ -81,7 +81,7 @@ resource security_t {
 //
 boolean(secure_mode_policyload, false);
 resource secure_mode_policyload_t inherits booleans {
-    genfscon(selinuxfs, /booleans/secure_mode_policyload, file, this);
+    genfscon(selinuxfs, "/booleans/secure_mode_policyload", file);
 
     fn set(domain source) {
         sysfs_t.list(source);

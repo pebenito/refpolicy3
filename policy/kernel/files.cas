@@ -770,7 +770,8 @@ resource hwdata_t inherits common_file {
 }
 
 @hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write kernel modules.")
-resource kernel_module_t alias modules_object_t inherits common_file {
+@alias(modules_object_t)
+resource kernel_module_t inherits common_file {
     /// Kernel modules (*.ko).
 
     file_context("/usr/lib/modules(/.*)?", any);
@@ -785,7 +786,7 @@ resource ld_so_cache_t inherits common_file {
     file_context("/etc/ld\.so\.cache", file);
     file_context("/etc/ld\.so\.preload", file);
     file_context("/etc/ld-musl-[^/]*\.path", file);
-)
+}
 
 @hint(class=file, perm=[create write append relabelto], hint="Only trusted processes should write the library linker.")
 resource ld_so_t inherits common_file {
@@ -1043,7 +1044,8 @@ resource poly_t inherits common_dir, polyinstantiated {
     /// The default for polyinstantiated directories.
 }
 
-resource public_content_t alias readable_t inherits common_file { // customizable
+@alias(readable_t)
+resource public_content_t inherits common_file { // customizable
     /// Read-only public shared data for network servers such as Apache, FTP, NFS, and Samba servers.
 
     file_context("/srv/([^/]*/)?ftp(/.*)?", any);
@@ -1071,10 +1073,11 @@ resource root_t inherits common_dir, mountpoint, noxattr_filesystem {
 @hint(class=[file fifo_file sock_file], hint="Runtime directories are shared. A different type should use used, e.g. foo_t.runtime, to keep data private.")
 @hint(class=dir, perm=create, hint="Runtime directories are shared. A different type should use used, e.g. foo_t.runtime, to keep data private.")
 @derive(strategy=common_dir)
-resource runtime_t alias var_run_t inherits common_dir, runtimefile, mountpoint  {
+@alias(var_run_t)
+resource runtime_t inherits common_dir, runtimefile, mountpoint  {
     /// The runtime directory (/run and /var/run)
 
-    file_context("/run", dir, system_u:object_r:runtime_t:s0-mls_systemhigh)
+    file_context("/run", dir, system_u:object_r:runtime_t:s0-mls_systemhigh);
     file_context("/run", symlink);
     // file_context("/run/.*", any, <<none>>);
     file_context("/run/shm", symlink);
@@ -1171,7 +1174,7 @@ resource tls_privkey_t inherits tls_privkey_type {
 @hint(class=dir, perm=create, hint="Temp directories are shared. A different type should use used, e.g. foo_t.tmp, to keep data private.")
 resource tmp_t inherits tmpfile, mountpoint, polyinstantiated {
     /// Top-level dir of temporary directories, such as /tmp and /var/tmp.
-    file_context("/tmp", dir, system_u:object_r:tmp_t,s0-mls_systemhigh)
+    file_context("/tmp", dir, system_u:object_r:tmp_t,s0-mls_systemhigh);
     // file_context("/tmp/.*", any, <<none>>);
     // file_context("/tmp/\.journal", any, <<none>>);
 
@@ -1182,8 +1185,8 @@ resource tmp_t inherits tmpfile, mountpoint, polyinstantiated {
     file_context("/usr/tmp", dir, system_u:object_r:tmp_t:s0-mls_systemhigh);
     // file_context("/usr/tmp/.*", any, <<none>>);
 
-    file_context("/var/tmp", dir, system_u:object_r:tmp_t:s0-mls_systemhigh)
-    file_context("/var/tmp, symlink, system_u:object_r:tmp_t:s0);
+    file_context("/var/tmp", dir, system_u:object_r:tmp_t:s0-mls_systemhigh);
+    file_context("/var/tmp", symlink, system_u:object_r:tmp_t:s0);
     // file_context("/var/tmp/.*", any, <<none>>);
     file_context("/var/tmp/systemd-private-[^/]+", dir, system_u:object_r:tmp_t:s0-mls_systemhigh);
     file_context("/var/tmp/systemd-private-[^/]+/tmp", dir, system_u:object_r:tmp_t:s0-mls_systemhigh);

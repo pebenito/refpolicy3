@@ -33,13 +33,13 @@ domain setrans_t inherits daemon {
     allow(setrans, self, process, [setrlimit getcap setcap signal_perms ]);
     allow(setrans, self, unix_stream_socket, manage_stream_socket_perms);
     allow(setrans, self, unix_dgram_socket, manage_socket_perms);
-    allow(setrans, self, netlink_selinux_socket, manage_socket_perms;
+    allow(setrans, self, netlink_selinux_socket, manage_socket_perms);
     allow(setrans, self, context, contains);
 
     this.exec.exec(); usr_t.list(); bin_t.list();
 
     // allow performing getpidcon() on all processes
-    domain.ps()
+    domain.ps();
     domain.get_session_id();
 
     etc_runtime_t.read();

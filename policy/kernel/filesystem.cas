@@ -419,7 +419,7 @@ resource proc_t inherits pseudo_filesystem, mountpoint, proc_entry {
 
     resource kmsg inherits proc_entry {
         /// Kernel message interface.
-        genfscon("proc", "/kmsg", any, system_u:object_r:proc_t.kmsg:mls_systemhigh)
+        genfscon("proc", "/kmsg", any, system_u:object_r:proc_t.kmsg:mls_systemhigh);
 
 //        optional_policy(`
 //            init_mountpoint(proc_kmsg_t)
@@ -450,7 +450,7 @@ resource proc_t inherits pseudo_filesystem, mountpoint, proc_entry {
     }
 
     @alias(proc_xen_t)
-    type xen inherits proc_entry, mountpoint {
+    resource xen inherits proc_entry, mountpoint {
         /// Xen filesystem (xenfs) mountpoint.
         genfscon("proc", "/xen", any);
     }
@@ -642,7 +642,7 @@ resource tracefs_t inherits pseudo_filesystem {
 //    init_mountpoint(tracefs_t)
 //')
 
-resource vmblock_t inherts noxattr_filesystem {
+resource vmblock_t inherits noxattr_filesystem {
     /// Virtualization block device filesystem.
     genfscon("vmblock", "/", any);
     genfscon("vboxsf", "/", any);
@@ -669,10 +669,10 @@ resource tmpfs_t inherits xattr_filesystem, common_dir, polyinstantiate_parent {
     // file_context("/usr/lib/udev/devices/shm/.*", any, <<none>>);
     // file_context("/dev/mqueue(/.*)?", any, <<none>>);
 
-    if (distro_debian,
+    if (distro_debian) {
         file_context("/run/shm", dir);
         //file_context("/run/shm/.*", any, <<none>>);
-    ')
+    }
 
     // Use a transition SID based on the allocating task SID and the
     // filesystem SID to label inodes in the following filesystem types,

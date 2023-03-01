@@ -404,7 +404,7 @@ domain systemd_t inherits init {
     allow(this, self, unix_dgram_socket, [ manage_socket_perms sendto ]);
     allow(this, self, unix_stream_socket, [ manage_stream_socket_perms connectto ]);
     allow(this, self, netlink_audit_socket, [ nlmsg_relay create_socket_perms ]);
-    allow(this, self, netlink_selinux_socket, manage_socket_perms;
+    allow(this, self, netlink_selinux_socket, manage_socket_perms);
     allow(this, self, udp_socket, create_socket_perms);
     allow(this, self, netlink_route_socket, [ manage_socket_perms nlmsg_read nlmsg_write ]);
     allow(this, self, key, [ search setattr write ]);
@@ -1068,7 +1068,7 @@ extend systemdunit inherits systemd_unit_api {}
 
 extend udev_t {
     // systemd-vconsole-setup will be called by udev during virtual terminal initialization
-    allow(this, self, capability sys_tty_config;
+    allow(this, self, capability, sys_tty_config);
 
     // for systemd-udevd to rename interfaces
     allow(this, self, netlink_route_socket, nlmsg_write);

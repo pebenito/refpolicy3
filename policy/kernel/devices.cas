@@ -179,8 +179,8 @@ resource device_t inherits filesystem, mountpoint, common_dir {
     if (distro_debian) {
         // this is a static /dev dir "backup mount"
         // if you want to disable udev, you will have to boot permissive and relabel!
-        file_context("/dev/\.static, dir);
-        file_context("/dev/\.static/dev, dir);
+        file_context("/dev/\.static", dir);
+        file_context("/dev/\.static/dev", dir);
         // TODO add back in when we figure out what to do with none
         // file_context("/dev/\.static/dev/.+", <<none>>);
     }
@@ -299,7 +299,7 @@ resource freefall_device_t inherits common_character_device {
     file_context("/dev/freefall", chardev);
 }
 
-type fuse_device_t inherits common_character_device {
+resource fuse_device_t inherits common_character_device {
     /// The FUSE device, /dev/fuse.
     file_context("/dev/fuse", chardev);
     file_context("/usr/lib/udev/devices/fuse", chardev);
@@ -315,9 +315,6 @@ resource ipmi_device_t inherits common_character_device {
     file_context("/dev/ipmi[0-9]+", chardev);
     file_context("/dev/ipmi/[0-9]+", chardev);
 }
-
-
-Types for Hyper-V guest devices
 
 resource hyperv_kvp_device_t inherits common_character_device {
     /// Hyper-V key-value pair device.
@@ -564,7 +561,7 @@ resource scanner_device_t inherits common_character_device {
     file_context("/dev/usb/scanner.*", chardev);
 }
 
-type scsi_generic_device_t inherits common_character_device {
+resource scsi_generic_device_t inherits common_character_device {
     /// SCSI generic devices, /dev/sg* and /dev/bsg/*.
     /// Accessing these devices should be avoided. By accessing the device,
     /// a domain can bypass SELinux access controls for filesystems.
