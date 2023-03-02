@@ -42,7 +42,6 @@ let admin_process_perms = [signal_perms ptrace getsched setsched getattr getcap]
 @hint(class=process, perm=execheap, hint="Executable heap is dangerous, as it opens a vector for arbitrary code execution.")
 @hint(class=process, perm=[execmem execstack execheap], hint="See https://www.akkadia.org/drepper/selinux-mem.html for more information.")
 @hint(class=process, perm=setcurrent, hint="This indicates the process is attempting to change its context.")
-// TODO add builtin back in when its a keyword
 extend domain {
     /// The built-in domain virtual.
     /// With few exceptions, common_domain should be inherited instead.

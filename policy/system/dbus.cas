@@ -307,7 +307,6 @@ domain system_dbusd_t inherits daemon {
 //
 // Extends
 //
-// TODO add builtin back in when its a keyword
 extend domain {
     fn dbus_send(domain source) {
         /// Send dbus messages to this domain.
