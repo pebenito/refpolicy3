@@ -1,0 +1,131 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain alsa_t inherits system_app_domain {
+    /// Advanced Linux Sound Architecture (ALSA) utilities.
+
+    @alias(alsa_etc_t)
+    resource config inherits configfile {
+        /// System configuration files.
+
+        file_context("/etc/alsa(/.*)?", any);
+        file_context("/etc/asound\.conf", file);
+        file_context("/usr/share/alsa(/.*)?", any);
+
+    }
+
+    @alias(alsa_exec_t)
+    extend exec {
+        file_context("/usr/bin/ainit", file);
+        file_context("/usr/bin/alsactl", file);
+        file_context("/usr/bin/alsaunmute", file);
+        file_context("/usr/bin/salsa", file);
+        file_context("/usr/sbin/alsactl", file);
+        file_context("/usr/sbin/salsa", file);
+    }
+
+    @alias(alsa_home_t)
+    resource home inherits user_home_content {
+        /// User configuration files.
+
+        file_context("HOME_DIR/\.asoundrc", file);
+    }
+
+    @alias(alsa_var_lock_t)
+    resource lock inherits lockfile {
+        /// Lock files.
+
+        file_context("/var/lock/asound\.state\.lock", file);
+    }
+
+    @alias(alsa_runtime_t)
+    resource runtime inherits runtimefile {
+        /// Runtime files.
+
+        file_context("/run/alsa(/.*)?", any);
+        file_context("/run/alsactl\.pid", file);
+    }
+
+    @alias(alsa_var_lib_t)
+    resource state inherits common_file {
+        /// Saved state files.
+
+        file_context("/var/lib/alsa(/.*)?", any);
+    }
+
+    @alias(alsa_tmp_t)
+    resource tmp inherits tmpfile {
+        /// Temporary files.
+    }
+
+    @alias(alsa_tmpfs_t)
+    resource tmpfs inherits tmpfsfile {
+        /// Shared memory segments.
+    }
+
+    @alias(alsa_unit_t)
+    resource unit inherits systemdunit {
+        /// Systemd unit files.
+
+        file_context("/usr/lib/systemd/system/[^/]*alsa-restore.*", file);
+        file_context("/usr/lib/systemd/system/[^/]*alsa-state.*", file);
+        file_context("/usr/lib/systemd/system/[^/]*alsa-store.*", file);
+    }
+
+    allow(this, self, capability, [ dac_override dac_read_search ipc_owner setgid setuid ]);
+    allow(this, self, unix_stream_socket, [ accept listen ]);
+    allow(this, self, sem, create_sem_perms);
+    allow(this, self, shm, create_shm_perms);
+    allow(this, self, process, [ getsched setsched signal ]);
+    // kill : kill pulseaudio
+    dontaudit(this, self, capability, [ kill sys_admin ]);
+
+    this.config.mmap_read();
+
+    this.home.read(); user_home_dir_t.list(); home_root_t.list();
+
+    this.lock.manage();
+    this.lock.filetrans(this, this.lock, file);
+
+    this.runtime.manage();
+    var_run_t.filetrans(this, this.runtime, [ dir file ]);
+
+    this.state.manage(); var_lib_t.list(); var_t.list();
+
+    this.tmp.manage();
+    tmp_t.filetrans(this, this.tmp, [ dir file ]);
+    user_tmp_t.filetrans(this, this.tmp, [ dir file ]);
+
+    this.tmpfs.mmap_manage();
+    tmpfs_t.filetrans(this, this.tmpfs, file );
+
+    bin_t.exec();
+
+    console_device_t.dontaudit_rw();
+
+    device_t.getattr();
+
+    devpts_t<common_character_device>.dontaudit_rw();
+
+    event_device_t.read();
+
+    nss.get_passwd_entry();
+
+    proc_t.read();
+
+    pty.dontaudit_rw();
+
+    sound_device_t.mmap_rw();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    tmpfs_t.getattr_superblock();
+
+    unpriv_userdomain.manage_sysv_semaphores();
+    unpriv_userdomain.manage_sysv_shared_memory();
+
+    urandom_device_t.read();
+
+    usr_t.read();
+}
