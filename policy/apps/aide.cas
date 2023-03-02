@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: GPL-2.0
+
+let aide_mmap_files = false;
+/// Control if AIDE can mmap files.
+/// AIDE can be compiled with the option 'with-mmap' in which case it will
+/// attempt to mmap files while running.
+
+
+domain aide_t inherits app_domain {
+    /// Advanced Intrusion Detection Environment (AIDE) filesystem integrity checker.
+
+    @alias(aide_exec_t)
+    extend exec {
+        file_context("/usr/bin/aide", file, system_u:object_r:aide_exec_t:mls_systemhigh);
+        file_context("/usr/sbin/aide", file, system_u:object_r:aide_exec_t:mls_systemhigh);
+    }
+
+    @alias(aide_db_t)
+    resource db inherits common_file {
+        /// Integrity measurement database.
+
+        file_context("/var/lib/aide(/.*)?", any, system_u:object_r:this.db:mls_systemhigh);
+    }
+
+    @alias(aide_log_t)
+    resource log inherits logfile {
+        /// Log files.
+
+        file_context("/var/log/aide(/.*)?", any, system_u:object_r:this.log:mls_systemhigh);
+        file_context("/var/log/aide\.log.*", file, system_u:object_r:this.log:mls_systemhigh);
+    }
+
+    allow(this, self, capability, [ dac_override fowner ]);
+
+    this.db.manage(); var_lib_t.list(); var_t.list();
+
+    this.log.create();
+    drop allow(this, this.log, file, write);
+    var_log_t.filetrans(this, this.log, file); var_t.list();
+
+    audit.send_messages();
+
+    file_type<common_file>.read();
+
+    syslog.send_messages();
+
+    if (aide_mmap_files) {
+        file_type<common_file>.mmap_read();
+    }
+}
