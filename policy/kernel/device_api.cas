@@ -13,7 +13,7 @@ let devfile_class_set = [ blk_file chr_file ];
 trait resource cap_sys_rawio_checks {
     /// API for types that have CAP_SYS_RAWIO checks on read and write.
 
-    fn read_inherited(domain source) {
+    fn read(domain source) {
         allow(source, self, capability, sys_rawio);
     }
 
@@ -21,7 +21,7 @@ trait resource cap_sys_rawio_checks {
         allow(source, self, capability, sys_rawio);
     }
 
-    fn write_inherited(domain source) {
+    fn write(domain source) {
         allow(source, self, capability, sys_rawio);
     }
 
@@ -29,7 +29,7 @@ trait resource cap_sys_rawio_checks {
         allow(source, self, capability, sys_rawio);
     }
 
-    fn rw_inherited(domain source) {
+    fn rw(domain source) {
         allow(source, self, capability, sys_rawio);
     }
 
