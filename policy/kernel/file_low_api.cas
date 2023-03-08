@@ -294,7 +294,7 @@ trait resource file_api {
         }
     }
 
-    fn dontaudit_textrel_mmap_exec_inherited(domain source) {
+    fn dontaudit_textrel_mmap_exec(domain source) {
         /// Do not audit denials for mmmap() this file as read-only and executable with text relocation only if it is inherited.
         /// This function is sensitive to the files_loose_watch tunable.
 
