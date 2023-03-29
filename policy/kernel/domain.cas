@@ -28,6 +28,7 @@ virtual domain common_domain inherits network_peer {
     //
 
     allow(this, self, process, [ fork getsched getcap getattr getpgid ]);
+    allow(this, self, fd, use);
 
     // access /proc/self/*
     allow(this, self, file, [create_file_perms rw_file_perms]);
