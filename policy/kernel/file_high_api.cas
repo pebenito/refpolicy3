@@ -425,7 +425,7 @@ trait resource common_dir_api inherits dir_api, symlink_api {
     }
 
     @alias(dontaudit_chown, dontaudit_chmod)
-    fn setattr(domain source) {
+    fn dontaudit_setattr(domain source) {
         /// Do not audit denials for setting the attributes of this directory.
         this<dir_api>.dontaudit_setattr(source);
         this<symlink_api>.dontaudit_read(source);
