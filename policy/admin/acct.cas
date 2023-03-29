@@ -1,0 +1,81 @@
+// SPDX-License-Identifier: GPL-2.0
+
+domain acct_t inherits system_app_domain {
+    /// Berkeley process accounting.
+
+    @alias(acct_exec_t)
+    extend exec {
+        file_context("/usr/bin/accton", file);
+        file_context("/usr/sbin/accton", file);
+    }
+
+    @alias(acct_data_t)
+    resource data inherits common_file, logfile {
+        /// Accounting data.
+
+        file_context("/var/account(/.*)?", any);
+        file_context("/var/log/account(/.*)?", any);
+    }
+
+    @alias(acct_initrc_exec_t)
+    resource initrc_exec inherits init_script_file {
+        /// SysV init script.
+
+        file_context("/etc/rc\.d/init\.d/psacct", file);
+    }
+
+    allow(this, self, capability, [ chown fsetid kill sys_pacct ]);
+    dontaudit(this, self, capability, sys_tty_config);
+
+    this.data.manage();
+
+    autofs_t.list();
+
+    bin_t.exec();
+
+    console_device_t.dontaudit_rw();
+
+    devpts_t<common_character_device>.dontaudit_rw();
+
+    etc_runtime_t.read();
+
+    fs_t.getattr_superblock();
+
+    init_script_t.exec.exec();
+    init_script_t.pty.rw();
+
+    proc_t.read();
+
+    shell_exec_t.exec();
+
+    sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
+
+    sysfs_t.read();
+
+    syslog.send_messages();
+
+    unpriv_userdomain.dontaudit_inherit_file_descriptors();
+
+    urandom_device_t.read();
+
+    user_home_dir_t.dontaudit_list();
+
+    usr_t.list();
+
+    optional {
+        user_cron_spool_log_t<common_file>.rw();
+
+        optional {
+            var_t.list();
+
+            var_log_t<common_dir>.rw();
+
+            wtmp_t.manage();
+            var_log_t.filetrans(this, wtmp_t, file, );
+
+        }
+    }
+}
+//domain_entry_file(initrc_t, acct_initrc_exec_t)
+//domtrans_pattern(init_run_all_scripts_domain, acct_initrc_exec_t, initrc_t)
+
