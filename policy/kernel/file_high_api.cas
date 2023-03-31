@@ -7,7 +7,7 @@
 //
 // Common file API
 //
-@derive(strategy=file_api)
+@derive(parents=file_api)
 trait resource common_file_api inherits dir_api, file_api, symlink_api {
     /// API for common regular files (file object class).
     /// This provides common access patterns for accessing files, including directory and symlink access.
@@ -399,7 +399,7 @@ trait resource common_file_api inherits dir_api, file_api, symlink_api {
 //
 // Common Directory API
 //
-@derive(strategy=dir_api)
+@derive(parents=dir_api)
 trait resource common_dir_api inherits dir_api, symlink_api {
     /// API for common directories (dir object class).
 
@@ -620,7 +620,7 @@ trait resource common_dir_api inherits dir_api, symlink_api {
     }
 }
 
-@derive(strategy=common_pipe_api)
+@derive(parents=pipe_api)
 trait resource common_pipe_api inherits dir_api, pipe_api, symlink_api {
     /// Virtual for pipes (FIFOs, fifo_file object class).
 
@@ -849,7 +849,7 @@ trait resource common_pipe_api inherits dir_api, pipe_api, symlink_api {
     }
 }
 
-@derive(strategy=named_socket_api)
+@derive(parents=named_socket_api)
 trait resource common_named_socket_api inherits dir_api, symlink_api, named_socket_api {
     /// API for common named UNIX sockets (sock_file object class).
 
@@ -1081,7 +1081,7 @@ trait resource common_named_socket_api inherits dir_api, symlink_api, named_sock
 // Higher-level file virtuals
 //
 
-@derive(strategy=common_file_api)
+@derive(parents=common_file_api)
 virtual resource common_file inherits dir, file, symlink, common_file_api {
     /// Virtual for regular files (file object class).
     /// This provides common access patterns for accessing files,
@@ -1090,21 +1090,21 @@ virtual resource common_file inherits dir, file, symlink, common_file_api {
 
 let notcommondir_class_set = [ fifo_file file sock_file blk_file chr_file ];
 
-@derive(strategy=common_dir_api)
+@derive(parents=common_dir_api)
 virtual resource common_dir inherits dir, symlink, common_dir_api {
     /// Virtual for directories (dir object class).
     /// This provides common access patterns for accessing files,
     /// including symlink access.
 }
 
-@derive(strategy=common_pipe_api)
+@derive(parents=common_pipe_api)
 virtual resource common_pipe inherits dir, pipe, symlink, common_pipe_api {
     /// Virtual for pipes (FIFOs, fifo_file object class).
     /// This provides common access patterns for accessing pipes,
     /// including directory and symlink access.
 }
 
-@derive(strategy=common_named_socket_api)
+@derive(parents=common_named_socket_api)
 virtual resource common_named_socket inherits dir, named_socket, symlink, common_named_socket_api {
     /// Low-level virtual for named UNIX sockets (sock_file object class).
     /// This provides common access patterns for accessing named sockets,

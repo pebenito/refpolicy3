@@ -537,7 +537,7 @@ virtual resource character_device inherits device_node, character_device_api {
 //
 
 // choose block_device functions if there is a collision
-@derive(strategy=block_device)
+@derive(parents=block_device)
 virtual resource common_block_device inherits block_device, dir, symlink {
     /// Common access patterns for block device files (blk_file object class).
     /// In most cases, this is the best choice to inherit for a block device.
@@ -728,7 +728,7 @@ virtual resource common_block_device inherits block_device, dir, symlink {
 }
 
 // choose character_device functions if there is a collision
-@derive(strategy=character_device)
+@derive(parents=character_device)
 virtual resource common_character_device inherits character_device, dir, symlink {
     /// Common access patterns for character device files (chr_file object class).
     /// In most cases, this is the best choice to inherit for a character device.
