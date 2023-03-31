@@ -232,7 +232,7 @@ collection kernel {
 
     fn unconfined(domain source) {
         /// Unconfined access to kernel interface.
-        this.insert_modules(source);
+        kernel.insert_modules(source);
         allow(source, kernel_t, system, [ ipc_info syslog_read syslog_mod syslog_console module_request ]);
     }
 }
