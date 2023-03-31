@@ -31,7 +31,7 @@ domain mount_t inherits system_app_domain {
     }
 
     @alias(mount_tmp_t)
-    resource tmp inherits tmpfile {
+    extend tmp {
         /// Temporary files in /tmp and /var/tmp.
     }
 
