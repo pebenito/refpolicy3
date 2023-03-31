@@ -128,31 +128,34 @@ virtual domain common_domain inherits network_peer {
 
     // domtrans == refpolicy2 run.  No more transition without either
     // a role change or role associate.
-    fn domtrans(domain source, role src_role=source.roles) {
+    //fn domtrans(domain source, role src_role=source.roles) {
+    fn domtrans(domain source) {
         this.exec.mmap_exec(source);
         allow(source, this, process, [transition]);
         type_transition(source, this.exec, process, this);
-        role_associate(src_role, this.roles);
+        //role_associate(src_role, this.roles);
     }
 
     //
     // Domain transitions using setexeccon()
     //
 
-    fn setexec_domtrans(domain source, role src_role=source.roles) {
+    //fn setexec_domtrans(domain source, role src_role=source.roles) {
+    fn setexec_domtrans(domain source) {
         allow(source, source, process, [setexec]);
         this.exec.mmap_exec(source);
         allow(source, this, process, [transition]);
-        role_associate(src_role, this.roles);
+        //role_associate(src_role, this.roles);
     }
 
     //
     // Dynamic domain transition
     //
 
-    fn dynamic_domtrans(domain source, role src_role=source.roles) {
+    //fn dynamic_domtrans(domain source, role src_role=source.roles) {
+    fn dynamic_domtrans(domain source) {
         allow(source, source, process, setcurrent);
         allow(source, this, process, [dyntransition]);
-        role_associate(src_role, this.roles);
+        //role_associate(src_role, this.roles);
     }
 }
