@@ -146,46 +146,52 @@ virtual domain userdomain inherits common_domain {
     //
     // Functions
     //
-    fn bin_setexec_rolechg_domtrans(domain source, role src_role) {
+    //fn bin_setexec_rolechg_domtrans(domain source, role src_role) {
+    fn bin_setexec_rolechg_domtrans(domain source) {
         allow(source, self, process, [setexec]);
         bin_t.mmap_exec(source);
         allow(source, this, process, [transition]);
-        this.roles.rolechg(src_role);
+        //this.roles.rolechg(src_role);
     }
 
-    fn bin_setexec_domtrans(domain source, role src_role) {
+    //fn bin_setexec_domtrans(domain source, role src_role) {
+    fn bin_setexec_domtrans(domain source) {
         allow(source, self, process, [setexec]);
         bin_t.mmap_exec(source);
         allow(source, this, process, [transition]);
-        role_associate(src_role, this.roles);
+        //role_associate(src_role, this.roles);
     }
 
-    fn bin_domtrans(domain source, role src_role) {
+    //fn bin_domtrans(domain source, role src_role) {
+    fn bin_domtrans(domain source) {
         bin_t.mmap_exec(source);
         allow(source, this, process, [transition]);
         type_transition(source, bin_t, process, this);
-        role_associate(src_role, this.roles);
+        //role_associate(src_role, this.roles);
     }
 
-    fn shell_setexec_rolechg_domtrans(domain source, role src_role) {
+    //fn shell_setexec_rolechg_domtrans(domain source, role src_role) {
+    fn shell_setexec_rolechg_domtrans(domain source) {
         allow(source, self, process, [setexec]);
         shell_exec_t.mmap_exec(source);
         allow(source, this, process, [transition]);
-        this.roles.rolechg(src_role);
+        //this.roles.rolechg(src_role);
     }
 
-    fn shell_setexec_domtrans(domain source, role src_role) {
+    //fn shell_setexec_domtrans(domain source, role src_role) {
+    fn shell_setexec_domtrans(domain source) {
         allow(source, self, process, [setexec]);
         shell_exec_t.mmap_exec(source);
         allow(source, this, process, [transition]);
-        role_associate(src_role, this.roles);
+        //role_associate(src_role, this.roles);
     }
 
-    fn shell_domtrans(domain source, role src_role) {
+    //fn shell_domtrans(domain source, role src_role) {
+    fn shell_domtrans(domain source) {
         shell_exec_t.mmap_exec(source);
         allow(source, this, process, [transition]);
         type_transition(source, shell_exec_t, process, this);
-        role_associate(src_role, this.roles);
+        //role_associate(src_role, this.roles);
     }
 
     fn unix_stream_connect(domain source) {

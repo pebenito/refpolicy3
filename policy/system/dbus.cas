@@ -93,11 +93,12 @@ virtual domain session_dbus inherits common_domain {
         source.systemd_user.unix_stream_activated(this, session_dbusd_runtime_t);
     }
 
-    fn domtrans(domain source, role src_role=source.roles) {
+    //fn domtrans(domain source, role src_role=source.roles) {
+    fn domtrans(domain source) {
         dbusd_exec_t.mmap_exec(source);
         allow(source, this, process, transition);
         type_transition(source, dbusd_exec_t, process, this);
-        role_associate(src_role, this.roles);
+        //role_associate(src_role, this.roles);
     }
 }
 

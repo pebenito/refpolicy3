@@ -78,18 +78,20 @@ virtual domain bin_login_domain inherits login_domain {
 
     associate(login_exec_t);
 
-    fn domtrans(domain source, role src_role=source.roles) {
+    //fn domtrans(domain source, role src_role=source.roles) {
+    fn domtrans(domain source) {
         login_exec_t.mmap_exec(source);
         allow(source, this, process, [transition]);
         type_transition(source, login_exec_t, process, this);
-        role_associate(src_role, this.roles);
+        //role_associate(src_role, this.roles);
     }
 
-    fn setexec_domtrans(domain source, role src_role=source.roles) {
+    //fn setexec_domtrans(domain source, role src_role=source.roles) {
+    fn setexec_domtrans(domain source) {
         allow(source, source, process, [setexec]);
         login_exec_t.mmap_exec(source);
         allow(source, this, process, [transition]);
-        role_associate(src_role, this.roles);
+        //role_associate(src_role, this.roles);
     }
 }
 

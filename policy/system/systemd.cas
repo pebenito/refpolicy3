@@ -256,11 +256,10 @@ virtual domain systemd_user inherits common_domain, systemd_common {
     //
     // Functions
     //
-    fn setexec_domtrans(domain source, role src_role=source.roles) {
+    fn setexec_domtrans(domain source) {
         allow(source, source, process, [setexec]);
         init_exec_t.mmap_exec(source);
         allow(source, this, process, [transition]);
-        role_associate(src_role, this.roles);
     }
 
     fn unix_stream_connect(domain source) {
@@ -281,7 +280,7 @@ virtual domain systemd_user inherits common_domain, systemd_common {
     }
 
     @associated_call
-    fn user_derived_domain(userdomain source) {
+    fn user_derived_domain(domain source) {
         //
         // systemd --user rules
         //
@@ -950,18 +949,16 @@ extend init_script_t {
         tmpfs_t<common_file>.manage();
     }
 
-    fn bin_domtrans(domain source, role src_role) {
+    fn bin_domtrans(domain source) {
         bin_t.mmap_exec(source);
         allow(source, this, process, [transition]);
         type_transition(source, bin_t, process, this);
-        role_associate(src_role, this.roles);
     }
 
-    fn shell_domtrans(domain source, role src_role) {
+    fn shell_domtrans(domain source) {
         shell_exec_t.mmap_exec(source);
         allow(source, this, process, [transition]);
         type_transition(source, shell_exec_t, process, this);
-        role_associate(src_role, this.roles);
     }
 }
 
