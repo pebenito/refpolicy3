@@ -1072,7 +1072,7 @@ resource root_t inherits common_dir, mountpoint, noxattr_filesystem {
 
 @hint(class=[file fifo_file sock_file], hint="Runtime directories are shared. A different type should use used, e.g. foo_t.runtime, to keep data private.")
 @hint(class=dir, perm=create, hint="Runtime directories are shared. A different type should use used, e.g. foo_t.runtime, to keep data private.")
-@derive(parents=common_dir)
+@derive(parents=[ common_dir mountpoint ])
 @alias(var_run_t)
 resource runtime_t inherits common_dir, runtimefile, mountpoint  {
     /// The runtime directory (/run and /var/run)
@@ -1222,7 +1222,6 @@ resource usr_t inherits common_file, mountpoint {
 
 @hint(class=[file fifo_file sock_file], hint="/var directories are shared. A different type should use used, e.g. foo_t.data, to keep data private.")
 @hint(class=dir, perm=create, hint="/var directories are shared. A different type should use used, e.g. foo_t.data, to keep data private.")
-@derive(parents=common_dir)
 resource var_t inherits common_dir, mountpoint {
     /// The /var directory.
 
@@ -1250,7 +1249,7 @@ resource var_lib_t inherits common_dir, mountpoint {
 
 @hint(class=[file fifo_file sock_file], hint="Lock directories are shared. A different type should use used, e.g. foo_t.lock, to keep data private.")
 @hint(class=dir, perm=create, hint="Lock directories are shared. A different type should use used, e.g. foo_t.lock, to keep data private.")
-@derive(parents=common_dir)
+@derive(parents=[ common_dir mountpoint ])
 resource var_lock_t inherits common_dir, lockfile, mountpoint {
     /// The /var/lock directory.
 

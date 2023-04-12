@@ -7,7 +7,6 @@
 //
 // Common file API
 //
-@derive(parents=file_api)
 trait resource common_file_api inherits dir_api, file_api, symlink_api {
     /// API for common regular files (file object class).
     /// This provides common access patterns for accessing files, including directory and symlink access.
@@ -399,7 +398,6 @@ trait resource common_file_api inherits dir_api, file_api, symlink_api {
 //
 // Common Directory API
 //
-@derive(parents=dir_api)
 trait resource common_dir_api inherits dir_api, symlink_api {
     /// API for common directories (dir object class).
 
@@ -620,7 +618,6 @@ trait resource common_dir_api inherits dir_api, symlink_api {
     }
 }
 
-@derive(parents=pipe_api)
 trait resource common_pipe_api inherits dir_api, pipe_api, symlink_api {
     /// Virtual for pipes (FIFOs, fifo_file object class).
 
@@ -849,7 +846,6 @@ trait resource common_pipe_api inherits dir_api, pipe_api, symlink_api {
     }
 }
 
-@derive(parents=named_socket_api)
 trait resource common_named_socket_api inherits dir_api, symlink_api, named_socket_api {
     /// API for common named UNIX sockets (sock_file object class).
 

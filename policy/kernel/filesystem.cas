@@ -238,7 +238,6 @@ resource debugfs inherits pseudo_filesystem {
 //
 @hint(class=[file fifo_file sock_file lnk_file blk_file], hint="Only directories should have this label.")
 @hint(class=chr_file, hint="This is a generic context. A different type should use used, e.g. foo_t.pty that inherits pty, login_pty, or user_pty. The login program should use term.open_pty(), to keep data private.")
-@derive(parents=common_dir)
 resource devpts_t inherits common_dir, pseudo_filesystem, mountpoint {
     file_context("/dev/pts", dir, system_u:object_r:devpts_t:s0-mls_systemhigh);
     // file_context("/dev/pts(/.*)?", any, <<none>>);
@@ -487,7 +486,6 @@ resource romfs_t inherits noxattr_filesystem {
     genfscon("cramfs", "/", any);
 }
 
-@derive(parents=common_pipe)
 resource rpc_pipefs_t inherits pseudo_filesystem, common_pipe, mountpoint {
     /// RPC filesystem for communication between the kernel and userspace.
     // file_context("/var/lib/nfs/rpc_pipefs(/.*)?", any, <<none>>);
@@ -656,7 +654,6 @@ resource vxfs_t inherits noxattr_filesystem {
 
 @hint(class=[file fifo_file sock_file], hint="Tmpfs directories are shared. A different type should use used, e.g. foo_t.tmpfs, to keep data private.")
 @hint(class=dir, perm=create, hint="Tmpfs directories are shared. A different type should use used, e.g. foo_t.tmpfs, to keep data private.")
-@derive(parents=common_dir)
 resource tmpfs_t inherits xattr_filesystem, common_dir, polyinstantiate_parent {
     /// tmpfs filesystem.
 
