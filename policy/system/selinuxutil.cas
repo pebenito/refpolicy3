@@ -509,6 +509,14 @@ module selinuxutil_base {
     resource selinux_policy_t;
 }
 
+module semanage {
+    domain semanage_t;
+}
+
+module setfiles {
+    domain setfiles_t;
+}
+
 module selinuxutil {
     module checkpolicy;
     module selinuxutil_base;
@@ -518,12 +526,4 @@ module selinuxutil {
     module run_init;
     module semanage;
     module setfiles;
-}
-
-module semanage {
-    domain semanage;
-}
-
-module setfiles {
-    domain setfiles_t;
 }

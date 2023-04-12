@@ -12,17 +12,19 @@ let files_loose_execmod = false;
 // General object class sets
 //
 
-// All directory and file classes
-let dir_file_class_set = [ dir file_class_set ];
-
-// All non-directory file classes.
-let file_class_set = [ devfile_class_set notdevfile_class_set ];
+let devfile_class_set = [ blk_file chr_file ];
 
 // Non-device file classes.
 let notdevfile_class_set = [ fifo_file file lnk_file sock_file ];
 
 // Non-device file classes.
 let dir_notdevfile_class_set = [ dir notdevfile_class_set ];
+
+// All non-directory file classes.
+let file_class_set = [ devfile_class_set notdevfile_class_set ];
+
+// All directory and file classes
+let dir_file_class_set = [ dir file_class_set ];
 
 //
 // Low-level regular file API
