@@ -315,7 +315,7 @@ domain semanage_t inherits user_app_domain {
     }
 
     @alias(semanage_tmp_t)
-    resource tmp inherits tmpfile {
+    extend tmp {
         /// Temporary files in /tmp and /var/tmp.
     }
 
