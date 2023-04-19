@@ -315,9 +315,7 @@ domain semanage_t inherits user_app_domain {
     }
 
     @alias(semanage_tmp_t)
-    extend tmp {
-        /// Temporary files in /tmp and /var/tmp.
-    }
+    extend tmp inherits {}
 
     @alias(semanage_trans_lock_t)
     resource trans_lock inherits common_file {

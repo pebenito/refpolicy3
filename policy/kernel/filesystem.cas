@@ -141,6 +141,11 @@ virtual resource pseudo_filesystem inherits filesystem, common_file_api {
     /// Pseudo filesystems that have missing or partial extended attribute support.
 }
 
+
+virtual resource sysfs_entry inherits common_file_api {
+    /// Virtual for sysfs entries.
+}
+
 virtual resource sysctl_entry inherits common_file_api {
     /// Virtual for sysctls.
 }
@@ -652,9 +657,10 @@ resource vxfs_t inherits noxattr_filesystem {
     genfscon("vxfs", "/", any);
 }
 
+// TODO: polyinstantiate_parent
 @hint(class=[file fifo_file sock_file], hint="Tmpfs directories are shared. A different type should use used, e.g. foo_t.tmpfs, to keep data private.")
 @hint(class=dir, perm=create, hint="Tmpfs directories are shared. A different type should use used, e.g. foo_t.tmpfs, to keep data private.")
-resource tmpfs_t inherits xattr_filesystem, common_dir, polyinstantiate_parent {
+resource tmpfs_t inherits xattr_filesystem, common_dir  {
     /// tmpfs filesystem.
 
     device_t.associate(this);

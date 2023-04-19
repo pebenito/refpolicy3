@@ -4,7 +4,7 @@
 // Concrete types
 //
 
-resource auth_cache_t inherits logfile, common_sock_file {
+resource auth_cache_t inherits logfile, common_named_socket {
     file_context("/var/cache/coolkey(/.*)?", any);
 }
 

@@ -53,9 +53,7 @@ domain alsa_t inherits system_app_domain {
     }
 
     @alias(alsa_tmp_t)
-    extend tmp {
-        /// Temporary files.
-    }
+    extend tmp {}
 
     @alias(alsa_tmpfs_t)
     resource tmpfs inherits tmpfsfile {

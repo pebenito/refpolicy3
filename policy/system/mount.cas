@@ -31,9 +31,7 @@ domain mount_t inherits system_app_domain {
     }
 
     @alias(mount_tmp_t)
-    extend tmp {
-        /// Temporary files in /tmp and /var/tmp.
-    }
+    extend tmp {}
 
     //
     // Policy

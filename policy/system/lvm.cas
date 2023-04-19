@@ -163,9 +163,7 @@ domain lvm_t inherits system_app_domain {
     }
 
     @alias(lvm_tmp_t)
-    extend tmp inherits common_named_socket {
-        /// Temporary files in /tmp and /var/tmp.
-    }
+    extend tmp inherits common_named_socket {}
 
     @alias(lvm_tmpfs_t)
     resource tmpfs inherits tmpfsfile {
