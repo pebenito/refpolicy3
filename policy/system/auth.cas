@@ -8,7 +8,7 @@ resource auth_cache_t inherits logfile, common_named_socket {
     file_context("/var/cache/coolkey(/.*)?", any);
 }
 
-resource chkpwd_t inherits app_domain {
+domain chkpwd_t inherits app_domain {
     /// pam_unix_chkpwd
 
     extend exec {
@@ -439,7 +439,7 @@ module pam {
     domain chkpwd_t;
     domain pam_console_t;
     resource pam_motd_runtime_t;
-    resource updpwd_t;
+    domain updpwd_t;
 }
 
 module pam_timestamp {
