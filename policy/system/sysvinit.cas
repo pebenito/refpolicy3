@@ -4,7 +4,7 @@
 // Concrete Types
 //
 @alias(init_t)
-domain sysvinit_t {
+domain sysvinit_t inherits init {
     /// SysV init program (pid 1)
 
     //
@@ -139,14 +139,14 @@ domain sysvinit_t {
         this.initctl.rw(source);
 
         // upstart uses a datagram socket instead of initctl pipe
-        allow(source, self, unix_dgram_socket, create_socket_perms);
+        allow(source, self, unix_dgram_socket, manage_socket_perms);
         allow(source, this, unix_dgram_socket, sendto);
         //576913
         allow(source, this, unix_stream_socket, connectto);
 
         bin_t.exec(source);
 
-        runtime_t.search(source);
+        runtime_t.list(source);
     }
 }
 

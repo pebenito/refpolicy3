@@ -15,11 +15,16 @@ let socket_class_set = [ tcp_socket udp_socket rawip_socket netlink_socket packe
 // Socket permission sets
 //
 
-let read_inherited_socket_perms = [getattr read ioctl getopt shutdown];
-let write_inherited_socket_perms = [getattr append write ioctl getopt shutdown];
-let rw_inherited_socket_perms = [getattr read append write ioctl shutdown];
-let manage_socket_perms = [create ioctl read getattr write setattr append bind getopt setopt shutdown];
-let manage_stream_socket_perms = [create ioctl read getattr write setattr append bind getopt setopt shutdown listen accept];
+let read_inherited_socket_perms = [ getattr read ioctl getopt shutdown ];
+let write_inherited_socket_perms = [ getattr append write ioctl getopt shutdown ];
+let rw_inherited_socket_perms = [ getattr read append write ioctl shutdown ];
+let manage_socket_perms = [ create ioctl read getattr write setattr append bind getopt setopt shutdown ];
+let manage_stream_socket_perms = [create ioctl read getattr write setattr append bind getopt setopt shutdown listen accept ];
+
+let read_inherited_netlink_socket_perms = [ read_inherited_socket_perms nlmsg_read ];
+let write_inherited_netlink_socket_perms = [ write_inherited_socket_perms nlmsg_write ];
+let rw_inherited_netlink_socket_perms = [ rw_inherited_socket_perms nlmsg_read nlmsg_write ];
+let manage_netlink_socket_perms = [ manage_socket_perms nlmsg_read nlmsg_write ];
 
 //
 // Low-level api
@@ -125,7 +130,7 @@ virtual resource network_node {
         this.receive(source);
     }
 
-    fn stcp_bind(domain source) {
+    fn sctp_bind(domain source) {
         /// Bind SCTP sockets to this node.
         allow(source, this, tcp_socket, bind);
     }
@@ -176,12 +181,12 @@ virtual resource network_packet {
 
     fn forward_in(network_peer peer) {
         /// Allow the network peer traffic to forward incoming traffic with this packet.
-        allow(peer, this, packet, forward_in);
+        allow(peer<domain>, this, packet, forward_in);
     }
 
     fn forward_out(network_peer peer) {
         /// Allow the network peer traffic to forward incoming traffic with this packet.
-        allow(peer, this, packet, forward_out);
+        allow(peer<domain>, this, packet, forward_out);
     }
 
     fn forward_inout(network_peer peer) {
@@ -218,66 +223,66 @@ virtual resource network_peer {
 
     fn raw_recvfrom(domain source) {
         /// Receive a peer raw IP packet using netlabel.
-        allow(source, this, peer, recvfrom);
+        allow(source, this, peer, recv);
         allow(source, this, rawip_socket, recvfrom);
-        allow(source, self, association, send);
-        allow(source, this, association, receive);
+        allow(source, self, association, sendto);
+        allow(source, this, association, recvfrom);
     }
 
     fn dontaudit_raw_recvfrom(domain source) {
         /// Do not audit denials for receiving a peer raw IP packet using netlabel.
-        dontaudit(source, this, peer, recvfrom);
+        dontaudit(source, this, peer, recv);
         dontaudit(source, this, rawip_socket, recvfrom);
-        dontaudit(source, self, association, send);
-        dontaudit(source, this, association, receive);
+        dontaudit(source, self, association, sendto);
+        dontaudit(source, this, association, recvfrom);
     }
 
     fn sctp_recvfrom(domain source) {
         /// Receive from a peer SCTP connection using netlabel.
-        allow(source, this, peer, recvfrom);
+        allow(source, this, peer, recv);
         allow(source, this, sctp_socket, recvfrom);
-        allow(source, self, association, send);
-        allow(source, this, association, receive);
+        allow(source, self, association, sendto);
+        allow(source, this, association, recvfrom);
     }
 
     fn dontaudit_sctp_recvfrom(domain source) {
         /// Do not audit denials for receiving from a peer SCTP connection using netlabel.
-        dontaudit(source, this, peer, recvfrom);
+        dontaudit(source, this, peer, recv);
         dontaudit(source, this, sctp_socket, recvfrom);
-        dontaudit(source, self, association, send);
-        dontaudit(source, this, association, receive);
+        dontaudit(source, self, association, sendto);
+        dontaudit(source, this, association, recvfrom);
     }
 
     fn tcp_recvfrom(domain source) {
         /// Receive from a peer TCP connection using netlabel.
-        allow(source, this, peer, recvfrom);
+        allow(source, this, peer, recv);
         allow(source, this, tcp_socket, recvfrom);
-        allow(source, self, association, send);
-        allow(source, this, association, receive);
+        allow(source, self, association, sendto);
+        allow(source, this, association, recvfrom);
     }
 
     fn dontaudit_tcp_recvfrom(domain source) {
         /// Do not audit denials for receiving from a peer TCP connection using netlabel.
-        dontaudit(source, this, peer, recvfrom);
+        dontaudit(source, this, peer, recv);
         dontaudit(source, this, tcp_socket, recvfrom);
-        dontaudit(source, self, association, send);
-        dontaudit(source, this, association, receive);
+        dontaudit(source, self, association, sendto);
+        dontaudit(source, this, association, recvfrom);
     }
 
     fn udp_recvfrom(domain source) {
         /// Receive a peer UDP datagram using netlabel.
-        allow(source, this, peer, recvfrom);
+        allow(source, this, peer, recv);
         allow(source, this, tcp_socket, recvfrom);
-        allow(source, self, association, send);
-        allow(source, this, association, receive);
+        allow(source, self, association, sendto);
+        allow(source, this, association, recvfrom);
     }
 
     fn dontaudit_udp_recvfrom(domain source) {
         /// Do not audit denials for receiving a peer UDP datagram using netlabel.
-        dontaudit(source, this, peer, recvfrom);
+        dontaudit(source, this, peer, recv);
         dontaudit(source, this, tcp_socket, recvfrom);
-        dontaudit(source, self, association, send);
-        dontaudit(source, this, association, receive);
+        dontaudit(source, self, association, sendto);
+        dontaudit(source, this, association, recvfrom);
     }
 
     fn unconfined(domain source) {

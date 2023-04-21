@@ -24,8 +24,8 @@ domain kernel_t inherits network_peer {
     allow(this, self, sem, create_sem_perms);
     allow(this, self, msg, [send receive]);
     allow(this, self, msgq, create_msgq_perms);
-    allow(this, self, unix_dgram_socket, [create_socket_perms sendto]);
-    allow(this, self, unix_stream_socket, [create_stream_socket_perms connectto]);
+    allow(this, self, unix_dgram_socket, [manage_socket_perms sendto]);
+    allow(this, self, unix_stream_socket, [manage_stream_socket_perms connectto]);
     allow(this, self, fifo_file, rw_fifo_file_perms);
     allow(this, self, sock_file, read_sock_file_perms);
     allow(this, self, fd, use);

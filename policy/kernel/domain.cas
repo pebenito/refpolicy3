@@ -143,7 +143,7 @@ virtual domain common_domain inherits network_peer {
 
     //fn setexec_domtrans(domain source, role src_role=source.roles) {
     fn setexec_domtrans(domain source) {
-        allow(source, source, process, [setexec]);
+        allow(source, self, process, [setexec]);
         this.exec.mmap_exec(source);
         allow(source, this, process, [transition]);
         //role_associate(src_role, this.roles);
@@ -155,7 +155,7 @@ virtual domain common_domain inherits network_peer {
 
     //fn dynamic_domtrans(domain source, role src_role=source.roles) {
     fn dynamic_domtrans(domain source) {
-        allow(source, source, process, setcurrent);
+        allow(source, self, process, setcurrent);
         allow(source, this, process, [dyntransition]);
         //role_associate(src_role, this.roles);
     }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 
-domain systemd_resolved_t inherits systemd_app_domain {
+domain systemd_resolved_t inherits daemon {
     /// Network name resolution management.
 
     //
@@ -12,7 +12,7 @@ domain systemd_resolved_t inherits systemd_app_domain {
     }
 
     @alias(systemd_resolved_runtime_t)
-    resource runtime inherits runtimefile, common_pipe, common_named_socket {
+    extend runtime {
         /// Runtime files in /run/systemd/resolve.
         file_context("/run/systemd/resolve(/.*)?", any);
     }

@@ -71,7 +71,7 @@ virtual domain session_dbus inherits common_domain {
         allow(source, this, dbus, [ send_msg acquire_svc ]);
         allow(source, this, fd, use);
 
-        dontaudit(source, this, netlink_selinux_socket, rw_socket_perms);
+        dontaudit(source, this, netlink_selinux_socket, rw_inherited_socket_perms);
 
         session_dbusd_home_t.admin(source);
         user_home_dir_t.filetrans(source, session_dbusd_home_t, dir, ".dbus");
@@ -85,7 +85,7 @@ virtual domain session_dbus inherits common_domain {
         this.ps(source);
         allow(source, this, process, [ ptrace signal_perms ]);
 
-        allow(this, source, process, sigkill);
+        allow(this, source<resource>, process, sigkill);
 
         source.bin_domtrans(this);
         source.shell_domtrans(this);
@@ -300,7 +300,7 @@ domain system_dbusd_t inherits daemon {
 
     fn unconfined(domain source) {
         /// Unconfined access to dbus (system bus and user session buses).
-        domain.send_msg();
+        domain.dbus_send();
         allow(source, [ this session_dbus ], dbus, acquire_svc);
     }
 }
@@ -311,7 +311,7 @@ domain system_dbusd_t inherits daemon {
 extend domain {
     fn dbus_send(domain source) {
         /// Send dbus messages to this domain.
-        allow(source, this, dbus, send_msg);
+        allow(source, this<resource>, dbus, send_msg);
 
         if (!dbus_broker_system_bus) {
             // dbus-service checks send_msg on method returns.
@@ -326,7 +326,7 @@ extend daemon {
     this.domtrans(system_dbusd_t);
     this.ps(system_dbusd_t);
 
-    dontaudit(this, system_dbusd_t, netlink_selinux_socket, rw_socket_perms);
+    dontaudit(this, system_dbusd_t, netlink_selinux_socket, rw_inherited_socket_perms);
     system_dbusd_t.client(this);
     system_dbusd_t.own_default_service(this);
 }

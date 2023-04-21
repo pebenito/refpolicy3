@@ -257,7 +257,7 @@ virtual domain systemd_user inherits common_domain, systemd_common {
     // Functions
     //
     fn setexec_domtrans(domain source) {
-        allow(source, source, process, [setexec]);
+        allow(source, source<resource>, process, [setexec]);
         init_exec_t.mmap_exec(source);
         allow(source, this, process, [transition]);
     }
@@ -284,7 +284,7 @@ virtual domain systemd_user inherits common_domain, systemd_common {
         //
         // systemd --user rules
         //
-        allow(this, source, process, [ setsched rlimitinh signal_perms ]);
+        allow(this, source<resource>, process, [ setsched rlimitinh signal_perms ]);
 
         source.ps(this);
 
@@ -332,7 +332,7 @@ virtual domain systemd_user inherits common_domain, systemd_common {
 //role $1_r types $1_systemd_t;
 // These should be handled with general socket activation perms
 // but the user daemons need a virtual:
-//allow $1_systemd_t systemd_user_unix_stream_activated_socket_type:unix_stream_socket { create_socket_perms listen };
+//allow $1_systemd_t systemd_user_unix_stream_activated_socket_type:unix_stream_socket { manage_socket_perms listen };
 //allow $1_systemd_t systemd_user_activated_sock_file_type:dir manage_dir_perms;
 //allow $1_systemd_t systemd_user_activated_sock_file_type:sock_file manage_sock_file_perms;
 }
@@ -402,9 +402,9 @@ domain systemd_t inherits init {
     allow(this, self, fifo_file, rw_fifo_file_perms);
     allow(this, self, unix_dgram_socket, [ manage_socket_perms sendto ]);
     allow(this, self, unix_stream_socket, [ manage_stream_socket_perms connectto ]);
-    allow(this, self, netlink_audit_socket, [ nlmsg_relay create_socket_perms ]);
+    allow(this, self, netlink_audit_socket, [ nlmsg_relay manage_socket_perms ]);
     allow(this, self, netlink_selinux_socket, manage_socket_perms);
-    allow(this, self, udp_socket, create_socket_perms);
+    allow(this, self, udp_socket, manage_socket_perms);
     allow(this, self, netlink_route_socket, [ manage_socket_perms nlmsg_read nlmsg_write ]);
     allow(this, self, key, [ search setattr write ]);
     allow(this, self, bpf, [ map_create map_read map_write prog_load prog_run ]);
@@ -757,12 +757,12 @@ domain systemd_t inherits init {
         /// Admin systemd (--system and --user).
         allow(source, this, system, admin_systemd_perms);
 
-        this.telinit(source);
-
         // for /etc/fstab
         etc_t<systemdunit>.admin(source);
 
         null_device_t<systemdunit>.admin(source);
+
+        services.telinit(source);
 
         systemdunit.admin(source);
 
@@ -1018,7 +1018,7 @@ extend syslogd_t {
 
     kernel_t.rw_inherited_stream_sockets();
     kernel_t.rw_inherited_datagram_sockets();
-    allow(this, kernel_t, netlink_audit_socket, [ rw_socket_perms nlmsg_read nlmsg_write ]);
+    allow(this, kernel_t, netlink_audit_socket, [ rw_inherited_socket_perms nlmsg_read nlmsg_write ]);
 
     kmsg_device_t.rw();
 

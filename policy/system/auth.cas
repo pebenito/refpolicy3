@@ -455,5 +455,5 @@ module auth {
     module auth_extra;
     module pam;
     module pam_timestamp;
-    module utempter_t;
+    module utempter;
 }

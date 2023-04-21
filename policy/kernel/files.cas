@@ -71,7 +71,7 @@ virtual resource polyinstantiated {
 
     fn poly_member(domain source, dir member) {
         // equivalent of typeattribute member this.memberdirs;
-        type_member(source, this, dir, member);
+        //type_member(source, this, dir, member);
     }
 
     fn setup_poly(domain source) {
@@ -93,7 +93,7 @@ virtual resource polyinstantiated {
 
         // Need to give permission to create directories where applicable
         allow(source, self, process, setfscreate);
-        allow(source, this.memberdirs, [create setattr relabelto]);
+        allow(source, this.memberdirs, dir, [create setattr relabelto]);
         allow(source, this, dir, [write add_name open]);
         allow(source, this.parentdirs, dir, [rw_dir_perms relabel_dir_perms]);
 

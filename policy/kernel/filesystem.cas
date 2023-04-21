@@ -6,24 +6,24 @@ virtual resource filesystem {
     fn associate(any_file_type object) {
         /// Associate a file to this filesystem.
         /// This will allow files with the object label to exist on this filesystem.
-        allow(object, this, filesystem, [associate]);
+        allow(object<domain>, this, filesystem, [associate]);
     }
 
     fn dontaudit_associate(any_file_type object) {
         /// Do not audit denials for associating a file to this filesystem.
-        dontaudit(object, this, filesystem, [associate]);
+        dontaudit(object<domain>, this, filesystem, [associate]);
     }
 
     @alias(statfs)
     fn getattr_superblock(domain source) {
         /// Get the attributes of the superblock.
-        allow(object, this, filesystem, [getattr]);
+        allow(source, this, filesystem, [getattr]);
     }
 
     @alias(dontaudit_statfs)
     fn dontaudit_getattr_superblock(domain source) {
         /// Do not audit denials for getting the attributes of the superblock.
-        dontaudit(object, this, filesystem, [getattr]);
+        dontaudit(source, this, filesystem, [getattr]);
     }
 
     fn mount(domain source) {

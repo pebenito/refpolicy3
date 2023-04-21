@@ -38,11 +38,14 @@ let mmap_read_file_perms = [ getattr open map read ioctl ];
 let mmap_exec_inherited_file_perms = [ getattr map read execute ioctl ];
 let mmap_exec_file_perms = [ getattr open map read execute ioctl ];
 let textrel_mmap_exec_inherited_file_perms = [ getattr map read execute execmod ioctl ];
+let textrel_mmap_exec_file_perms = [ getattr open map read execute execmod ioctl ];
 let exec_file_perms = [ getattr open map read execute ioctl execute_no_trans ];
 let append_inherited_file_perms = [ getattr append lock ioctl ];
 let append_file_perms = [ getattr open append lock ioctl ];
 let write_inherited_file_perms = [ getattr write append lock ioctl ];
 let write_file_perms = [ getattr open write append lock ioctl ];
+let mmap_write_inherited_file_perms = [ getattr write append lock ioctl map ];
+let mmap_write_file_perms = [ getattr open write append lock ioctl map ];
 let rw_inherited_file_perms = [ getattr read write append ioctl lock ];
 let rw_file_perms = [ open rw_inherited_file_perms ];
 let mmap_rw_inherited_file_perms = [ getattr map read write ioctl ];
@@ -915,7 +918,7 @@ trait resource dir_api {
     @alias(dontaudit_stat)
     fn dontaudit_getattr(domain source) {
         /// Do not audit denials for getting the attributes of this directory.
-        dontaudit_allow(source, this, dir, getattr_dir_perms);
+        dontaudit(source, this, dir, getattr_dir_perms);
     }
 
     @alias(chown, chmod)
@@ -962,45 +965,45 @@ trait resource dir_api {
     @alias(append_inherited)
     fn add_entry_inherited(domain source) {
         /// Add entries to this directory only if it is inherited.
-        allow(self, this, dir, add_entry_inherited_dir_perms);
+        allow(source, this, dir, add_entry_inherited_dir_perms);
     }
 
     @alias(dontaudit_append_inherited)
     fn dontaudit_add_entry_inherited(domain source) {
         /// Do not audit denials for adding entries to this directory only if it is inherited.
-        dontaudit(self, this, dir, add_entry_inherited_dir_perms);
+        dontaudit(source, this, dir, add_entry_inherited_dir_perms);
     }
 
     @alias(append)
     fn add_entry(domain source) {
         /// Add entries to this directory.
-        allow(self, this, dir, add_entry_dir_perms);
+        allow(source, this, dir, add_entry_dir_perms);
     }
 
     @alias(dontaudit_append)
     fn dontaudit_add_entry(domain source) {
         /// Do not audit denials for adding entries to this directory.
-        dontaudit(self, this, dir, add_entry_dir_perms);
+        dontaudit(source, this, dir, add_entry_dir_perms);
     }
 
     fn delete_entry_inherited(domain source) {
         /// Delete entries from this directory only if it is inherited.
-        allow(self, this, dir, delete_entry_inherited_dir_perms);
+        allow(source, this, dir, delete_entry_inherited_dir_perms);
     }
 
     fn dontaudit_delete_entry_inherited(domain source) {
         /// Do not audit denials for deleting entries from this directory only if it is inherited.
-        dontaudit(self, this, dir, delete_entry_inherited_dir_perms);
+        dontaudit(source, this, dir, delete_entry_inherited_dir_perms);
     }
 
     fn delete_entry(domain source) {
         /// Delete entries from this directory.
-        allow(self, this, dir, delete_entry_dir_perms);
+        allow(source, this, dir, delete_entry_dir_perms);
     }
 
     fn dontaudit_delete_entry(domain source) {
         /// Do not audit denials for deleting entries from this directory.
-        dontaudit(self, this, dir, delete_entry_dir_perms);
+        dontaudit(source, this, dir, delete_entry_dir_perms);
     }
 
     fn write_inherited(domain source) {
@@ -1008,12 +1011,12 @@ trait resource dir_api {
         /// This function typically is only useful if the code is checking to see if this directory
         /// is writable.  The add_entry_inherited(), delete_entry_inherited(), or rw_inherited()
         /// functions are better choices in most cases.
-        allow(self, this, dir, write_inherited_dir_perms);
+        allow(source, this, dir, write_inherited_dir_perms);
     }
 
     fn dontaudit_write_inherited(domain source) {
         /// Do not audit denials for writing this directory only if it is inherited.
-        dontaudit(self, this, dir, write_inherited_dir_perms);
+        dontaudit(source, this, dir, write_inherited_dir_perms);
     }
 
     fn write(domain source) {
@@ -1361,7 +1364,7 @@ trait resource pipe_api {
     }
 
     @alias(dontaudit_stat)
-    fn dontuadit_getattr(domain source) {
+    fn dontaudit_getattr(domain source) {
         /// Do not audit denials for getting the attributes of this pipe.
         dontaudit(source, this, fifo_file, getattr_fifo_file_perms);
     }

@@ -6,13 +6,13 @@ collection audit {
     fn send_messages(domain source) {
         /// Send audit messages to the kernel audit subsystem.
         allow(source, self, capability, audit_write);
-        allow(source, self, netlink_audit_socket, [read_netlink_socket_perms nlmsg_relay ]);
+        allow(source, self, netlink_audit_socket, [read_inherited_netlink_socket_perms nlmsg_relay ]);
     }
 
     fn dontaudit_send_messages(domain source) {
         /// Do not audit denials for sending audit messages to the kernel audit subsystem.
         dontaudit(source, self, capability, audit_write);
-        dontaudit(source, self, netlink_audit_socket, [read_netlink_socket_perms nlmsg_relay ]);
+        dontaudit(source, self, netlink_audit_socket, [read_inherited_netlink_socket_perms nlmsg_relay ]);
     }
 
     fn set_loginuid(domain source) {
@@ -20,12 +20,12 @@ collection audit {
         /// This should only be used by login programs.  Other programs that change the
         /// process UID, such as su and sudo, should not do this.
         allow(source, self, capability, audit_control);
-        allow(source, self, netlink_audit_socket, [read_netlink_socket_perms nlmsg_relay ]);
+        allow(source, self, netlink_audit_socket, [read_inherited_netlink_socket_perms nlmsg_relay ]);
     }
 
     fn set_tty_auditing(domain source) {
         /// Set TTY auditing.
-        allow(source, self, netlink_audit_socket, [read_netlink_socket_perms nlmsg_tty_audit ]);
+        allow(source, self, netlink_audit_socket, [read_inherited_netlink_socket_perms nlmsg_tty_audit ]);
     }
 
     fn set_parameters(domain source) {
@@ -288,7 +288,7 @@ collection network {
         /// network interfaces (netif_t).  Port connection access will need to be
         /// added by caller to complete the access.
 
-        allow(source, self, tcp_socket, create_socket_perms);
+        allow(source, self, tcp_socket, manage_socket_perms);
 
         // Certificates for TLS
         cert_t.read(source);
@@ -312,7 +312,7 @@ collection network {
         /// network interfaces (netif_t).  Port binding access will need to be
         /// added by caller to complete the access.
 
-        allow(source, self, tcp_socket, create_stream_socket_perms);
+        allow(source, self, tcp_socket, manage_stream_socket_perms);
 
         // Certificates for TLS
         cert_t.read(source);
@@ -330,7 +330,7 @@ collection network {
         /// This includes access for default network nodes (node_t) and default
         /// network interfaces (netif_t).  Assumes bidirectional communication.
 
-        allow(source, self, udp_socket, create_socket_perms);
+        allow(source, self, udp_socket, manage_socket_perms);
 
         // /etc/hosts
         etc_t.read(source);
@@ -352,7 +352,7 @@ collection network {
         /// added by caller to complete the access.    Assumes bidirectional
         /// communication.
 
-        allow(source, self, udp_socket, create_socket_perms);
+        allow(source, self, udp_socket, manage_socket_perms);
 
         netif_t.sendrecv(source);
 
@@ -761,7 +761,7 @@ collection selinux {
     fn get_access_decisions(domain source) {
         /// Get SELinux access decisions.
         /// This is typically used by userspace object managers.
-        allow(source, self, netlink_selinux_socket, create_socket_perms);
+        allow(source, self, netlink_selinux_socket, manage_socket_perms);
 
         libs.libselinux_linked(source);
 
@@ -773,7 +773,7 @@ collection selinux {
     @alias(dontaudit_compute_access_vectors, dontaudit_compute_av)
     fn dontaudit_get_access_decisions(domain source) {
         /// Do not audit denials for getting SELinux access decisions.
-        dontaudit(source, self, netlink_selinux_socket, create_socket_perms);
+        dontaudit(source, self, netlink_selinux_socket, manage_socket_perms);
 
         dontaudit(source, security_t, security, compute_av);
 
@@ -875,7 +875,7 @@ collection selinux {
         allow(source, self, netlink_selinux_socket, manage_socket_perms);
 
         // New status page:
-        selinux.use_status_page(spirce);
+        selinux.use_status_page(source);
 
         libs.libselinux_linked(source);
     }
@@ -922,7 +922,7 @@ collection services {
         /// to control specific units.
 
         dontaudit(source, self, capability, [ net_admin sys_resource ]);
-        allow(this, self, process, signal);
+        allow(source, self, process, signal);
 
         // the command is a regular bin
         bin_t.exec(source);

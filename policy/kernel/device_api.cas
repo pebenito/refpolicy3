@@ -302,7 +302,7 @@ let manage_chr_file_perms = [ create open getattr setattr rename link unlink loc
 let relabelfrom_chr_file_perms = [ getattr relabelfrom ];
 let relabelto_chr_file_perms = [ getattr relabelto ];
 let relabel_chr_file_perms = [ getattr relabelfrom relabelto ];
-let unlabeled_chr_file_perms = [ manage_chr_file_perms relabel_chr_file_perms read write append map execute quotaon mounton execmod watch ];
+let unconfined_chr_file_perms = [ manage_chr_file_perms relabel_chr_file_perms read write append map execute quotaon mounton execmod watch ];
 
 trait resource character_device_api {
     /// The low-level API for character device files (chr_file object class)
