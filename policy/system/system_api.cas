@@ -1027,12 +1027,11 @@ collection term {
 
         bsdpty_device_t.dontaudit_rw(source);
 
-        ptmx.rw(source);
+        ptmx_t.rw(source);
 
         devpts_t.list(source);
         devpts_t.getattr_superblock(source);
-
-        resource_transition(ptydev, source, devpts_t, chr_file);
+        devpts_t.filetrans(source, ptydev, chr_file);
     }
 }
 

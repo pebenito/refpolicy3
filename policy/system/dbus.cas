@@ -283,7 +283,7 @@ domain system_dbusd_t inherits daemon {
     fn client(domain source) {
         /// Connect to the system dbus as a client.
         allow(source, [ this self ], dbus, send_msg);
-        allow(this, source, dbus, send_msg);
+        allow(this, source<resource>, dbus, send_msg);
 
         this.unix_stream_connect(source); runtime_t.list(source);
 

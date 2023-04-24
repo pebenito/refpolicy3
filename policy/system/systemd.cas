@@ -856,9 +856,7 @@ extend app_domain {
 extend bin_t {}
 
 extend daemon {
-    resource unit inherits systemdunit {
-        /// The systemd unit for this daemon.
-    }
+    extend unit inherits systemdunit {}
 
     allow(this, init_t, unix_stream_socket, rw_inherited_socket_perms);
     allow(this, init_t, unix_dgram_socket, sendto);
