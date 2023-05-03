@@ -382,7 +382,6 @@ collection network {
         network.read_dns_server_config(source);
 
         node_t.sendrecv(source);
-
     }
 
     fn use_ldap(domain source) {
@@ -404,14 +403,27 @@ collection network {
     fn use_portmap(domain source) {
         /// IP network perms for portmap connections.
 
-        network.tcp_client(source);
-        network.tcp_server(source);
-        network.udp_client(source);
-        network.udp_server(source);
+        allow(source, self, tcp_socket, manage_stream_socket_perms);
+        allow(source, self, udp_socket, manage_socket_perms);
+
+        // Certificates for TLS
+        cert_t.read(source);
+
+        // /etc/hosts
+        etc_t.read(source);
+
+        netif_t.sendrecv(source);
+
+        netlabel_peer_t.tcp_recvfrom(source);
+        netlabel_peer_t.udp_recvfrom(source);
 
         network_port.dontaudit_tcp_bind(source);
         network_port.dontaudit_tcp_connect(source);
         network_port.dontaudit_udp_bind(source);
+
+        node_t.sendrecv(source);
+        node_t.tcp_bind(source);
+        node_t.udp_bind(source);
 
         portmap_port_t.tcp_connect(source);
 
