@@ -602,13 +602,13 @@ trait resource common_dir_api inherits dir_api, symlink_api {
         /// Create a file-like object in this directory with a private type.
         /// This does not allow deletions from the directory.
         allow(source, this, dir, add_entry_dir_perms);
-        resource_transition(default, source, this, obj_classes, name);
+        resource_transition(source, this, obj_classes, default, name);
     }
 
     fn filetrans(domain source, resource default, [class]obj_classes, string name=None) {
         /// Create a file-like object in this directory with a private type.
         allow(source, this, dir, rw_dir_perms);
-        resource_transition(default, source, this, obj_classes, name);
+        resource_transition(source, this, obj_classes, default, name);
     }
 
     fn unconfined(domain source) {
@@ -829,13 +829,13 @@ trait resource common_pipe_api inherits dir_api, pipe_api, symlink_api {
         /// Create a file-like object in this directory with a private type.
         /// This does not allow deletions from the directory.
         allow(source, this, dir, add_entry_dir_perms);
-        resource_transition(default, source, this, obj_classes, name);
+        resource_transition(source, this, obj_classes, default, name);
     }
 
     fn filetrans(domain source, resource default, [class]obj_classes, string name=None) {
         /// Create a file-like object in this directory with a private type.
         allow(source, this, dir, rw_dir_perms);
-        resource_transition(default, source, this, obj_classes, name);
+        resource_transition(source, this, obj_classes, default, name);
     }
 
     fn unconfined(domain source) {
@@ -1057,13 +1057,13 @@ trait resource common_named_socket_api inherits dir_api, symlink_api, named_sock
         /// Create a file-like object in this directory with a private type.
         /// This does not allow deletions from the directory.
         allow(source, this, dir, add_entry_dir_perms);
-        resource_transition(default, source, this, obj_classes, name);
+        resource_transition(source, this, obj_classes, default, name);
     }
 
     fn filetrans(domain source, resource default, [class]obj_classes, string name=None) {
         /// Create a file-like object in this directory with a private type.
         allow(source, this, dir, rw_dir_perms);
-        resource_transition(default, source, this, obj_classes, name);
+        resource_transition(source, this, obj_classes, default, name);
     }
 
     fn unconfined(domain source) {
