@@ -282,7 +282,8 @@ domain system_dbusd_t inherits daemon {
     //
     fn client(domain source) {
         /// Connect to the system dbus as a client.
-        allow(source, [ this self ], dbus, send_msg);
+        allow(source, this, dbus, send_msg);
+        allow(source, self, dbus, send_msg);
         allow(this, source<resource>, dbus, send_msg);
 
         this.unix_stream_connect(source); runtime_t.list(source);
@@ -301,7 +302,8 @@ domain system_dbusd_t inherits daemon {
     fn unconfined(domain source) {
         /// Unconfined access to dbus (system bus and user session buses).
         domain.dbus_send();
-        allow(source, [ this session_dbus ], dbus, acquire_svc);
+        allow(source, this, dbus, acquire_svc);
+        allow(source, session_dbus, dbus, acquire_svc);
     }
 }
 
