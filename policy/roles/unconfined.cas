@@ -140,7 +140,7 @@ domain unconfined_mount_t inherits common_domain {
     fn domtrans(domain source) {
         mount_t.exec.mmap_exec(source);
         allow(source, this, process, [transition]);
-        type_transition(source, mount_t.exec, process, this);
+        domain_transition(source, mount_t.exec, this);
 	//role_associate(src_role, this.roles);
     }
 }

@@ -97,7 +97,7 @@ virtual domain session_dbus inherits common_domain {
     fn domtrans(domain source) {
         dbusd_exec_t.mmap_exec(source);
         allow(source, this, process, transition);
-        type_transition(source, dbusd_exec_t, process, this);
+        domain_transition(source, dbusd_exec_t, this);
         //role_associate(src_role, this.roles);
     }
 }

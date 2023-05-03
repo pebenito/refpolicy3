@@ -133,7 +133,7 @@ virtual domain common_domain inherits network_peer {
     fn domtrans(domain source) {
         this.exec.mmap_exec(source);
         allow(source, this, process, [transition]);
-        type_transition(source, this.exec, process, this);
+        domain_transition(source, this.exec, this);
         //role_associate(src_role, this.roles);
     }
 

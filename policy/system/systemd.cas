@@ -950,13 +950,13 @@ extend init_script_t {
     fn bin_domtrans(domain source) {
         bin_t.mmap_exec(source);
         allow(source, this, process, [transition]);
-        type_transition(source, bin_t, process, this);
+        domain_transition(source, bin_t, this);
     }
 
     fn shell_domtrans(domain source) {
         shell_exec_t.mmap_exec(source);
         allow(source, this, process, [transition]);
-        type_transition(source, shell_exec_t, process, this);
+        domain_transition(source, shell_exec_t, this);
     }
 }
 
