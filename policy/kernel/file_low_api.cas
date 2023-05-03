@@ -1149,14 +1149,14 @@ trait resource dir_api {
         dontaudit(source, this, dir, audit_access);
     }
 
-    fn add_entry_filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+    fn add_entry_filetrans(domain source, resource default, [class]obj_classes, string name="") {
         /// Create a file-like object in this directory with a private type.
         /// This does not allow deletions from the directory.
         allow(source, this, dir, add_entry_dir_perms);
         resource_transition(source, this, obj_classes, default, name);
     }
 
-    fn filetrans(domain source, resource default, [class]obj_classes, string name=None) {
+    fn filetrans(domain source, resource default, [class]obj_classes, string name="") {
         /// Create a file-like object in this directory with a private type.
         allow(source, this, dir, rw_dir_perms);
         resource_transition(source, this, obj_classes, default, name);
