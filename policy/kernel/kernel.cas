@@ -189,6 +189,6 @@ domain kernel_t inherits network_peer {
 
     fn userspace_entrypoint(common_domain target) {
         target.domtrans(this, this.roles);
-        target.dyn_domtrans(this, this.roles);
+        target.dynamic_domtrans(this, this.roles);
     }
 }
