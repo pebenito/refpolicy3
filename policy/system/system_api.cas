@@ -633,19 +633,19 @@ collection selinux {
 
         allow(source, security_t, security, read_policy);
 
-        selinuxfs_t.read(source); sysfs_t.list(source);
-
         // Read the kernel policy on disk
-        policy_config_t.read(source); selinux_config_t.list(source); etc_t.list(source);
+        selinux_policy_t.read(source); selinux_config_t.list(source); etc_t.list(source);
+
+        selinuxfs_t.read(source); sysfs_t.list(source);
     }
 
     fn dontaudit_read_policy(domain source) {
         /// Do not audit denials for reading the running policy from kernel memory.
         dontaudit(source, security_t, security, read_policy);
 
-        selinuxfs_t.dontaudit_read(source); sysfs_t.dontaudit_list(source);
+        selinux_policy_t.dontaudit_read(source); selinux_config_t.dontaudit_list(source); etc_t.dontaudit_list(source);
 
-        policy_config_t.dontaudit_read(source); selinux_config_t.dontaudit_list(source); etc_t.dontaudit_list(source);
+        selinuxfs_t.dontaudit_read(source); sysfs_t.dontaudit_list(source);
     }
 
     fn load_policy(domain source) {

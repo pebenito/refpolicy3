@@ -726,8 +726,6 @@ collection user_api {
 
         netlabel_mgmt_t.domtrans(source);
 
-        policy_config_t.manage(source);
-
         samhain_t.domtrans(source);
 
         setfiles_t.domtrans(source);
@@ -738,6 +736,8 @@ collection user_api {
         selinux.set_parameters(source);
 
         selinux_config_t.list(source);
+
+        selinux_policy_t.manage(source);
 
         semanage_t.domtrans(source);
 
