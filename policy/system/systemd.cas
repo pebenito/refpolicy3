@@ -273,7 +273,7 @@ virtual domain systemd_user inherits common_domain, systemd_common {
         source.domtrans(this);
     }
 
-    fn unix_stream_activated(common_domain source, named_socket sock=source.runtime) {
+    fn unix_stream_activated(common_domain source, named_socket sock) {
         allow(this, source, unix_stream_socket, [ manage_socket_perms listen ]);
         sock<common_named_socket>.manage();
         source.domtrans(this);
