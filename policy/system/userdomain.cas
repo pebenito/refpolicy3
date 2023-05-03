@@ -199,8 +199,8 @@ virtual domain userdomain inherits common_domain {
         /// This is to handle daemons running in the user's domain.
         /// Sockets are supported in both the user's tmp and
         /// runtime directories.
-        this.runtime<common_named_socket>.rw(source); runtime_t.list(source);
-        this.tmp<common_named_socket>.rw(source); tmp_t.list(source);
+        user_runtime_t<common_named_socket>.rw(source); runtime_t.list(source);
+        user_tmp_t<common_named_socket>.rw(source); tmp_t.list(source);
         allow(source, this, unix_stream_socket, [ getattr connectto ]);
     }
 
@@ -209,8 +209,8 @@ virtual domain userdomain inherits common_domain {
         /// This is to handle daemons running in the user's domain.
         /// Sockets are supported in both the user's tmp and
         /// runtime directories.
-        this.runtime<common_named_socket>.rw(source); runtime_t.list(source);
-        this.tmp<common_named_socket>.rw(source); tmp_t.list(source);
+        user_runtime_t<common_named_socket>.rw(source); runtime_t.list(source);
+        user_tmp_t<common_named_socket>.rw(source); tmp_t.list(source);
         allow(source, this, unix_dgram_socket, [ getattr sendto ]);
     }
 }
