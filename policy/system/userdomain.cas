@@ -36,26 +36,26 @@ virtual resource user_pty inherits pty {
     /// Virtual for user PTY devices.
 
     //ubac_constrained()
-    @associated_call
-    fn associate_user_pty(domain source) {
-        type_change(source, server_ptynode, chr_file, this);
-    }
+//    @associated_call
+//    fn associate_user_pty(domain source) {
+//        type_change(source, server_ptynode, chr_file, this);
+//    }
 }
 
 virtual resource user_tty inherits tty {
     /// Virtual for user tty devices.
 
     //ubac_constrained()
-    @associated_call
-    fn associate_user_tty(domain source) {
-        type_change(source, tty_device_t, chr_file, this);
-
-        if (console_login) {
-            // When user logs in from /dev/console, relabel it
-            // to user tty type as well.
-            type_change(source, console_device_t, chr_file, this);
-        }
-    }
+//    @associated_call
+//    fn associate_user_tty(domain source) {
+//        type_change(source, tty_device_t, chr_file, this);
+//
+//        if (console_login) {
+//            // When user logs in from /dev/console, relabel it
+//            // to user tty type as well.
+//            type_change(source, console_device_t, chr_file, this);
+//        }
+//    }
 }
 
 virtual domain userdomain inherits common_domain {
