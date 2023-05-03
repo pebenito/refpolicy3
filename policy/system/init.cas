@@ -85,6 +85,11 @@ virtual domain daemon inherits common_domain {
 virtual domain init inherits common_domain {
     /// Virtual for init programs.
 
+    @alias(init_runtime_t)
+    resource runtime inherits runtimefile, common_pipe, common_named_socket {
+        /// Runtime files in /run and /var/run.
+    }
+
     allow(this, self, process, setexec);
 
     daemon.domtrans();

@@ -356,11 +356,6 @@ domain systemd_t inherits init {
         file_context("/var/log/journal(/.*)?", any, system_u:object_r:systemd_journal_t:mls_systemhigh);
     }
 
-    @alias(init_runtime_t)
-    resource runtime inherits runtimefile, common_pipe, common_named_socket {
-        /// Runtime files in /run and /var/run.
-    }
-
     @alias(init_var_lib_t)
     resource state inherits common_file, systemd_tmpfiles_managed {
         /// Contents of /var/lib/systemd/*

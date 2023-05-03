@@ -16,11 +16,6 @@ domain sysvinit_t inherits init {
         /// The /dev/initctl pipe.
     }
 
-    @alias(init_runtime_t)
-    resource runtime inherits runtimefile, common_pipe, common_named_socket {
-        /// Runtime files in /run and /var/run.
-    }
-
     @alias(init_tmp_t)
     resource tmp inherits tmpfile, common_pipe, common_named_socket {
         /// Temporary files in /tmp and /var/tmp.
