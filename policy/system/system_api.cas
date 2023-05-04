@@ -1021,7 +1021,7 @@ collection syslog {
             // Allow systemd-journald to check whether the process died
             source.check_existence(syslogd_t);
 
-            allow(source, kernel_t, unix_datagram_socket, sendto);
+            allow(source, kernel_t, unix_dgram_socket, sendto);
         }
     }
 
