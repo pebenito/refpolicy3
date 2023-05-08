@@ -761,7 +761,7 @@ domain systemd_t inherits init {
 
         systemdunit.admin(source);
 
-        allow(source, user_systemd, system, admin_systemd_perms);
+        allow(source, systemd_user, system, admin_systemd_perms);
 
         user_systemdunit.admin(source);
     }
