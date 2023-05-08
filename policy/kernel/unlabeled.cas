@@ -25,23 +25,23 @@ resource unlabeled_t inherits mountpoint, network_peer {
     // Labeling statements
     //
 
-    initial_context(unlabeled, system_u:object_r:unlabeled_t:mls_systemhigh);
-    initial_context(file, system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context("unlabeled", system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context("file", system_u:object_r:unlabeled_t:mls_systemhigh);
     // These initial sids are no longer used, and can be removed:
-    initial_context(any_socket, system_u:object_r:unlabeled_t:mls_systemhigh);
-    initial_context(file_labels);
-    initial_context(icmp_socket, system_u:object_r:unlabeled_t:mls_systemhigh);
-    initial_context(igmp_packet, system_u:object_r:unlabeled_t:mls_systemhigh);
-    initial_context(init);
-    initial_context(kmod, system_u:object_r:unlabeled_t:mls_systemhigh);
-    initial_context(policy, system_u:object_r:unlabeled_t:mls_systemhigh);
-    initial_context(scmp_packet, system_u:object_r:unlabeled_t:mls_systemhigh);
-    initial_context(sysctl_modprobe);
-    initial_context(sysctl_fs);
-    initial_context(sysctl_kernel);
-    initial_context(sysctl_net);
-    initial_context(sysctl_net_unix);
-    initial_context(sysctl_vm);
-    initial_context(sysctl_dev);
-    initial_context(tcp_socket, system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context("any_socket", system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context("file_labels", this);
+    initial_context("icmp_socket", system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context("igmp_packet", system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context("init", this);
+    initial_context("kmod", system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context("policy", system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context("scmp_packet", system_u:object_r:unlabeled_t:mls_systemhigh);
+    initial_context("sysctl_modprobe", this);
+    initial_context("sysctl_fs", this);
+    initial_context("sysctl_kernel", this);
+    initial_context("sysctl_net", this);
+    initial_context("sysctl_net_unix", this);
+    initial_context("sysctl_vm", this);
+    initial_context("sysctl_dev", this);
+    initial_context("tcp_socket", system_u:object_r:unlabeled_t:mls_systemhigh);
 }

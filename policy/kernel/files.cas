@@ -1067,7 +1067,7 @@ resource root_t inherits common_dir, mountpoint, noxattr_filesystem {
     // initrd mount point, only used during boot
     file_context("/initrd", dir, this);
 
-    genfscon(rootfs, "/", dir);
+    fs_context("rootfs", genfscon, this, "/", dir);
 }
 
 @hint(class=[file fifo_file sock_file], hint="Runtime directories are shared. A different type should use used, e.g. foo_t.runtime, to keep data private.")
@@ -1145,7 +1145,7 @@ resource system_map_t inherits common_file {
     file_context("/boot/efi(/.*)?/System\.map(-.*)?", file, this);
     file_context("/boot/System\.map(-.*)?", file, this);
 
-    genfscon(proc, "/kallsyms", any);
+    fs_context("proc", genfscon, this, "/kallsyms", any);
 }
 //optional_policy(`
 //    init_mountpoint(system_map_t)

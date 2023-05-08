@@ -185,7 +185,7 @@ resource device_t inherits filesystem, mountpoint, common_dir {
         // file_context("/dev/\.static/dev/.+", <<none>>);
     }
 
-    fs_use_trans(devtmpfs);
+    fs_context("devtmpfs", trans, this);
 
     systemd_tmpfiles_t.manager_of(this);
 }
@@ -442,7 +442,7 @@ resource null_device_t inherits common_character_device {
     // used by init scripts to initially populate udev /dev
     file_context("/usr/lib/udev/devices/null", chr_file, this);
 
-    initial_context(devnull);
+    initial_context("devnull", this);
 }
 //mls_trusted_object(null_device_t)
 

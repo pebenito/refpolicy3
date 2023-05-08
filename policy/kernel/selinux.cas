@@ -54,7 +54,7 @@ virtual resource booleans inherits file_api {
 //
 
 resource boolean_t inherits booleans {
-    genfscon(selinuxfs, "/booleans/", file);
+    fs_context("selinuxfs", genfscon, this, "/booleans/", file);
 }
 
 // SELinux security server
@@ -72,7 +72,7 @@ resource boolean_t inherits booleans {
 @hint(class=security, perm=compute_relabel, hint="Use selinux.get_relabel_contexts() or selinux.dontaudit_get_relabel_contexts()")
 @hint(class=security, perm=compute_user, hint="Use selinux.get_user_contexts() or selinux.dontaudit_get_user_contexts()")
 resource security_t {
-    initial_context(security, system_u:object_r:security_t:mls_systemhigh);
+    initial_context("security", system_u:object_r:security_t:mls_systemhigh);
 }
 
 //
@@ -81,7 +81,7 @@ resource security_t {
 //
 boolean(secure_mode_policyload, false);
 resource secure_mode_policyload_t inherits booleans {
-    genfscon(selinuxfs, "/booleans/secure_mode_policyload", file);
+    fs_context("selinuxfs", genfscon, this, "/booleans/secure_mode_policyload", file);
 
     fn set(domain source) {
         sysfs_t.list(source);

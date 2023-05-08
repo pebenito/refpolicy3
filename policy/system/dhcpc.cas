@@ -2,12 +2,12 @@
 
 resource dhcpc_port_t inherits reserved_network_port {
     /// DHCP client port.
-    portcon(udp, 68);
-    portcon(tcp, 68);
-    portcon(udp, 546);
-    portcon(tcp, 546);
-    portcon(udp, 5546);
-    portcon(tcp, 5546);
+    portcon("udp", 68, this);
+    portcon("tcp", 68, this);
+    portcon("udp", 546, this);
+    portcon("tcp", 546, this);
+    portcon("udp", 5546, this);
+    portcon("tcp", 5546, this);
 }
 
 domain dhcpc_t inherits daemon {

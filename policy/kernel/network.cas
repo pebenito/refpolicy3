@@ -426,7 +426,7 @@ virtual resource server_packet inherits network_packet {
 
 resource netif_t inherits network_interface {
     /// Default type for network interfaces.
-    initial_context(netif, system_u:object_r:netif_t:s0 - mls_systemhigh);
+    initial_context("netif", system_u:object_r:netif_t:s0 - mls_systemhigh);
 }
 
 //if (enable_mls) {
@@ -441,7 +441,7 @@ resource netif_t inherits network_interface {
 //
 resource node_t inherits network_node {
     /// Default type for network nodes.
-    initial_context(node, system_u:object_r:node_t:s0 - mls_systemhigh);
+    initial_context("node", system_u:object_r:node_t:s0 - mls_systemhigh);
 }
 
 
@@ -452,16 +452,16 @@ resource node_t inherits network_node {
 @alias(hi_reserved_port_t)
 resource rpc_port_t inherits rpc_network_port {
     /// Default type for RPC ports, 512-1023.
-    portcon(sctp, 512-1023);
-    portcon(tcp, 512-1023);
-    portcon(udp, 512-1023);
+    portcon("sctp", 512-1023, this);
+    portcon("tcp", 512-1023, this);
+    portcon("udp", 512-1023, this);
 }
 
 resource reserved_port_t inherits reserved_network_port {
     /// Default type for ports 1-511.
-    portcon(sctp, 1-511);
-    portcon(tcp, 1-511);
-    portcon(udp, 1-511);
+    portcon("sctp", 1-511, this);
+    portcon("tcp", 1-511, this);
+    portcon("udp", 1-511, this);
 }
 
 @alias(port_t)
@@ -469,7 +469,7 @@ resource unreserved_port_t inherits network_port {
     /// The default type for network ports.
     /// Generally this labels ports > 1023 that are not
     /// otherwise defined.
-    initial_context(port);
+    initial_context("port", this);
 }
 
 
@@ -479,5 +479,5 @@ resource unreserved_port_t inherits network_port {
 
 resource netlabel_peer_t inherits network_peer {
     /// Type for remote processes using netlabel.
-    initial_context(netmsg, system_u:object_r:netlabel_peer_t:mls_systemhigh);
+    initial_context("netmsg", system_u:object_r:netlabel_peer_t:mls_systemhigh);
 }

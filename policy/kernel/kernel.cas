@@ -181,7 +181,7 @@ domain kernel_t inherits network_peer {
     //
     // Labeling
     //
-    initial_context(kernel, system_u:system_r:kernel_t:mls_systemhigh);
+    initial_context("kernel", system_u:system_r:kernel_t:mls_systemhigh);
 
     //
     // Member functions
