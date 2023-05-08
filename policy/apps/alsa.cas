@@ -7,49 +7,49 @@ domain alsa_t inherits system_app_domain {
     resource config inherits configfile {
         /// System configuration files.
 
-        file_context("/etc/alsa(/.*)?", any);
-        file_context("/etc/asound\.conf", file);
-        file_context("/usr/share/alsa(/.*)?", any);
+        file_context("/etc/alsa(/.*)?", any, this);
+        file_context("/etc/asound\.conf", file, this);
+        file_context("/usr/share/alsa(/.*)?", any, this);
 
     }
 
     @alias(alsa_exec_t)
     extend exec {
-        file_context("/usr/bin/ainit", file);
-        file_context("/usr/bin/alsactl", file);
-        file_context("/usr/bin/alsaunmute", file);
-        file_context("/usr/bin/salsa", file);
-        file_context("/usr/sbin/alsactl", file);
-        file_context("/usr/sbin/salsa", file);
+        file_context("/usr/bin/ainit", file, this);
+        file_context("/usr/bin/alsactl", file, this);
+        file_context("/usr/bin/alsaunmute", file, this);
+        file_context("/usr/bin/salsa", file, this);
+        file_context("/usr/sbin/alsactl", file, this);
+        file_context("/usr/sbin/salsa", file, this);
     }
 
     @alias(alsa_home_t)
     resource home inherits user_home_content {
         /// User configuration files.
 
-        file_context("HOME_DIR/\.asoundrc", file);
+        file_context("HOME_DIR/\.asoundrc", file, this);
     }
 
     @alias(alsa_var_lock_t)
     resource lock inherits lockfile {
         /// Lock files.
 
-        file_context("/var/lock/asound\.state\.lock", file);
+        file_context("/var/lock/asound\.state\.lock", file, this);
     }
 
     @alias(alsa_runtime_t)
     resource runtime inherits runtimefile {
         /// Runtime files.
 
-        file_context("/run/alsa(/.*)?", any);
-        file_context("/run/alsactl\.pid", file);
+        file_context("/run/alsa(/.*)?", any, this);
+        file_context("/run/alsactl\.pid", file, this);
     }
 
     @alias(alsa_var_lib_t)
     resource state inherits common_file {
         /// Saved state files.
 
-        file_context("/var/lib/alsa(/.*)?", any);
+        file_context("/var/lib/alsa(/.*)?", any, this);
     }
 
     @alias(alsa_tmp_t)
@@ -64,9 +64,9 @@ domain alsa_t inherits system_app_domain {
     resource unit inherits systemdunit {
         /// Systemd unit files.
 
-        file_context("/usr/lib/systemd/system/[^/]*alsa-restore.*", file);
-        file_context("/usr/lib/systemd/system/[^/]*alsa-state.*", file);
-        file_context("/usr/lib/systemd/system/[^/]*alsa-store.*", file);
+        file_context("/usr/lib/systemd/system/[^/]*alsa-restore.*", file, this);
+        file_context("/usr/lib/systemd/system/[^/]*alsa-state.*", file, this);
+        file_context("/usr/lib/systemd/system/[^/]*alsa-store.*", file, this);
     }
 
     allow(this, self, capability, [ dac_override dac_read_search ipc_owner setgid setuid ]);

@@ -8,14 +8,14 @@ domain systemd_update_done_t inherits systemd_app_domain {
     //
     @alias(systemd_update_done_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-update-done", file);
+        file_context("/usr/lib/systemd/systemd-update-done", file, this);
     }
 
     @alias(systemd_update_run_t)
     resource runtime inherits runtimefile {
         /// Runtime files in /run and /var/run.
-        file_context("/etc/\.updated", file);
-        file_context("/var/\.updated", file);
+        file_context("/etc/\.updated", file, this);
+        file_context("/var/\.updated", file, this);
     }
 
 

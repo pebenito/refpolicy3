@@ -8,7 +8,7 @@ domain unconfined_t inherits userdomain {
     //
     @alias(unconfined_exec_t)
     extend exec  {
-        file_context("/usr/bin/vncserver", file);
+        file_context("/usr/bin/vncserver", file, this);
     }
 
     //
@@ -96,22 +96,22 @@ domain unconfined_execmem_t inherits unconfined_t {
     //
     @alias(unconfined_execmem_exec_t)
     extend exec {
-        file_context("/usr/bin/gnatbind", file);
-        file_context("/usr/bin/gnatls", file);
-        file_context("/usr/bin/gnatmake", file);
-        file_context("/usr/bin/valgrind", file);
-        file_context("/usr/lib/ia32el/ia32x_loader", file);
-        file_context("/usr/libexec/gcc(/.*)?/gnat1", file);
-        file_context("/usr/local/RealPlayer/realplay\.bin", file);
+        file_context("/usr/bin/gnatbind", file, this);
+        file_context("/usr/bin/gnatls", file, this);
+        file_context("/usr/bin/gnatmake", file, this);
+        file_context("/usr/bin/valgrind", file, this);
+        file_context("/usr/lib/ia32el/ia32x_loader", file, this);
+        file_context("/usr/libexec/gcc(/.*)?/gnat1", file, this);
+        file_context("/usr/local/RealPlayer/realplay\.bin", file, this);
 
         if (distro_debian) {
-            file_context("/usr/bin/gcj-dbtool-4\.1", file);
-            file_context("/usr/bin/gij-4\.1", file);
-            file_context("/usr/lib/openoffice/program/soffice\.bin", file);
+            file_context("/usr/bin/gcj-dbtool-4\.1", file, this);
+            file_context("/usr/bin/gij-4\.1", file, this);
+            file_context("/usr/lib/openoffice/program/soffice\.bin", file, this);
         }
 
         if (distro_gentoo) {
-            file_context("/usr/lib/openoffice/program/[^/]+\.bin", file);
+            file_context("/usr/lib/openoffice/program/[^/]+\.bin", file, this);
         }
     }
 

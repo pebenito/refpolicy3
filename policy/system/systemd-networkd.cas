@@ -11,22 +11,22 @@ domain systemd_networkd_t inherits systemd_app_domain {
     //
     @alias(systemd_networkd_exec_t)
     extend exec  {
-       file_context("/usr/lib/systemd/systemd-networkd", file);
-       file_context("/usr/lib/systemd/systemd-network-generator", file);
+       file_context("/usr/lib/systemd/systemd-networkd", file, this);
+       file_context("/usr/lib/systemd/systemd-network-generator", file, this);
     }
 
     @alias(systemd_networkd_runtime_t)
     resource runtime inherits runtimefile, systemd_mountpoint {
         /// Runtime files in /run and /var/run.
-        file_context("/run/systemd/netif(/.*)?", any);
-        file_context("/run/systemd/network(/.*)?", any);
+        file_context("/run/systemd/netif(/.*)?", any, this);
+        file_context("/run/systemd/network(/.*)?", any, this);
     }
 
     @alias(systemd_networkd_unit_t)
     resource unit inherits common_file, systemdunit {
         /// The systemd unit.
-        file_context("/usr/lib/systemd/system/systemd-networkd.*", any);
-        file_context("/usr/lib/systemd/system/systemd-network-generator.*", any);
+        file_context("/usr/lib/systemd/system/systemd-networkd.*", any, this);
+        file_context("/usr/lib/systemd/system/systemd-network-generator.*", any, this);
     }
 
     //

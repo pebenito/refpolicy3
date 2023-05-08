@@ -8,7 +8,7 @@ domain systemd_modules_load_t inherits systemd_app_domain {
     //
     @alias(systemd_modules_load_exec_t)
     extend exec  {
-       file_context("/usr/lib/systemd/systemd-modules-load", file);
+       file_context("/usr/lib/systemd/systemd-modules-load", file, this);
     }
 
     //

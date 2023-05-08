@@ -2,7 +2,7 @@
 
 resource var_yp_t inherits common_file {
     /// NIS database.
-    file_context("/var/yp(/.*)?", any);
+    file_context("/var/yp(/.*)?", any, this);
 }
 
 domain ypbind_t inherits daemon {
@@ -13,18 +13,18 @@ domain ypbind_t inherits daemon {
     //
     @alias(ypbind_exec_t)
     extend exec {
-        file_context("/usr/bin/ypbind", file);
-        file_context("/usr/sbin/ypbind", file);
+        file_context("/usr/bin/ypbind", file, this);
+        file_context("/usr/sbin/ypbind", file, this);
     }
 
     @alias(ypbind_initrc_exec_t)
     extend initrc_exec {
-        file_context("/etc/rc\.d/init\.d/ypbind", file);
+        file_context("/etc/rc\.d/init\.d/ypbind", file, this);
     }
 
     @alias(ypbind_runtime_t)
     extend runtime {
-        file_context("/run/ypbind.*", file);
+        file_context("/run/ypbind.*", file, this);
     }
 
     @alias(ypbind_tmp_t)
@@ -32,7 +32,7 @@ domain ypbind_t inherits daemon {
 
     @alias(ypbind_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/ypbind.*\.service", file);
+        file_context("/usr/lib/systemd/system/ypbind.*\.service", file, this);
     }
 
     //
@@ -93,21 +93,21 @@ domain yppasswdd_t inherits daemon {
     //
     @alias(yppasswdd_exec_t)
     extend exec {
-        file_context("/usr/bin/rpc\.yppasswdd", file);
-        file_context("/usr/sbin/rpc\.yppasswdd", file);
+        file_context("/usr/bin/rpc\.yppasswdd", file, this);
+        file_context("/usr/sbin/rpc\.yppasswdd", file, this);
     }
 
     extend initrc_exec {
-        file_context("/etc/rc\.d/init\.d/yppasswd", file);
+        file_context("/etc/rc\.d/init\.d/yppasswd", file, this);
     }
 
     @alias(yppasswdd_runtime_t)
     extend runtime {
-        file_context("/run/yppass.*", file);
+        file_context("/run/yppass.*", file, this);
     }
 
     extend unit {
-        file_context("/usr/lib/systemd/system/yppasswdd.*\.service", file);
+        file_context("/usr/lib/systemd/system/yppasswdd.*\.service", file, this);
     }
 
     //
@@ -177,30 +177,30 @@ domain ypserv_t inherits daemon {
     //
     @alias(ypserv_conf_t)
     extend conf {
-        file_context("/etc/ypserv\.conf", file);
+        file_context("/etc/ypserv\.conf", file, this);
     }
 
     @alias(ypserv_exec_t)
     extend exec {
-        file_context("/usr/bin/ypserv", file);
-        file_context("/usr/sbin/ypserv", file);
+        file_context("/usr/bin/ypserv", file, this);
+        file_context("/usr/sbin/ypserv", file, this);
     }
 
     @alias(nis_initrc_exec_t)
     extend initrc_exec {
-        file_context("/etc/rc\.d/init\.d/ypserv", file);
+        file_context("/etc/rc\.d/init\.d/ypserv", file, this);
     }
 
     @alias(ypserv_runtime_t)
     extend runtime {
-        file_context("/run/ypserv.*", file);
+        file_context("/run/ypserv.*", file, this);
     }
 
     @alias(ypserv_tmp_t)
     extend tmp {}
 
     extend unit {
-        file_context("/usr/lib/systemd/system/ypserv.*\.service", file);
+        file_context("/usr/lib/systemd/system/ypserv.*\.service", file, this);
     }
 
     //
@@ -252,22 +252,22 @@ domain ypxfr_t inherits daemon {
     //
     @alias(ypxfr_exec_t)
     extend exec {
-        file_context("/usr/bin/rpc\.ypxfrd", file);
-        file_context("/usr/lib/yp/ypxfr", file);
-        file_context("/usr/sbin/rpc\.ypxfrd", file);
+        file_context("/usr/bin/rpc\.ypxfrd", file, this);
+        file_context("/usr/lib/yp/ypxfr", file, this);
+        file_context("/usr/sbin/rpc\.ypxfrd", file, this);
     }
 
     extend initrc_exec {
-        file_context("/etc/rc\.d/init\.d/ypxfrd", file);
+        file_context("/etc/rc\.d/init\.d/ypxfrd", file, this);
     }
 
     @alias(ypxfr_runtime_t)
     extend runtime {
-        file_context("/run/ypxfrd.*", file);
+        file_context("/run/ypxfrd.*", file, this);
     }
 
     extend unit {
-        file_context("/usr/lib/systemd/system/ypxfrd.*\.service", file);
+        file_context("/usr/lib/systemd/system/ypxfrd.*\.service", file, this);
     }
 
     //

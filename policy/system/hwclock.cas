@@ -2,15 +2,15 @@
 
 resource adjtime_t inherits common_file {
     /// Time corrections file.
-    file_context("/etc/adjtime", file);
+    file_context("/etc/adjtime", file, this);
 }
 
 domain hwclock_t inherits system_app_domain {
 
     @alias(hwclock_exec_t)
     extend exec {
-        file_context("/usr/bin/hwclock", file);
-        file_context("/usr/sbin/hwclock", file);
+        file_context("/usr/bin/hwclock", file, this);
+        file_context("/usr/sbin/hwclock", file, this);
     }
 
     // Give hwclock the capabilities it requires.  dac_override is a surprise,

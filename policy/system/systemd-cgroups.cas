@@ -8,7 +8,7 @@ domain systemd_cgroups_t inherits systemd_app_domain {
     //
     @alias(systemd_cgroups_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-cgroups-agent", file);
+        file_context("/usr/lib/systemd/systemd-cgroups-agent", file, this);
     }
 
     //

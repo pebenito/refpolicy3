@@ -8,7 +8,7 @@ domain systemd_hostnamed_t inherits systemd_daemon {
     //
     @alias(systemd_hostnamed_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-hostnamed", file);
+        file_context("/usr/lib/systemd/systemd-hostnamed", file, this);
     }
 
     //

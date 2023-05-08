@@ -18,45 +18,45 @@ domain dhcpc_t inherits daemon {
     //
     @alias(dhcp_etc_t)
     extend conf {
-        file_context("/etc/dhclient.*conf", file);
-        file_context("/etc/dhclient-script", file);
-        file_context("/etc/dhcpc.*", any);
-        file_context("/etc/dhcpd\.conf", file);
-        file_context("/etc/dhcp/dhcpd\.conf", file);
-        file_context("/etc/dhcp3(/.*)?", any);
-        file_context("/etc/dhcp3?/dhclient.*", any);
+        file_context("/etc/dhclient.*conf", file, this);
+        file_context("/etc/dhclient-script", file, this);
+        file_context("/etc/dhcpc.*", any, this);
+        file_context("/etc/dhcpd\.conf", file, this);
+        file_context("/etc/dhcp/dhcpd\.conf", file, this);
+        file_context("/etc/dhcp3(/.*)?", any, this);
+        file_context("/etc/dhcp3?/dhclient.*", any, this);
     }
 
     @alias(dhcpc_exec_t)
     extend exec {
-        file_context("/usr/bin/dhclient.*", file);
-        file_context("/usr/bin/dhcdbd", file);
-        file_context("/usr/bin/dhcp6c", file);
-        file_context("/usr/bin/dhcpcd", file);
-        file_context("/usr/bin/pump", file);
-        file_context("/usr/sbin/dhclient.*", file);
-        file_context("/usr/sbin/dhcdbd", file);
-        file_context("/usr/sbin/dhcp6c", file);
-        file_context("/usr/sbin/dhcpcd", file);
-        file_context("/usr/sbin/pump", file);
+        file_context("/usr/bin/dhclient.*", file, this);
+        file_context("/usr/bin/dhcdbd", file, this);
+        file_context("/usr/bin/dhcp6c", file, this);
+        file_context("/usr/bin/dhcpcd", file, this);
+        file_context("/usr/bin/pump", file, this);
+        file_context("/usr/sbin/dhclient.*", file, this);
+        file_context("/usr/sbin/dhcdbd", file, this);
+        file_context("/usr/sbin/dhcp6c", file, this);
+        file_context("/usr/sbin/dhcpcd", file, this);
+        file_context("/usr/sbin/pump", file, this);
     }
 
     @alias(dhcpc_runtime_t)
     extend runtime {
-        file_context("/run/dhclient.*", file);
-        file_context("/run/dhcpcd(/.*)?", any);
+        file_context("/run/dhclient.*", file, this);
+        file_context("/run/dhcpcd(/.*)?", any, this);
     }
 
     @alias(dhcp_state_t, dhcpc_state_t)
     resource state inherits common_file {
         /// Contents of /var/lib/dhcpcd.
-        file_context("/var/lib/dhcp3?", dir);
-        file_context("/var/lib/dhcp3?/dhclient.*", any);
-        file_context("/var/lib/dhcpc(/.*)?", any);
-        file_context("/var/lib/dhcpcd(/.*)?", any);
-        file_context("/var/lib/dhcpv6(/.*)?", any);
-        file_context("/var/lib/dhclient(/.*)?", any);
-        file_context("/var/lib/wifiroamd(/.*)?", any);
+        file_context("/var/lib/dhcp3?", dir, this);
+        file_context("/var/lib/dhcp3?/dhclient.*", any, this);
+        file_context("/var/lib/dhcpc(/.*)?", any, this);
+        file_context("/var/lib/dhcpcd(/.*)?", any, this);
+        file_context("/var/lib/dhcpv6(/.*)?", any, this);
+        file_context("/var/lib/dhclient(/.*)?", any, this);
+        file_context("/var/lib/wifiroamd(/.*)?", any, this);
     }
 
     @alias(dhcpc_tmp_t)

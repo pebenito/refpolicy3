@@ -8,7 +8,7 @@ domain checkpolicy_t inherits app_domain {
     //
     @alias(checkpolicy_exec_t)
     extend exec  {
-        file_context("/usr/bin/checkpolicy", file);
+        file_context("/usr/bin/checkpolicy", file, this);
     }
 
     //
@@ -29,13 +29,13 @@ domain checkpolicy_t inherits app_domain {
 
 resource default_context_t inherits common_file {
     /// The type applied to /etc/selinux/*/contexts/*
-    file_context("/etc/selinux/([^/]*/)?contexts(/.*)?", any);
-    file_context("/root/\.default_contexts", file);
+    file_context("/etc/selinux/([^/]*/)?contexts(/.*)?", any, this);
+    file_context("/root/\.default_contexts", file, this);
 }
 
 resource file_context_t inherits common_file {
     /// type applied to /etc/selinux/*/contexts/files
-    file_context("/etc/selinux/([^/]*/)?contexts/files(/.*)?", any);
+    file_context("/etc/selinux/([^/]*/)?contexts/files(/.*)?", any, this);
 }
 
 domain load_policy_t inherits app_domain {
@@ -46,8 +46,8 @@ domain load_policy_t inherits app_domain {
     //
     @alias(load_policy_exec_t)
     extend exec  {
-        file_context("/usr/bin/load_policy", file);
-        file_context("/usr/sbin/load_policy", file);
+        file_context("/usr/bin/load_policy", file, this);
+        file_context("/usr/sbin/load_policy", file, this);
     }
 
     //
@@ -85,7 +85,7 @@ domain newrole_t inherits user_app_domain {
     //
     @alias(newrole_exec_t)
     extend exec  {
-        file_context("/usr/bin/newrole", file);
+        file_context("/usr/bin/newrole", file, this);
     }
 
     //
@@ -169,18 +169,18 @@ domain restorecond_t inherits daemon, setfiles_t {
     //
     @alias(restorecond_exec_t)
     extend exec  {
-        file_context("/usr/bin/restorecond", file);
-        file_context("/usr/sbin/restorecond", file);
+        file_context("/usr/bin/restorecond", file, this);
+        file_context("/usr/sbin/restorecond", file, this);
     }
 
     @alias(restorecond_run_t)
     extend runtime {
-        file_context("/run/restorecond\.pid", file);
+        file_context("/run/restorecond\.pid", file, this);
     }
 
     @alias(restorecond_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/restorecond.*\.service", file);
+        file_context("/usr/lib/systemd/system/restorecond.*\.service", file, this);
     }
 
     //
@@ -216,8 +216,8 @@ domain run_init_t inherits user_app_domain {
     //
     @alias(run_init_exec_t)
     extend exec  {
-        file_context("/usr/bin/run_init", file);
-        file_context("/usr/sbin/run_init", file);
+        file_context("/usr/bin/run_init", file, this);
+        file_context("/usr/sbin/run_init", file, this);
     }
 
     //
@@ -272,7 +272,7 @@ domain run_init_t inherits user_app_domain {
 
 resource selinux_config_t inherits common_file {
     /// The type applied to /etc/selinux/config.
-    file_context("/etc/selinux(/.*)?", any);
+    file_context("/etc/selinux(/.*)?", any, this);
     file_context("/etc/selinux/([^/]*/)?setrans\.conf", file, system_u:object_r:selinux_config_t:mls_systemhigh);
     file_context("/etc/selinux/([^/]*/)?seusers", file, system_u:object_r:selinux_config_t:mls_systemhigh);
     file_context("/etc/selinux/([^/]*/)?users(/.*)?", file, system_u:object_r:selinux_config_t:mls_systemhigh);
@@ -292,26 +292,26 @@ domain semanage_t inherits user_app_domain {
     //
     @alias(semanage_exec_t)
     extend exec {
-        file_context("/usr/bin/setsebool", file);
-        file_context("/usr/bin/semanage", file);
-        file_context("/usr/bin/semodule", file);
-        file_context("/usr/sbin/setsebool", file);
-        file_context("/usr/sbin/semanage", file);
-        file_context("/usr/sbin/semodule", file);
-        file_context("/usr/lib/selinux/semanage_migrate_store", file);
-        file_context("/usr/libexec/selinux/semanage_migrate_store", file);
+        file_context("/usr/bin/setsebool", file, this);
+        file_context("/usr/bin/semanage", file, this);
+        file_context("/usr/bin/semodule", file, this);
+        file_context("/usr/sbin/setsebool", file, this);
+        file_context("/usr/sbin/semanage", file, this);
+        file_context("/usr/sbin/semodule", file, this);
+        file_context("/usr/lib/selinux/semanage_migrate_store", file, this);
+        file_context("/usr/libexec/selinux/semanage_migrate_store", file, this);
     }
 
     @alias(semanage_read_lock_t)
     resource read_lock inherits common_file {
-        file_context("/etc/selinux/([^/]*/)?modules/semanage\.read\.LOCK", file);
-        file_context("/var/lib/selinux/[^/]+/semanage\.read\.LOCK", file);
+        file_context("/etc/selinux/([^/]*/)?modules/semanage\.read\.LOCK", file, this);
+        file_context("/var/lib/selinux/[^/]+/semanage\.read\.LOCK", file, this);
     }
 
     @alias(semanage_store_t)
     resource store inherits security_file {
-        file_context("/etc/selinux/([^/]*/)?modules(/.*)?", any);
-        file_context("/var/lib/selinux(/.*)?", any);
+        file_context("/etc/selinux/([^/]*/)?modules(/.*)?", any, this);
+        file_context("/var/lib/selinux(/.*)?", any, this);
     }
 
     @alias(semanage_tmp_t)
@@ -319,8 +319,8 @@ domain semanage_t inherits user_app_domain {
 
     @alias(semanage_trans_lock_t)
     resource trans_lock inherits common_file {
-        file_context("/etc/selinux/([^/]*/)?modules/semanage\.trans\.LOCK", file);
-        file_context("/var/lib/selinux/[^/]+/semanage\.trans\.LOCK", file);
+        file_context("/etc/selinux/([^/]*/)?modules/semanage\.trans\.LOCK", file, this);
+        file_context("/var/lib/selinux/[^/]+/semanage\.trans\.LOCK", file, this);
     }
 
     //
@@ -403,10 +403,10 @@ domain setfiles_t inherits system_app_domain {
     //
     @alias(setfiles_exec_t)
     extend exec  {
-        file_context("/usr/bin/restorecon", file);
-        file_context("/usr/bin/setfiles.*", file);
-        file_context("/usr/sbin/restorecon", file);
-        file_context("/usr/sbin/setfiles.*", file);
+        file_context("/usr/bin/restorecon", file, this);
+        file_context("/usr/bin/setfiles.*", file, this);
+        file_context("/usr/sbin/restorecon", file, this);
+        file_context("/usr/sbin/setfiles.*", file, this);
     }
 
     //

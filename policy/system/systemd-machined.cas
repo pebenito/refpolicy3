@@ -9,12 +9,12 @@ domain systemd_machined_t inherits systemd_daemon {
 
     @alias(systemd_machined_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-machined", file);
+        file_context("/usr/lib/systemd/systemd-machined", file, this);
     }
 
     @alias(systemd_machined_runtime_t)
     extend runtime {
-        file_context("/run/systemd/machines(/.*)?", any);
+        file_context("/run/systemd/machines(/.*)?", any, this);
     }
 
     @alias(systemd_machined_devpts_t)

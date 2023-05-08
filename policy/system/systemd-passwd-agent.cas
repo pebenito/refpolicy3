@@ -8,14 +8,14 @@ domain systemd_passwd_agent_t inherits systemd_app_domain {
     //
     @alias(systemd_passwd_agent_exec_t)
     extend exec  {
-        file_context("/usr/bin/systemd-tty-ask-password-agent", file);
+        file_context("/usr/bin/systemd-tty-ask-password-agent", file, this);
     }
 
     @alias(systemd_passwd_runtime_t)
     resource runtime inherits runtimefile, common_pipe, common_named_socket {
         /// Runtime files in /run and /var/run.
-        file_context("/run/systemd/ask-password(/.*)?", any);
-        file_context("/run/systemd/ask-password-block(/.*)?", any);
+        file_context("/run/systemd/ask-password(/.*)?", any, this);
+        file_context("/run/systemd/ask-password-block(/.*)?", any, this);
     }
 
     //

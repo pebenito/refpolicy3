@@ -5,8 +5,8 @@ domain netlabel_mgmt_t inherits app_domain {
 
     @alias(netlabel_mgmt_exec_t)
     extend exec {
-        file_context("/usr/bin/netlabelctl", file);
-        file_context("/usr/sbin/netlabelctl", file);
+        file_context("/usr/bin/netlabelctl", file, this);
+        file_context("/usr/sbin/netlabelctl", file, this);
     }
 
     // modify the network subsystem configuration

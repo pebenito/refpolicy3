@@ -168,7 +168,7 @@
 	},
     "file_context template": {
         "prefix": "file_context",
-        "body": "file_context(\"${1:path_regex}\", ${2|any,file,pipe,symlink,socket,chardev,blockdev|});"
+        "body": "file_context(\"${1:path_regex}\", ${2|any,file,fifo_file,lnk_file,sock_file,chr_file,blk_file|}, this);"
     },
     "bare extend block": {
         "prefix": "extend",

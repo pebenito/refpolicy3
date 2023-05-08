@@ -11,44 +11,44 @@ domain udev_t inherits daemon {
 
     @alias(udev_exec_t)
     extend exec {
-        file_context("/usr/bin/udev", file);
-        file_context("/usr/bin/udevadm", file);
-        file_context("/usr/bin/udevd", file);
-        file_context("/usr/bin/udevinfo", file);
-        file_context("/usr/bin/udevsend", file);
-        file_context("/usr/bin/udevstart", file);
-        file_context("/usr/bin/wait_for_sysfs", file);
-        file_context("/usr/sbin/udev", file);
-        file_context("/usr/sbin/udevadm", file);
-        file_context("/usr/sbin/udevd", file);
-        file_context("/usr/sbin/udevsend", file);
-        file_context("/usr/sbin/udevstart", file);
-        file_context("/usr/sbin/wait_for_sysfs", file);
-        file_context("/usr/lib/systemd/systemd-udevd", file);
-        file_context("/usr/lib/udev/udev-acl", file);
+        file_context("/usr/bin/udev", file, this);
+        file_context("/usr/bin/udevadm", file, this);
+        file_context("/usr/bin/udevd", file, this);
+        file_context("/usr/bin/udevinfo", file, this);
+        file_context("/usr/bin/udevsend", file, this);
+        file_context("/usr/bin/udevstart", file, this);
+        file_context("/usr/bin/wait_for_sysfs", file, this);
+        file_context("/usr/sbin/udev", file, this);
+        file_context("/usr/sbin/udevadm", file, this);
+        file_context("/usr/sbin/udevd", file, this);
+        file_context("/usr/sbin/udevsend", file, this);
+        file_context("/usr/sbin/udevstart", file, this);
+        file_context("/usr/sbin/wait_for_sysfs", file, this);
+        file_context("/usr/lib/systemd/systemd-udevd", file, this);
+        file_context("/usr/lib/udev/udev-acl", file, this);
 
         if (distro_debian) {
-            file_context("/usr/lib/udev/create_static_nodes", file);
+            file_context("/usr/lib/udev/create_static_nodes", file, this);
         }
 
         if (distro_redhat) {
-            file_context("/usr/sbin/start_udev", file);
+            file_context("/usr/sbin/start_udev", file, this);
         }
     }
 
     @alias(udev_rules_t)
     resource rules inherits common_file {
-        file_context("/etc/udev/rules\.d(/.*)?", any); // udev_rules_t
-        file_context("/usr/lib/udev/rules\.d(/.*)?", any); // udev_rules_t
-        file_context("/run/udev/rules\.d(/.*)?", any); // udev_rules_t
+        file_context("/etc/udev/rules\.d(/.*)?", any, this);
+        file_context("/usr/lib/udev/rules\.d(/.*)?", any, this);
+        file_context("/run/udev/rules\.d(/.*)?", any, this);
     }
 
     @alias(udev_runtime_t)
     extend runtime {
-        file_context("/run/udev(/.*)?", any);
+        file_context("/run/udev(/.*)?", any, this);
 
         if (distro_debian) {
-            file_context("/run/xen-hotplug", dir);
+            file_context("/run/xen-hotplug", dir, this);
         }
     }
 
@@ -351,10 +351,10 @@ resource udev_helper_exec_t inherits executable {
     /// udev helper tools.
     // TODO: probably should phase this out since udev
     // can exec all executables (!?)
-    file_context("/etc/dev\.d/.+", file);
-    file_context("/etc/hotplug\.d/default/udev.*", file);
-    file_context("/etc/udev/scripts/.+", file);
-    file_context("/usr/share/virtualbox/VBoxCreateUSBNode\.sh", file);
+    file_context("/etc/dev\.d/.+", file, this);
+    file_context("/etc/hotplug\.d/default/udev.*", file, this);
+    file_context("/etc/udev/scripts/.+", file, this);
+    file_context("/usr/share/virtualbox/VBoxCreateUSBNode\.sh", file, this);
 }
 
 domain udevadm_t inherits app_domain {

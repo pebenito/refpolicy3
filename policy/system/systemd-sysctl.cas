@@ -8,7 +8,7 @@ domain systemd_sysctl_t inherits systemd_app_domain {
     //
     @alias(systemd_sysctl_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-sysctl", file);
+        file_context("/usr/lib/systemd/systemd-sysctl", file, this);
     }
 
     //

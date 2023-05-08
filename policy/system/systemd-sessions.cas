@@ -8,16 +8,16 @@ domain systemd_sessions_t inherits systemd_app_domain {
     //
     @alias(systemd_sessions_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-user-sessions", file);
+        file_context("/usr/lib/systemd/systemd-user-sessions", file, this);
     }
 
     @alias(systemd_sessions_runtime_t)
     resource runtime inherits runtimefile, systemd_mountpoint, systemd_tmpfiles_managed {
         /// Runtime files in /run and /var/run.
-        file_context("/run/\.nologin[^/]*", file);
-        file_context("/run/nologin", file);
-        file_context("/run/systemd/seats(/.*)?", any);
-        file_context("/run/systemd/sessions(/.*)?", any);
+        file_context("/run/\.nologin[^/]*", file, this);
+        file_context("/run/nologin", file, this);
+        file_context("/run/systemd/seats(/.*)?", any, this);
+        file_context("/run/systemd/sessions(/.*)?", any, this);
     }
 
     //

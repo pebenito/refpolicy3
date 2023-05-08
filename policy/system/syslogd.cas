@@ -8,9 +8,9 @@ domain syslogd_t inherits daemon {
     //
     @alias(syslog_conf_t)
     extend conf {
-        file_context("/etc/rsyslog\.conf", file);
-        file_context("/etc/syslog\.conf", file);
-        file_context("/etc/rsyslog\.d(/.*)?", any);
+        file_context("/etc/rsyslog\.conf", file, this);
+        file_context("/etc/syslog\.conf", file, this);
+        file_context("/etc/rsyslog\.d(/.*)?", any, this);
     }
 
     @alias(devlog_t)
@@ -18,28 +18,28 @@ domain syslogd_t inherits daemon {
         /// The /dev/log syslog socket.
         // This is separate from systemd_t.runtime because
         // it is a MLS trusted object.
-        file_context("/dev/log", socket, system_u:object_r:devlog_t:mls_systemhigh);
-        file_context("/run/log", socket, system_u:object_r:devlog_t:mls_systemhigh);
+        file_context("/dev/log", sock_file, system_u:object_r:devlog_t:mls_systemhigh);
+        file_context("/run/log", sock_file, system_u:object_r:devlog_t:mls_systemhigh);
     //typeattribute devlog_t mlstrustedobject;
     }
 
     @alias(syslogd_exec_t)
     extend exec  {
-        file_context("/usr/bin/metalog", file);
-        file_context("/usr/bin/minilogd", file);
-        file_context("/usr/bin/rsyslogd", file);
-        file_context("/usr/bin/syslog-ng", file);
-        file_context("/usr/bin/syslogd", file);
-        file_context("/usr/sbin/metalog", file);
-        file_context("/usr/sbin/minilogd", file);
-        file_context("/usr/sbin/rsyslogd", file);
-        file_context("/usr/sbin/syslog-ng", file);
-        file_context("/usr/sbin/syslogd", file);
+        file_context("/usr/bin/metalog", file, this);
+        file_context("/usr/bin/minilogd", file, this);
+        file_context("/usr/bin/rsyslogd", file, this);
+        file_context("/usr/bin/syslog-ng", file, this);
+        file_context("/usr/bin/syslogd", file, this);
+        file_context("/usr/sbin/metalog", file, this);
+        file_context("/usr/sbin/minilogd", file, this);
+        file_context("/usr/sbin/rsyslogd", file, this);
+        file_context("/usr/sbin/syslog-ng", file, this);
+        file_context("/usr/sbin/syslogd", file, this);
     }
 
     @alias(syslogd_initrc_exec_t)
     extend initrc_exec  {
-        file_context("/etc/rc\.d/init\.d/rsyslog", file);
+        file_context("/etc/rc\.d/init\.d/rsyslog", file, this);
     }
 
     @alias(syslogd_runtime_t)
@@ -55,10 +55,10 @@ domain syslogd_t inherits daemon {
     @alias(syslogd_var_lib_t)
     resource state inherits common_file {
         /// Contents of syslog dirs in /var/lib/.
-        file_context("/var/lib/misc/syslog-ng\.persist-?", file);
-        file_context("/var/lib/syslog-ng(/.*)?", any);
-        file_context("/var/lib/r?syslog(/.*)?", any);
-        file_context("/var/lib/syslog-ng\.persist", file);
+        file_context("/var/lib/misc/syslog-ng\.persist-?", file, this);
+        file_context("/var/lib/syslog-ng(/.*)?", any, this);
+        file_context("/var/lib/r?syslog(/.*)?", any, this);
+        file_context("/var/lib/syslog-ng\.persist", file, this);
     }
 
     @alias(syslogd_tmp_t)
@@ -66,7 +66,7 @@ domain syslogd_t inherits daemon {
 
     @alias(syslogd_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/rsyslog.*\.service", file);
+        file_context("/usr/lib/systemd/system/rsyslog.*\.service", file, this);
     }
 
     //

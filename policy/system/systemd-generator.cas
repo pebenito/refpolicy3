@@ -8,10 +8,10 @@ domain systemd_generator_t inherits systemd_app_domain {
     //
     @alias(systemd_generator_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/system-environment-generators/.*", file);
-        file_context("/usr/lib/systemd/system-generators/.*", file);
-        file_context("/usr/lib/systemd/user-environment-generators/.*", file);
-        file_context("/usr/lib/systemd/user-generators/.*", file);
+        file_context("/usr/lib/systemd/system-environment-generators/.*", file, this);
+        file_context("/usr/lib/systemd/system-generators/.*", file, this);
+        file_context("/usr/lib/systemd/user-environment-generators/.*", file, this);
+        file_context("/usr/lib/systemd/user-generators/.*", file, this);
     }
 
     //

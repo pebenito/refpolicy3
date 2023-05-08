@@ -8,13 +8,13 @@ domain systemd_coredump_t inherits systemd_app_domain {
     //
     @alias(systemd_coredump_exec_t)
     extend exec  {
-        file_context("/usr/bin/systemd-coredump", file);
-        file_context("/usr/lib/systemd/systemd-coredump", file);
+        file_context("/usr/bin/systemd-coredump", file, this);
+        file_context("/usr/lib/systemd/systemd-coredump", file, this);
     }
 
     @alias(systemd_coredump_var_lib_t)
     resource state inherits common_file, systemd_tmpfiles_managed {
-        file_context("/var/lib/systemd/coredump(/.*)?", any);
+        file_context("/var/lib/systemd/coredump(/.*)?", any, this);
     }
 
     //

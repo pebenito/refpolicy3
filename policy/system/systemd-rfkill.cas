@@ -8,18 +8,18 @@ domain systemd_rfkill_t inherits systemd_app_domain {
     //
     @alias(systemd_rfkill_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-rfkill", file);
+        file_context("/usr/lib/systemd/systemd-rfkill", file, this);
     }
 
     @alias(systemd_rfkill_var_lib_t)
     resource state inherits common_file {
-        file_context("/var/lib/systemd/rfkill(/.*)?", any);
+        file_context("/var/lib/systemd/rfkill(/.*)?", any, this);
     }
 
     @alias(systemd_rfkill_unit_t)
     resource unit inherits systemdunit {
         /// The systemd unit.
-        file_context("/usr/lib/systemd/system/systemd-rfkill.*", file);
+        file_context("/usr/lib/systemd/system/systemd-rfkill.*", file, this);
     }
 
     //

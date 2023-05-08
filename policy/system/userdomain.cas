@@ -1191,25 +1191,25 @@ resource user_home_dir_t inherits common_dir, mountpoint {
 
 resource user_home_t inherits common_pipe, common_named_socket, mountpoint, user_home_content {
     /// General user home directory content.
-    file_context("HOME_DIR/.+", any);
+    file_context("HOME_DIR/.+", any, this);
 }
 //files_poly_parent(user_home_t)
 
 resource user_bin_t inherits user_home_content {
-    file_context("HOME_DIR/bin(/.*)?", any);
-    file_context("HOME_DIR/\.local/bin(/.*)?", any);
+    file_context("HOME_DIR/bin(/.*)?", any, this);
+    file_context("HOME_DIR/\.local/bin(/.*)?", any, this);
 }
 
 resource user_cert_t inherits user_home_content {
-    file_context("HOME_DIR/\.pki(/.*)?", any);
+    file_context("HOME_DIR/\.pki(/.*)?", any, this);
 }
 
 resource user_devpts_t inherits user_pty {
-    file_context("/dev/pts/[0-9]+", chardev);
+    file_context("/dev/pts/[0-9]+", chr_file, this);
 }
 
 resource user_tmp_t inherits common_pipe, common_named_socket, user_tmp_content {
-    file_context("/tmp/gconfd-%{USERNAME}", dir);
+    file_context("/tmp/gconfd-%{USERNAME}", dir, this);
 }
 
 resource user_tmpfs_t inherits user_tmpfs_content {}
@@ -1217,7 +1217,7 @@ resource user_tmpfs_t inherits user_tmpfs_content {}
 resource user_tty_device_t inherits user_tty {}
 
 resource user_runtime_root_t inherits common_dir, mountpoint {
-    file_context("/run/user", dir);
+    file_context("/run/user", dir, this);
 
     systemd_tmpfiles_t.manager_of(this);
 }
@@ -1225,9 +1225,9 @@ resource user_runtime_root_t inherits common_dir, mountpoint {
 
 resource user_runtime_t inherits common_pipe, common_named_socket, mountpoint, user_runtime_content {
     /// General user home directory content.
-    file_context("/run/user/[^/]+", dir);
+    file_context("/run/user/[^/]+", dir, this);
 //    file_context("/run/user/[^/]+/.+", dir, <<none>>);
-    file_context("/run/user/%{USERID}", dir);
+    file_context("/run/user/%{USERID}", dir, this);
 //    file_context("/run/user/%{USERID}/.+", any, <<none>>);
 }
 //files_poly(user_runtime_t)

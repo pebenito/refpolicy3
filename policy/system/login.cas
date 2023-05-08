@@ -102,6 +102,6 @@ virtual domain bin_login_domain inherits login_domain {
 resource login_exec_t inherits entrypoint {
     /// The /bin/login program.
 
-    file_context("/usr/bin/login", file);
-    file_context("/usr/kerberos/sbin/login\.krb5", file);
+    file_context("/usr/bin/login", file, this);
+    file_context("/usr/kerberos/sbin/login\.krb5", file, this);
 }

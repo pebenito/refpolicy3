@@ -5,20 +5,20 @@
 //
 
 resource auth_cache_t inherits logfile, common_named_socket {
-    file_context("/var/cache/coolkey(/.*)?", any);
+    file_context("/var/cache/coolkey(/.*)?", any, this);
 }
 
 domain chkpwd_t inherits app_domain {
     /// pam_unix_chkpwd
 
     extend exec {
-        file_context("/usr/bin/unix_chkpwd", file);
-        file_context("/usr/bin/unix_verify", file);
-        file_context("/usr/bin/validate", file);
-        file_context("/usr/libexec/chkpwd/tcb_chkpwd", file);
-        file_context("/usr/sbin/unix_chkpwd", file);
-        file_context("/usr/sbin/unix_verify", file);
-        file_context("/usr/sbin/validate", file);
+        file_context("/usr/bin/unix_chkpwd", file, this);
+        file_context("/usr/bin/unix_verify", file, this);
+        file_context("/usr/bin/validate", file, this);
+        file_context("/usr/libexec/chkpwd/tcb_chkpwd", file, this);
+        file_context("/usr/sbin/unix_chkpwd", file, this);
+        file_context("/usr/sbin/unix_verify", file, this);
+        file_context("/usr/sbin/validate", file, this);
     }
 
     allow(this, self, capability, [dac_override setuid ]);
@@ -87,17 +87,17 @@ domain chkpwd_t inherits app_domain {
 
 resource faillog_t inherits logfile {
     /// Login failure database
-    file_context("/var/log/btmp.*", file);
-    file_context("/var/log/faillog", file);
-    file_context("/var/log/tallylog", file);
-    file_context("/run/faillock(/.*)?", any);
+    file_context("/var/log/btmp.*", file, this);
+    file_context("/var/log/faillog", file, this);
+    file_context("/var/log/tallylog", file, this);
+    file_context("/run/faillock(/.*)?", any, this);
 
     systemd_tmpfiles_t.manager_of(this);
 }
 
 resource lastlog_t inherits logfile {
     /// Most recent login information for users
-    file_context("/var/log/lastlog", file);
+    file_context("/var/log/lastlog", file, this);
 
     systemd_tmpfiles_t.manager_of(this);
 }
@@ -106,21 +106,21 @@ resource lastlog_t inherits logfile {
 domain pam_timestamp_t inherits common_domain {
     @alias(pam_exec_t)
     extend exec {
-        file_context("/usr/bin/pam_timestamp_check", file);
-        file_context("/usr/sbin/pam_timestamp_check", file);
+        file_context("/usr/bin/pam_timestamp_check", file, this);
+        file_context("/usr/sbin/pam_timestamp_check", file, this);
     }
 
     @alias(pam_runtime_t)
     resource runtime inherits runtimefile {
         /// Runtime files in /run and /var/run.
 
-        file_context("/run/pam_mount(/.*)?", any);
-        file_context("/run/sepermit(/.*)?", any);
-        file_context("/run/sudo(/.*)?", any);
-        file_context("/run/sudo/ts/%{USERNAME}", any);
-        file_context("/var/(db|adm)/sudo(/.*)?", any);
-        file_context("/var/lib/sudo(/.*)?", any);
-        file_context("/run/console(/.*)?", any);
+        file_context("/run/pam_mount(/.*)?", any, this);
+        file_context("/run/sepermit(/.*)?", any, this);
+        file_context("/run/sudo(/.*)?", any, this);
+        file_context("/run/sudo/ts/%{USERNAME}", any, this);
+        file_context("/var/(db|adm)/sudo(/.*)?", any, this);
+        file_context("/var/lib/sudo(/.*)?", any, this);
+        file_context("/run/console(/.*)?", any, this);
     }
 
     @alias(pam_tmp_t)
@@ -168,8 +168,8 @@ domain pam_console_t inherits system_app_domain {
 
     @alias(pam_console_exec_t)
     extend exec {
-        file_context("/usr/bin/pam_console_apply", file);
-        file_context("/usr/sbin/pam_console_apply", file);
+        file_context("/usr/bin/pam_console_apply", file, this);
+        file_context("/usr/sbin/pam_console_apply", file, this);
     }
 
     @alias(pam_var_console_t)
@@ -302,27 +302,27 @@ resource pam_motd_runtime_t inherits runtimefile {
     /// The message of the day
     /// The contents of the file is typically displayed at login.
 
-    file_context("/run/motd", file);
-    file_context("/run/motd\.dynamic", file);
-    file_context("/run/motd\.dynamic\.new", file);
+    file_context("/run/motd", file, this);
+    file_context("/run/motd\.dynamic", file, this);
+    file_context("/run/motd\.dynamic\.new", file, this);
 }
 
 resource shadow_t inherits authentication_file {
     /// The shadow password file, /etc/shadow
 
-    file_context("/etc/gshadow.*", file);
-    file_context("/etc/shadow.*", file);
-    file_context("/etc/tcb(/.*)?", file);
+    file_context("/etc/gshadow.*", file, this);
+    file_context("/etc/shadow.*", file, this);
+    file_context("/etc/tcb(/.*)?", file, this);
 
-    file_context("/var/db/shadow.*", file);
+    file_context("/var/db/shadow.*", file, this);
 }
 
 resource shadow_lock_t inherits lockfile {
     /// Lock files for password files.
 
-    file_context("/etc/\.pwd\.lock", file);
-    file_context("/etc/group\.lock", file);
-    file_context("/etc/passwd\.lock", file);
+    file_context("/etc/\.pwd\.lock", file, this);
+    file_context("/etc/group\.lock", file, this);
+    file_context("/etc/passwd\.lock", file, this);
 }
 
 domain updpwd_t inherits common_domain {
@@ -330,12 +330,12 @@ domain updpwd_t inherits common_domain {
 
     @alias(updpwd_exec_t)
     extend exec {
-        file_context("/usr/bin/tcb_convert", file);
-        file_context("/usr/bin/tcb_unconvert", file);
-        file_context("/usr/bin/unix_update", file);
-        file_context("/usr/sbin/tcb_convert", file);
-        file_context("/usr/sbin/tcb_unconvert", file);
-        file_context("/usr/sbin/unix_update", file);
+        file_context("/usr/bin/tcb_convert", file, this);
+        file_context("/usr/bin/tcb_unconvert", file, this);
+        file_context("/usr/bin/unix_update", file, this);
+        file_context("/usr/sbin/tcb_convert", file, this);
+        file_context("/usr/sbin/tcb_unconvert", file, this);
+        file_context("/usr/sbin/unix_update", file, this);
     }
 
     allow(this, self, capability, [ chown dac_override ]);
@@ -374,9 +374,9 @@ domain utempter_t inherits app_domain {
 
     @alias(utempter_exec_t)
     extend exec {
-        file_context("/usr/bin/utempter", file);
-        file_context("/usr/lib/([^/]+/)?utempter/utempter", file);
-        file_context("/usr/sbin/utempter", file);
+        file_context("/usr/bin/utempter", file, this);
+        file_context("/usr/lib/([^/]+/)?utempter/utempter", file, this);
+        file_context("/usr/sbin/utempter", file, this);
     }
 
     allow(this, self, capability, setgid);
@@ -407,9 +407,9 @@ domain utempter_t inherits app_domain {
 resource var_auth_t inherits authentication_file {
     /// The type of /var/lib/auth, usually used for auth data in pam_able
 
-    file_context("/var/lib/abl(/.*)?", any);
-    file_context("/var/lib/pam_ssh(/.*)?", any);
-    file_context("/run/pam_ssh(/.*)?", any);
+    file_context("/var/lib/abl(/.*)?", any, this);
+    file_context("/var/lib/pam_ssh(/.*)?", any, this);
+    file_context("/run/pam_ssh(/.*)?", any, this);
 
     systemd_tmpfiles_t.manager_of(this);
 }
@@ -417,7 +417,7 @@ resource var_auth_t inherits authentication_file {
 resource wtmp_t inherits logfile {
     /// Login records
     // TODO change /run/utmp to his type
-    file_context("/var/log/wtmp.*", file);
+    file_context("/var/log/wtmp.*", file, this);
 
     systemd_tmpfiles_t.manager_of(this);
 }

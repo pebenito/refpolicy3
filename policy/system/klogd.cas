@@ -7,14 +7,14 @@ domain klogd_t inherits daemon {
     // Resources
     //
     extend exec {
-        file_context("/usr/bin/klogd", file);
-        file_context("/usr/bin/rklogd", file);
-        file_context("/usr/sbin/klogd", file);
-        file_context("/usr/sbin/rklogd", file);
+        file_context("/usr/bin/klogd", file, this);
+        file_context("/usr/bin/rklogd", file, this);
+        file_context("/usr/sbin/klogd", file, this);
+        file_context("/usr/sbin/rklogd", file, this);
     }
 
     extend runtime {
-        file_context("/run/klogd\.pid", file);
+        file_context("/run/klogd\.pid", file, this);
     }
 
     //

@@ -108,14 +108,14 @@ virtual domain session_dbus inherits common_domain {
 
 resource session_dbusd_home_t inherits common_file, user_home_content {
     /// Home directory files for user dbus sessions.
-    file_context("HOME_DIR/\.dbus(/.*)?", any);
+    file_context("HOME_DIR/\.dbus(/.*)?", any, this);
 // TBD session_dbusd_home_t polymember for particular types
 }
 
 resource session_dbusd_runtime_t inherits runtimefile, user_runtime_content, common_named_socket {
     /// Runtime files for user dbus sessions.
-    file_context("/run/user/%{USERID}/bus", socket);
-    file_context("/run/user/%{USERID}/dbus-1(/.*)?", any);
+    file_context("/run/user/%{USERID}/bus", sock_file, this);
+    file_context("/run/user/%{USERID}/dbus-1(/.*)?", any, this);
 }
 
 resource session_dbusd_tmp_t inherits tmpfile {
@@ -131,32 +131,32 @@ domain system_dbusd_t inherits daemon {
     //
     @alias(dbusd_etc_t)
     extend conf {
-        file_context("/etc/dbus-.*(/.*)?", any);
+        file_context("/etc/dbus-.*(/.*)?", any, this);
     }
 
     @alias(dbusd_exec_t)
     extend exec {
-        file_context("/usr/bin/dbus-daemon(-1)?", file);
-        file_context("/usr/bin/dbus-broker-launch", file);
-        file_context("/usr/bin/dbus-broker", file);
-        file_context("/usr/lib/dbus-.*/dbus-daemon-launch-helper", file);
-        file_context("/usr/libexec/dbus-daemon-launch-helper", file);
+        file_context("/usr/bin/dbus-daemon(-1)?", file, this);
+        file_context("/usr/bin/dbus-broker-launch", file, this);
+        file_context("/usr/bin/dbus-broker", file, this);
+        file_context("/usr/lib/dbus-.*/dbus-daemon-launch-helper", file, this);
+        file_context("/usr/libexec/dbus-daemon-launch-helper", file, this);
     }
 
     @alias(system_dbusd_runtime_t)
     extend runtime inherits mountpoint {
-        file_context("/run/dbus(/.*)?", any);
-        file_context("/run/messagebus\.pid", file);
-        file_context("/var/run/dbus/system_bus_socket", any);
+        file_context("/run/dbus(/.*)?", any, this);
+        file_context("/run/messagebus\.pid", file, this);
+        file_context("/var/run/dbus/system_bus_socket", any, this);
 
         if (distro_debian) {
-            file_context("/var/run/dbus(/.*)?", any);
+            file_context("/var/run/dbus(/.*)?", any, this);
         }
     }
 
     @alias(system_dbusd_var_lib_t)
     resource state inherits common_file {
-        file_context("/var/lib/dbus(/.*)?", any);
+        file_context("/var/lib/dbus(/.*)?", any, this);
 
         // allow populating of /var/lib/dbus by systemd-tmpfilesd
         systemd_tmpfiles_t.manager_of(this);
@@ -170,7 +170,7 @@ domain system_dbusd_t inherits daemon {
 
     @alias(dbusd_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/[^/]*dbus.*", file);
+        file_context("/usr/lib/systemd/system/[^/]*dbus.*", file, this);
     }
 
     //

@@ -10,7 +10,7 @@ domain systemd_locale_t inherits systemd_app_domain {
     //
     @alias(systemd_locale_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-localed", file);
+        file_context("/usr/lib/systemd/systemd-localed", file, this);
     }
 
     //

@@ -85,27 +85,27 @@ domain getty_t inherits getty_domain{
 
     @alias(getty_conf_t)
     extend conf {
-        file_context("/etc/mgetty(/.*)?", any);
+        file_context("/etc/mgetty(/.*)?", any, this);
     }
 
     @alias(getty_exec_t)
     extend exec {
-        file_context("/usr/bin/.*getty", file);
-        file_context("/usr/sbin/.*getty", file);
+        file_context("/usr/bin/.*getty", file, this);
+        file_context("/usr/sbin/.*getty", file, this);
     }
 
     @alias(getty_log_t)
     extend log {
-        file_context("/var/log/mgetty\.log.*", file);
-        file_context("/var/log/vgetty\.log\..*", file);
+        file_context("/var/log/mgetty\.log.*", file, this);
+        file_context("/var/log/vgetty\.log\..*", file, this);
     }
 
     @alias(getty_runtime_t)
     extend runtime {
-        file_context("/run/mgetty\.pid.*", file);
-        file_context("/run/agetty\.reload", file);
-        file_context("/var/spool/fax(/.*)?", any);
-        file_context("/var/spool/voice(/.*)?", any);
+        file_context("/run/mgetty\.pid.*", file, this);
+        file_context("/run/agetty\.reload", file, this);
+        file_context("/var/spool/fax(/.*)?", any, this);
+        file_context("/var/spool/voice(/.*)?", any, this);
     }
 
     @alias(getty_tmp_t)

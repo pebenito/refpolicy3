@@ -5,10 +5,10 @@ domain sulogin_t inherits system_app_domain {
 
     @alias(sulogin_exec_t)
     extend exec {
-        file_context("/usr/bin/sulogin", file);
-        file_context("/usr/bin/sushell", file);
-        file_context("/usr/sbin/sulogin", file);
-        file_context("/usr/sbin/sushell", file);
+        file_context("/usr/bin/sulogin", file, this);
+        file_context("/usr/bin/sushell", file, this);
+        file_context("/usr/sbin/sulogin", file, this);
+        file_context("/usr/sbin/sushell", file, this);
     }
 
     allow(this, self, capability, [ dac_read_search sys_admin sys_tty_config ]);

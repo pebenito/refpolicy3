@@ -5,23 +5,23 @@ domain acct_t inherits system_app_domain {
 
     @alias(acct_exec_t)
     extend exec {
-        file_context("/usr/bin/accton", file);
-        file_context("/usr/sbin/accton", file);
+        file_context("/usr/bin/accton", file, this);
+        file_context("/usr/sbin/accton", file, this);
     }
 
     @alias(acct_data_t)
     resource data inherits common_file, logfile {
         /// Accounting data.
 
-        file_context("/var/account(/.*)?", any);
-        file_context("/var/log/account(/.*)?", any);
+        file_context("/var/account(/.*)?", any, this);
+        file_context("/var/log/account(/.*)?", any, this);
     }
 
     @alias(acct_initrc_exec_t)
     resource initrc_exec inherits init_script_file {
         /// SysV init script.
 
-        file_context("/etc/rc\.d/init\.d/psacct", file);
+        file_context("/etc/rc\.d/init\.d/psacct", file, this);
     }
 
     allow(this, self, capability, [ chown fsetid kill sys_pacct ]);

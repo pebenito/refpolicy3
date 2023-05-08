@@ -10,128 +10,128 @@ domain lvm_t inherits system_app_domain {
     @alias(lvm_etc_t)
     resource conf inherits common_file {
         /// Device mapper config files.
-        file_context("/etc/lvm(/.*)?", any);
+        file_context("/etc/lvm(/.*)?", any, this);
     }
 
     @alias(lvm_exec_t)
     extend exec {
-        file_context("/usr/bin/cryptsetup", file);
-        file_context("/usr/bin/dmraid", file);
-        file_context("/usr/bin/dmsetup", file);
-        file_context("/usr/bin/dmsetup\.static", file);
-        file_context("/usr/bin/e2fsadm", file);
-        file_context("/usr/bin/lvchange", file);
-        file_context("/usr/bin/lvcreate", file);
-        file_context("/usr/bin/lvdisplay", file);
-        file_context("/usr/bin/lvextend", file);
-        file_context("/usr/bin/lvm", file);
-        file_context("/usr/bin/lvmetad", file);
-        file_context("/usr/bin/lvm\.static", file);
-        file_context("/usr/bin/lvmchange", file);
-        file_context("/usr/bin/lvmdiskscan", file);
-        file_context("/usr/bin/lvmiopversion", file);
-        file_context("/usr/bin/lvmsadc", file);
-        file_context("/usr/bin/lvmsar", file);
-        file_context("/usr/bin/lvreduce", file);
-        file_context("/usr/bin/lvremove", file);
-        file_context("/usr/bin/lvrename", file);
-        file_context("/usr/bin/lvresize", file);
-        file_context("/usr/bin/lvs", file);
-        file_context("/usr/bin/lvscan", file);
-        file_context("/usr/bin/multipath", file);
-        file_context("/usr/bin/multipathd", file);
-        file_context("/usr/bin/multipath\.static", file);
-        file_context("/usr/bin/pvchange", file);
-        file_context("/usr/bin/pvcreate", file);
-        file_context("/usr/bin/pvdata", file);
-        file_context("/usr/bin/pvdisplay", file);
-        file_context("/usr/bin/pvmove", file);
-        file_context("/usr/bin/pvremove", file);
-        file_context("/usr/bin/pvs", file);
-        file_context("/usr/bin/pvscan", file);
-        file_context("/usr/bin/vgcfgbackup", file);
-        file_context("/usr/bin/vgcfgrestore", file);
-        file_context("/usr/bin/vgchange", file);
-        file_context("/usr/bin/vgchange\.static", file);
-        file_context("/usr/bin/vgck", file);
-        file_context("/usr/bin/vgcreate", file);
-        file_context("/usr/bin/vgdisplay", file);
-        file_context("/usr/bin/vgexport", file);
-        file_context("/usr/bin/vgextend", file);
-        file_context("/usr/bin/vgimport", file);
-        file_context("/usr/bin/vgmerge", file);
-        file_context("/usr/bin/vgmknodes", file);
-        file_context("/usr/bin/vgreduce", file);
-        file_context("/usr/bin/vgremove", file);
-        file_context("/usr/bin/vgrename", file);
-        file_context("/usr/bin/vgs", file);
-        file_context("/usr/bin/vgscan", file);
-        file_context("/usr/bin/vgscan\.static", file);
-        file_context("/usr/bin/vgsplit", file);
-        file_context("/usr/bin/vgwrapper", file);
-        file_context("/usr/lib/lvm-10/.*", file);
-        file_context("/usr/lib/lvm-200/.*", file);
-        file_context("/usr/lib/udev/udisks-lvm-pv-export", file);
-        file_context("/usr/sbin/cryptsetup", file);
-        file_context("/usr/sbin/dmraid", file);
-        file_context("/usr/sbin/dmsetup", file);
-        file_context("/usr/sbin/dmsetup\.static", file);
-        file_context("/usr/sbin/e2fsadm", file);
-        file_context("/usr/sbin/lvchange", file);
-        file_context("/usr/sbin/lvcreate", file);
-        file_context("/usr/sbin/lvdisplay", file);
-        file_context("/usr/sbin/lvextend", file);
-        file_context("/usr/sbin/lvm", file);
-        file_context("/usr/sbin/lvmetad", file);
-        file_context("/usr/sbin/lvm\.static", file);
-        file_context("/usr/sbin/lvmchange", file);
-        file_context("/usr/sbin/lvmdiskscan", file);
-        file_context("/usr/sbin/lvmiopversion", file);
-        file_context("/usr/sbin/lvmsadc", file);
-        file_context("/usr/sbin/lvmsar", file);
-        file_context("/usr/sbin/lvreduce", file);
-        file_context("/usr/sbin/lvremove", file);
-        file_context("/usr/sbin/lvrename", file);
-        file_context("/usr/sbin/lvresize", file);
-        file_context("/usr/sbin/lvs", file);
-        file_context("/usr/sbin/lvscan", file);
-        file_context("/usr/sbin/multipathd", file);
-        file_context("/usr/sbin/multipath\.static", file);
-        file_context("/usr/sbin/pvchange", file);
-        file_context("/usr/sbin/pvcreate", file);
-        file_context("/usr/sbin/pvdata", file);
-        file_context("/usr/sbin/pvdisplay", file);
-        file_context("/usr/sbin/pvmove", file);
-        file_context("/usr/sbin/pvremove", file);
-        file_context("/usr/sbin/pvs", file);
-        file_context("/usr/sbin/pvscan", file);
-        file_context("/usr/sbin/vgcfgbackup", file);
-        file_context("/usr/sbin/vgcfgrestore", file);
-        file_context("/usr/sbin/vgchange", file);
-        file_context("/usr/sbin/vgchange\.static", file);
-        file_context("/usr/sbin/vgck", file);
-        file_context("/usr/sbin/vgcreate", file);
-        file_context("/usr/sbin/vgdisplay", file);
-        file_context("/usr/sbin/vgexport", file);
-        file_context("/usr/sbin/vgextend", file);
-        file_context("/usr/sbin/vgimport", file);
-        file_context("/usr/sbin/vgmerge", file);
-        file_context("/usr/sbin/vgmknodes", file);
-        file_context("/usr/sbin/vgreduce", file);
-        file_context("/usr/sbin/vgremove", file);
-        file_context("/usr/sbin/vgrename", file);
-        file_context("/usr/sbin/vgs", file);
-        file_context("/usr/sbin/vgscan", file);
-        file_context("/usr/sbin/vgscan\.static", file);
-        file_context("/usr/sbin/vgsplit", file);
-        file_context("/usr/sbin/vgwrapper", file);
+        file_context("/usr/bin/cryptsetup", file, this);
+        file_context("/usr/bin/dmraid", file, this);
+        file_context("/usr/bin/dmsetup", file, this);
+        file_context("/usr/bin/dmsetup\.static", file, this);
+        file_context("/usr/bin/e2fsadm", file, this);
+        file_context("/usr/bin/lvchange", file, this);
+        file_context("/usr/bin/lvcreate", file, this);
+        file_context("/usr/bin/lvdisplay", file, this);
+        file_context("/usr/bin/lvextend", file, this);
+        file_context("/usr/bin/lvm", file, this);
+        file_context("/usr/bin/lvmetad", file, this);
+        file_context("/usr/bin/lvm\.static", file, this);
+        file_context("/usr/bin/lvmchange", file, this);
+        file_context("/usr/bin/lvmdiskscan", file, this);
+        file_context("/usr/bin/lvmiopversion", file, this);
+        file_context("/usr/bin/lvmsadc", file, this);
+        file_context("/usr/bin/lvmsar", file, this);
+        file_context("/usr/bin/lvreduce", file, this);
+        file_context("/usr/bin/lvremove", file, this);
+        file_context("/usr/bin/lvrename", file, this);
+        file_context("/usr/bin/lvresize", file, this);
+        file_context("/usr/bin/lvs", file, this);
+        file_context("/usr/bin/lvscan", file, this);
+        file_context("/usr/bin/multipath", file, this);
+        file_context("/usr/bin/multipathd", file, this);
+        file_context("/usr/bin/multipath\.static", file, this);
+        file_context("/usr/bin/pvchange", file, this);
+        file_context("/usr/bin/pvcreate", file, this);
+        file_context("/usr/bin/pvdata", file, this);
+        file_context("/usr/bin/pvdisplay", file, this);
+        file_context("/usr/bin/pvmove", file, this);
+        file_context("/usr/bin/pvremove", file, this);
+        file_context("/usr/bin/pvs", file, this);
+        file_context("/usr/bin/pvscan", file, this);
+        file_context("/usr/bin/vgcfgbackup", file, this);
+        file_context("/usr/bin/vgcfgrestore", file, this);
+        file_context("/usr/bin/vgchange", file, this);
+        file_context("/usr/bin/vgchange\.static", file, this);
+        file_context("/usr/bin/vgck", file, this);
+        file_context("/usr/bin/vgcreate", file, this);
+        file_context("/usr/bin/vgdisplay", file, this);
+        file_context("/usr/bin/vgexport", file, this);
+        file_context("/usr/bin/vgextend", file, this);
+        file_context("/usr/bin/vgimport", file, this);
+        file_context("/usr/bin/vgmerge", file, this);
+        file_context("/usr/bin/vgmknodes", file, this);
+        file_context("/usr/bin/vgreduce", file, this);
+        file_context("/usr/bin/vgremove", file, this);
+        file_context("/usr/bin/vgrename", file, this);
+        file_context("/usr/bin/vgs", file, this);
+        file_context("/usr/bin/vgscan", file, this);
+        file_context("/usr/bin/vgscan\.static", file, this);
+        file_context("/usr/bin/vgsplit", file, this);
+        file_context("/usr/bin/vgwrapper", file, this);
+        file_context("/usr/lib/lvm-10/.*", file, this);
+        file_context("/usr/lib/lvm-200/.*", file, this);
+        file_context("/usr/lib/udev/udisks-lvm-pv-export", file, this);
+        file_context("/usr/sbin/cryptsetup", file, this);
+        file_context("/usr/sbin/dmraid", file, this);
+        file_context("/usr/sbin/dmsetup", file, this);
+        file_context("/usr/sbin/dmsetup\.static", file, this);
+        file_context("/usr/sbin/e2fsadm", file, this);
+        file_context("/usr/sbin/lvchange", file, this);
+        file_context("/usr/sbin/lvcreate", file, this);
+        file_context("/usr/sbin/lvdisplay", file, this);
+        file_context("/usr/sbin/lvextend", file, this);
+        file_context("/usr/sbin/lvm", file, this);
+        file_context("/usr/sbin/lvmetad", file, this);
+        file_context("/usr/sbin/lvm\.static", file, this);
+        file_context("/usr/sbin/lvmchange", file, this);
+        file_context("/usr/sbin/lvmdiskscan", file, this);
+        file_context("/usr/sbin/lvmiopversion", file, this);
+        file_context("/usr/sbin/lvmsadc", file, this);
+        file_context("/usr/sbin/lvmsar", file, this);
+        file_context("/usr/sbin/lvreduce", file, this);
+        file_context("/usr/sbin/lvremove", file, this);
+        file_context("/usr/sbin/lvrename", file, this);
+        file_context("/usr/sbin/lvresize", file, this);
+        file_context("/usr/sbin/lvs", file, this);
+        file_context("/usr/sbin/lvscan", file, this);
+        file_context("/usr/sbin/multipathd", file, this);
+        file_context("/usr/sbin/multipath\.static", file, this);
+        file_context("/usr/sbin/pvchange", file, this);
+        file_context("/usr/sbin/pvcreate", file, this);
+        file_context("/usr/sbin/pvdata", file, this);
+        file_context("/usr/sbin/pvdisplay", file, this);
+        file_context("/usr/sbin/pvmove", file, this);
+        file_context("/usr/sbin/pvremove", file, this);
+        file_context("/usr/sbin/pvs", file, this);
+        file_context("/usr/sbin/pvscan", file, this);
+        file_context("/usr/sbin/vgcfgbackup", file, this);
+        file_context("/usr/sbin/vgcfgrestore", file, this);
+        file_context("/usr/sbin/vgchange", file, this);
+        file_context("/usr/sbin/vgchange\.static", file, this);
+        file_context("/usr/sbin/vgck", file, this);
+        file_context("/usr/sbin/vgcreate", file, this);
+        file_context("/usr/sbin/vgdisplay", file, this);
+        file_context("/usr/sbin/vgexport", file, this);
+        file_context("/usr/sbin/vgextend", file, this);
+        file_context("/usr/sbin/vgimport", file, this);
+        file_context("/usr/sbin/vgmerge", file, this);
+        file_context("/usr/sbin/vgmknodes", file, this);
+        file_context("/usr/sbin/vgreduce", file, this);
+        file_context("/usr/sbin/vgremove", file, this);
+        file_context("/usr/sbin/vgrename", file, this);
+        file_context("/usr/sbin/vgs", file, this);
+        file_context("/usr/sbin/vgscan", file, this);
+        file_context("/usr/sbin/vgscan\.static", file, this);
+        file_context("/usr/sbin/vgsplit", file, this);
+        file_context("/usr/sbin/vgwrapper", file, this);
     }
 
     @alias(lvm_lock_t)
     resource lock inherits lockfile {
         /// Lock files.
-        file_context("/etc/lvm/lock(/.*)?", any);
-        file_context("/var/lock/lvm(/.*)?", any);
+        file_context("/etc/lvm/lock(/.*)?", any, this);
+        file_context("/var/lock/lvm(/.*)?", any, this);
 
         systemd_tmpfiles_t.manager_of(this);
     }
@@ -139,27 +139,27 @@ domain lvm_t inherits system_app_domain {
     @alias(lvm_metadata_t)
     resource metadata inherits common_file {
         /// LVM metadata.
-        file_context("/etc/lvm/\.cache", file);
-        file_context("/etc/lvm/cache(/.*)?", any);
-        file_context("/etc/lvm/archive(/.*)?", any);
-        file_context("/etc/lvm/backup(/.*)?", any);
-        file_context("/etc/lvmtab(/.*)?", any);
-        file_context("/etc/lvmtab\.d(/.*)?", any);
-        file_context("/var/cache/multipathd(/.*)?", any);
+        file_context("/etc/lvm/\.cache", file, this);
+        file_context("/etc/lvm/cache(/.*)?", any, this);
+        file_context("/etc/lvm/archive(/.*)?", any, this);
+        file_context("/etc/lvm/backup(/.*)?", any, this);
+        file_context("/etc/lvmtab(/.*)?", any, this);
+        file_context("/etc/lvmtab\.d(/.*)?", any, this);
+        file_context("/var/cache/multipathd(/.*)?", any, this);
     }
 
     @alias(lvm_runtime_t)
     resource runtime inherits runtimefile, common_pipe, common_named_socket {
         /// Runtime files in /run and /var/run.
-        file_context("/run/multipathd\.sock", socket);
-        file_context("/run/dmevent.*", any);
-        file_context("/run/lvm(/.*)?", any);
+        file_context("/run/multipathd\.sock", sock_file, this);
+        file_context("/run/dmevent.*", any, this);
+        file_context("/run/lvm(/.*)?", any, this);
     }
 
     @alias(lvm_var_lib_t)
     resource state inherits common_file {
         /// Contents of /var/lib/...
-        file_context("/var/lib/multipath(/.*)?", any);
+        file_context("/var/lib/multipath(/.*)?", any, this);
     }
 
     @alias(lvm_tmp_t)
@@ -173,10 +173,10 @@ domain lvm_t inherits system_app_domain {
     @alias(lvm_unit_t)
     resource unit inherits common_file {
         /// The systemd units.
-        file_context("/usr/lib/systemd/system/blk-availability.*", file);
-        file_context("/usr/lib/systemd/system/dm-event.*", file);
-        file_context("/usr/lib/systemd/system/lvm2-.*", file);
-        file_context("/usr/lib/systemd/system/lvm2-lvmetad.*", file);
+        file_context("/usr/lib/systemd/system/blk-availability.*", file, this);
+        file_context("/usr/lib/systemd/system/dm-event.*", file, this);
+        file_context("/usr/lib/systemd/system/lvm2-.*", file, this);
+        file_context("/usr/lib/systemd/system/lvm2-lvmetad.*", file, this);
     }
 
     //

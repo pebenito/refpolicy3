@@ -111,7 +111,7 @@ virtual domain init inherits common_domain {
     @alias(init_exec_t)
     extend exec {
         /// The init executable
-        file_context("/sbin/init", file);
+        file_context("/sbin/init", file, this);
     }
 
     //
@@ -165,23 +165,23 @@ domain init_script_t inherits system_app_domain {
     // Resources
     //
     extend exec {
-        file_context("/etc/rc\.d/rc", file);
-        file_context("/etc/rc\.d/rc\.[^/]+", file);
-        file_context("/etc/rc\.d/init\.d/.*", file);
-        file_context("/etc/sysconfig/network-scripts/ifup-ipsec", file);
-        file_context("/etc/X11/prefdm", file);
-        file_context("/usr/bin/open_init_pty", file);
-        file_context("/usr/bin/sepg_ctl", file);
-        file_context("/usr/libexec/dcc/start-.*", file);
-        file_context("/usr/libexec/dcc/stop-.*", file);
-        file_context("/usr/sbin/open_init_pty", file);
-        file_context("/etc/network/if-pre-up\.d/.*", file); // distro_debian
-        file_context("/etc/network/if-up\.d/.*", file); // distro_debian
-        file_context("/etc/network/if-down\.d/.*", file); // distro_debian
-        file_context("/etc/network/if-post-down\.d/.*", file); // distro_debian
-        file_context("/etc/vmware/init\.d/vmware", file); // distro_gentoo
-        file_context("/etc/x11/startDM\.sh", file); // distro_gentoo
-        file_context("/usr/lib/systemd/rhel[^/]*", file); // distro_redhat
+        file_context("/etc/rc\.d/rc", file, this);
+        file_context("/etc/rc\.d/rc\.[^/]+", file, this);
+        file_context("/etc/rc\.d/init\.d/.*", file, this);
+        file_context("/etc/sysconfig/network-scripts/ifup-ipsec", file, this);
+        file_context("/etc/X11/prefdm", file, this);
+        file_context("/usr/bin/open_init_pty", file, this);
+        file_context("/usr/bin/sepg_ctl", file, this);
+        file_context("/usr/libexec/dcc/start-.*", file, this);
+        file_context("/usr/libexec/dcc/stop-.*", file, this);
+        file_context("/usr/sbin/open_init_pty", file, this);
+        file_context("/etc/network/if-pre-up\.d/.*", file, this); // distro_debian
+        file_context("/etc/network/if-up\.d/.*", file, this); // distro_debian
+        file_context("/etc/network/if-down\.d/.*", file, this); // distro_debian
+        file_context("/etc/network/if-post-down\.d/.*", file, this); // distro_debian
+        file_context("/etc/vmware/init\.d/vmware", file, this); // distro_gentoo
+        file_context("/etc/x11/startDM\.sh", file, this); // distro_gentoo
+        file_context("/usr/lib/systemd/rhel[^/]*", file, this); // distro_redhat
     }
 
     @alias(initrc_runtime_t)

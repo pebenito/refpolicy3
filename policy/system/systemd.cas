@@ -774,31 +774,31 @@ domain systemd_t inherits init {
 
 resource power_unit_t inherits systemdunit {
     /// Units for power state (shutdown, reboot, sleep, etc.)
-    file_context("/usr/lib/systemd/system/[^/]*halt.*", file);
-    file_context("/usr/lib/systemd/system/[^/]*hibernate.*", file);
-    file_context("/usr/lib/systemd/system/[^/]*power.*", file);
-    file_context("/usr/lib/systemd/system/[^/]*reboot.*", file);
-    file_context("/usr/lib/systemd/system/[^/]*shutdown.*", file);
-    file_context("/usr/lib/systemd/system/[^/]*sleep.*", file);
-    file_context("/usr/lib/systemd/system/[^/]*suspend.*", file);
+    file_context("/usr/lib/systemd/system/[^/]*halt.*", file, this);
+    file_context("/usr/lib/systemd/system/[^/]*hibernate.*", file, this);
+    file_context("/usr/lib/systemd/system/[^/]*power.*", file, this);
+    file_context("/usr/lib/systemd/system/[^/]*reboot.*", file, this);
+    file_context("/usr/lib/systemd/system/[^/]*shutdown.*", file, this);
+    file_context("/usr/lib/systemd/system/[^/]*sleep.*", file, this);
+    file_context("/usr/lib/systemd/system/[^/]*suspend.*", file, this);
 }
 
 resource systemd_conf_home_t inherits user_systemdunit, user_home_content {
     /// Files in ~/.config/systemd.
-    file_context("HOME_DIR/\.config/systemd(/.*)?", any);
+    file_context("HOME_DIR/\.config/systemd(/.*)?", any, this);
 // systemd_conf_home_t inherits xdg_config_type;
 }
 
 resource systemd_data_home_t inherits user_home_content {
     /// Files in ~/.local/share/systemd.
-    file_context("HOME_DIR/\.local/share/systemd(/.*)?", any);
+    file_context("HOME_DIR/\.local/share/systemd(/.*)?", any, this);
 // systemd_data_home_t xdg_data_type;
 // TBD systemd_data_home_t polymember for particular types
 }
 
 resource systemd_unit_t inherits systemdunit {
     /// General system units.
-    file_context("/usr/lib/dracut/modules\.d/[^/]+/.*\.service", file);
+    file_context("/usr/lib/dracut/modules\.d/[^/]+/.*\.service", file, this);
 }
 
 resource systemd_transient_unit_t inherits systemdunit {
@@ -807,12 +807,12 @@ resource systemd_transient_unit_t inherits systemdunit {
 
 resource systemd_user_manager_unit_t inherits systemdunit {
     /// The user@.service unit for systemd --user instances.
-    file_context("/usr/lib/systemd/system/user@\.service", file);
+    file_context("/usr/lib/systemd/system/user@\.service", file, this);
 }
 
 resource systemd_user_runtime_t inherits user_runtime_content, common_named_socket, common_pipe, common_block_device, common_character_device, symlink {
     /// systemd --user instance data in /run/user/<uid>/systemd/*
-    file_context("/run/user/%{USERID}/systemd", dir);
+    file_context("/run/user/%{USERID}/systemd", dir, this);
 }
 
 resource systemd_user_runtime_notify_t inherits user_runtime_content, common_named_socket {
@@ -820,19 +820,19 @@ resource systemd_user_runtime_notify_t inherits user_runtime_content, common_nam
 }
 
 resource systemd_user_runtime_unit_t inherits user_runtime_content, user_systemdunit {
-    file_context("/run/user/%{USERID}/systemd/generator(/.*)?", any);
-    file_context("/run/user/%{USERID}/systemd/generator\.early(/.*)?", any);
-    file_context("/run/user/%{USERID}/systemd/generator\.late(/.*)?", any);
-    file_context("/run/user/%{USERID}/systemd/user(/.*)?", any);
+    file_context("/run/user/%{USERID}/systemd/generator(/.*)?", any, this);
+    file_context("/run/user/%{USERID}/systemd/generator\.early(/.*)?", any, this);
+    file_context("/run/user/%{USERID}/systemd/generator\.late(/.*)?", any, this);
+    file_context("/run/user/%{USERID}/systemd/user(/.*)?", any, this);
 }
 
 resource systemd_user_transient_unit_t inherits user_runtime_content, user_systemdunit {
-    file_context("/run/user/%{USERID}/systemd/transient(/.*)?", any);
+    file_context("/run/user/%{USERID}/systemd/transient(/.*)?", any, this);
 }
 
 resource systemd_user_unit_t inherits user_systemdunit, common_file {
     /// Systemwide units for systemd --user instances.
-    file_context("/usr/lib/systemd/user(/.*)?", any);
+    file_context("/usr/lib/systemd/user(/.*)?", any, this);
 }
 
 resource systemd_user_tmpfs_t inherits tmpfsfile {
@@ -969,20 +969,20 @@ extend syslogd_t {
     // Extend syslogd_t for systemd-journald use.
 
     extend conf {
-        file_context("/etc/systemd/journal.*\.conf", file);
-        file_context("/etc/systemd/journald\.conf\.d(/.*)?", any);
+        file_context("/etc/systemd/journal.*\.conf", file, this);
+        file_context("/etc/systemd/journald\.conf\.d(/.*)?", any, this);
     }
 
     extend devlog {
-        file_context("/run/systemd/journal/socket", socket, system_u:object_r:devlog_t:mls_systemhigh);
-        file_context("/run/systemd/journal/stdout", socket, system_u:object_r:devlog_t:mls_systemhigh);
-        file_context("/run/systemd/journal/syslog", socket, system_u:object_r:devlog_t:mls_systemhigh);
-        file_context("/run/systemd/journal/dev-log", socket, system_u:object_r:devlog_t:mls_systemhigh);
+        file_context("/run/systemd/journal/socket", sock_file, system_u:object_r:devlog_t:mls_systemhigh);
+        file_context("/run/systemd/journal/stdout", sock_file, system_u:object_r:devlog_t:mls_systemhigh);
+        file_context("/run/systemd/journal/syslog", sock_file, system_u:object_r:devlog_t:mls_systemhigh);
+        file_context("/run/systemd/journal/dev-log", sock_file, system_u:object_r:devlog_t:mls_systemhigh);
     }
 
     extend exec {
-        file_context("/usr/lib/systemd/systemd-journald", file);
-        file_context("/usr/lib/systemd/systemd-kmsg-syslogd", file);
+        file_context("/usr/lib/systemd/systemd-journald", file, this);
+        file_context("/usr/lib/systemd/systemd-kmsg-syslogd", file, this);
     }
 
     extend runtime {
@@ -990,7 +990,7 @@ extend syslogd_t {
     }
 
     extend unit {
-        file_context("/usr/lib/systemd/system/[^/]*systemd-journal.*", file);
+        file_context("/usr/lib/systemd/system/[^/]*systemd-journal.*", file, this);
     }
 
     // dac_read_search:  journald traverses /run/user/UID (which is mode 0700) to read symlinks in /run/user/UID/systemd/units/
@@ -1041,7 +1041,7 @@ extend syslogd_t {
 extend lvm_t inherits systemd_common {
     // Extend for systemd-cryptsetup
     extend exec {
-        file_context("/usr/lib/systemd/systemd-cryptsetup", file);
+        file_context("/usr/lib/systemd/systemd-cryptsetup", file, this);
     }
 
     hugetlbfs_t<common_dir>.manage();

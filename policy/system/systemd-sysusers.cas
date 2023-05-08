@@ -8,7 +8,7 @@ domain systemd_sysusers_t inherits systemd_app_domain {
     //
     @alias(systemd_sysusers_exec_t)
     extend exec  {
-        file_context("/usr/bin/systemd-sysusers", file);
+        file_context("/usr/bin/systemd-sysusers", file, this);
     }
 
     //

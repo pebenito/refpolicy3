@@ -8,32 +8,32 @@ domain ifconfig_t inherits system_app_domain {
     //
     @alias(ifconfig_exec_t)
     extend exec  {
-        file_context("/usr/bin/ethtool", file);
-        file_context("/usr/bin/ifconfig", file);
-        file_context("/usr/bin/ip", file);
-        file_context("/usr/bin/ipx_configure", file);
-        file_context("/usr/bin/ipx_interface", file);
-        file_context("/usr/bin/ipx_internal_net", file);
-        file_context("/usr/bin/iw", file);
-        file_context("/usr/bin/iwconfig", file);
-        file_context("/usr/bin/mii-tool", file);
-        file_context("/usr/bin/tc", file);
-        file_context("/usr/sbin/ethtool", file);
-        file_context("/usr/sbin/ifconfig", file);
-        file_context("/usr/sbin/ip", file);
-        file_context("/usr/sbin/ipx_configure", file);
-        file_context("/usr/sbin/ipx_interface", file);
-        file_context("/usr/sbin/ipx_internal_net", file);
-        file_context("/usr/sbin/iw", file);
-        file_context("/usr/sbin/iwconfig", file);
-        file_context("/usr/sbin/mii-tool", file);
-        file_context("/usr/sbin/tc", file);
+        file_context("/usr/bin/ethtool", file, this);
+        file_context("/usr/bin/ifconfig", file, this);
+        file_context("/usr/bin/ip", file, this);
+        file_context("/usr/bin/ipx_configure", file, this);
+        file_context("/usr/bin/ipx_interface", file, this);
+        file_context("/usr/bin/ipx_internal_net", file, this);
+        file_context("/usr/bin/iw", file, this);
+        file_context("/usr/bin/iwconfig", file, this);
+        file_context("/usr/bin/mii-tool", file, this);
+        file_context("/usr/bin/tc", file, this);
+        file_context("/usr/sbin/ethtool", file, this);
+        file_context("/usr/sbin/ifconfig", file, this);
+        file_context("/usr/sbin/ip", file, this);
+        file_context("/usr/sbin/ipx_configure", file, this);
+        file_context("/usr/sbin/ipx_interface", file, this);
+        file_context("/usr/sbin/ipx_internal_net", file, this);
+        file_context("/usr/sbin/iw", file, this);
+        file_context("/usr/sbin/iwconfig", file, this);
+        file_context("/usr/sbin/mii-tool", file, this);
+        file_context("/usr/sbin/tc", file, this);
     }
 
     @alias(ifconfig_runtime_t)
     resource runtime inherits runtimefile {
         /// Runtime files in /run and /var/run.
-        file_context("/run/netns", dir);
+        file_context("/run/netns", dir, this);
         // TODO add back in when we figure out what to do with none
         // file_context("/run/netns/[^/]+", file, <<none>>);
 //typeattribute ifconfig_runtime_t container_mountpoint_type;

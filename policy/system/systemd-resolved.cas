@@ -8,13 +8,13 @@ domain systemd_resolved_t inherits daemon {
     //
     @alias(systemd_resolved_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-resolved", file);
+        file_context("/usr/lib/systemd/systemd-resolved", file, this);
     }
 
     @alias(systemd_resolved_runtime_t)
     extend runtime {
         /// Runtime files in /run/systemd/resolve.
-        file_context("/run/systemd/resolve(/.*)?", any);
+        file_context("/run/systemd/resolve(/.*)?", any, this);
     }
 
     //

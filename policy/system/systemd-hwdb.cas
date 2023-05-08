@@ -8,12 +8,12 @@ domain systemd_hw_t inherits systemd_app_domain {
     //
     @alias(systemd_hw_exec_t)
     extend exec  {
-        file_context("/usr/bin/systemd-hwdb", file);
+        file_context("/usr/bin/systemd-hwdb", file, this);
     }
 
     @alias(systemd_hwdb_t)
     resource db inherits common_file {
-        file_context("/etc/udev/hwdb\.bin", file);
+        file_context("/etc/udev/hwdb\.bin", file, this);
     }
 
     //

@@ -6,23 +6,23 @@ domain setrans_t inherits daemon {
     //
     @alias(setrans_exec_t)
     extend exec {
-        file_context("/usr/bin/mcstransd", file);
-        file_context("/usr/sbin/mcstransd", file);
+        file_context("/usr/bin/mcstransd", file, this);
+        file_context("/usr/sbin/mcstransd", file, this);
     }
 
     @alias(setrans_initrc_exec_t)
     extend initrc_exec {
-        file_context("/etc/rc\.d/init\.d/mcstrans", file);
+        file_context("/etc/rc\.d/init\.d/mcstrans", file, this);
     }
 
     @alias(setrans_runtime_t)
     extend runtime {
-        file_context("/run/setrans(/.*)?", system_u:object_r:setrans_runtime_t:mls_systemhigh);
+        file_context("/run/setrans(/.*)?", any, system_u:object_r:setrans_runtime_t:mls_systemhigh);
     }
 
     @alias(setrans_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/mcstrans.*\.service", file);
+        file_context("/usr/lib/systemd/system/mcstrans.*\.service", file, this);
     }
 
 

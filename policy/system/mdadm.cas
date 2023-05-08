@@ -8,32 +8,32 @@ domain mdadm_t inherits daemon, system_app_domain {
     //
     @alias(mdadm_exec_t)
     extend exec {
-        file_context("/usr/bin/iprdump", file);
-        file_context("/usr/bin/iprinit", file);
-        file_context("/usr/bin/iprupdate", file);
-        file_context("/usr/bin/mdadm", file);
-        file_context("/usr/bin/mdmon", file);
-        file_context("/usr/bin/mdmpd", file);
-        file_context("/usr/bin/raid-check", file);
-        file_context("/usr/sbin/iprdump", file);
-        file_context("/usr/sbin/iprinit", file);
-        file_context("/usr/sbin/iprupdate", file);
-        file_context("/usr/sbin/mdadm", file);
-        file_context("/usr/sbin/mdmon", file);
-        file_context("/usr/sbin/mdmpd", file);
-        file_context("/usr/sbin/raid-check", file);
+        file_context("/usr/bin/iprdump", file, this);
+        file_context("/usr/bin/iprinit", file, this);
+        file_context("/usr/bin/iprupdate", file, this);
+        file_context("/usr/bin/mdadm", file, this);
+        file_context("/usr/bin/mdmon", file, this);
+        file_context("/usr/bin/mdmpd", file, this);
+        file_context("/usr/bin/raid-check", file, this);
+        file_context("/usr/sbin/iprdump", file, this);
+        file_context("/usr/sbin/iprinit", file, this);
+        file_context("/usr/sbin/iprupdate", file, this);
+        file_context("/usr/sbin/mdadm", file, this);
+        file_context("/usr/sbin/mdmon", file, this);
+        file_context("/usr/sbin/mdmpd", file, this);
+        file_context("/usr/sbin/raid-check", file, this);
     }
 
     @alias(mdadm_initrc_exec_t)
     extend initrc_exec {
-        file_context("/etc/rc\.d/init\.d/mdmonitor", file);
+        file_context("/etc/rc\.d/init\.d/mdmonitor", file, this);
     }
 
     @alias(mdadm_runtime_t)
     extend runtime {
-        file_context("/dev/\.mdadm\.map", file);
-        file_context("/dev/md/.*", file);
-        file_context("/run/mdadm(/.*)?", any);
+        file_context("/dev/\.mdadm\.map", file, this);
+        file_context("/dev/md/.*", file, this);
+        file_context("/run/mdadm(/.*)?", any, this);
 
         device_t.associate();
         tmpfs_t.associate();
@@ -41,8 +41,8 @@ domain mdadm_t inherits daemon, system_app_domain {
 
     @alias(mdadm_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/[^/]*mdadm-.*", file);
-        file_context("/usr/lib/systemd/system/[^/]*mdmon.*", file);
+        file_context("/usr/lib/systemd/system/[^/]*mdadm-.*", file, this);
+        file_context("/usr/lib/systemd/system/[^/]*mdmon.*", file, this);
     }
 
     //

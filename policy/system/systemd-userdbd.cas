@@ -8,18 +8,18 @@ domain systemd_userdbd_t inherits daemon {
     //
     @alias(systemd_userdbd_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-userdbd", file);
-        file_context("/usr/lib/systemd/systemd-userwork", file);
+        file_context("/usr/lib/systemd/systemd-userdbd", file, this);
+        file_context("/usr/lib/systemd/systemd-userwork", file, this);
     }
 
     @alias(systemd_userdbd_runtime_t)
     extend runtime {
-        file_context("/run/systemd/userdb(/.*)?", any);
+        file_context("/run/systemd/userdb(/.*)?", any, this);
     }
 
     @alias(systemd_userdbd_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/systemd-userdbd\.(service|socket)", file);
+        file_context("/usr/lib/systemd/system/systemd-userdbd\.(service|socket)", file, this);
     }
 
     //

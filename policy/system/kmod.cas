@@ -10,41 +10,41 @@ domain kmod_t inherits system_app_domain {
     @alias(modules_conf_t)
     resource conf inherits configfile {
         /// Configuration files.
-        file_context("/etc/modules\.conf.*", file);
-        file_context("/etc/modprobe\.conf.*", file);
-        file_context("/etc/modprobe\.d(/.*)?", any);
-        file_context("/usr/lib/modules/modprobe\.conf", file);
+        file_context("/etc/modules\.conf.*", file, this);
+        file_context("/etc/modprobe\.conf.*", file, this);
+        file_context("/etc/modprobe\.d(/.*)?", any, this);
+        file_context("/usr/lib/modules/modprobe\.conf", file, this);
     }
 
     @alias(modules_dep_t)
     resource dep inherits common_file {
         /// Kernel module dependencies.
-        file_context("/usr/lib/modules/[^/]+/modules\..+", file);
+        file_context("/usr/lib/modules/[^/]+/modules\..+", file, this);
     }
 
     @alias(kmod_exec_t)
     extend exec {
-        file_context("/usr/bin/depmod.*", file);
-        file_context("/usr/bin/generate-modprobe\.conf", file);
-        file_context("/usr/bin/insmod.*", file);
-        file_context("/usr/bin/kmod", file);
-        file_context("/usr/bin/modprobe.*", file);
-        file_context("/usr/bin/modules-update", file);
-        file_context("/usr/bin/rmmod.*", file);
-        file_context("/usr/bin/update-modules", file);
-        file_context("/usr/sbin/depmod.*", file);
-        file_context("/usr/sbin/generate-modprobe\.conf", file);
-        file_context("/usr/sbin/insmod.*", file);
-        file_context("/usr/sbin/modprobe.*", file);
-        file_context("/usr/sbin/modules-update", file);
-        file_context("/usr/sbin/rmmod.*", file);
-        file_context("/usr/sbin/update-modules", file);
+        file_context("/usr/bin/depmod.*", file, this);
+        file_context("/usr/bin/generate-modprobe\.conf", file, this);
+        file_context("/usr/bin/insmod.*", file, this);
+        file_context("/usr/bin/kmod", file, this);
+        file_context("/usr/bin/modprobe.*", file, this);
+        file_context("/usr/bin/modules-update", file, this);
+        file_context("/usr/bin/rmmod.*", file, this);
+        file_context("/usr/bin/update-modules", file, this);
+        file_context("/usr/sbin/depmod.*", file, this);
+        file_context("/usr/sbin/generate-modprobe\.conf", file, this);
+        file_context("/usr/sbin/insmod.*", file, this);
+        file_context("/usr/sbin/modprobe.*", file, this);
+        file_context("/usr/sbin/modules-update", file, this);
+        file_context("/usr/sbin/rmmod.*", file, this);
+        file_context("/usr/sbin/update-modules", file, this);
     }
 
     @alias(kmod_tmpfiles_conf_t)
     resource tmpfiles_conf inherits configfile, systemd_tmpfiles_configfile {
-        file_context("/run/tmpfiles\.d/kmod\.conf", file);
-        file_context("/run/tmpfiles\.d/static-nodes\.conf", file);
+        file_context("/run/tmpfiles\.d/kmod\.conf", file, this);
+        file_context("/run/tmpfiles\.d/static-nodes\.conf", file, this);
     }
 
     //

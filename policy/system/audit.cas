@@ -8,8 +8,8 @@ domain auditctl_t inherits system_app_domain {
     //
     @alias(auditctl_exec_t)
     extend exec  {
-        file_context("/usr/bin/auditctl", file);
-        file_context("/usr/sbin/auditctl", file);
+        file_context("/usr/bin/auditctl", file, this);
+        file_context("/usr/sbin/auditctl", file, this);
     }
 
     //
@@ -61,13 +61,13 @@ domain auditd_t inherits daemon {
 
     @alias(auditd_exec_t)
     extend exec  {
-        file_context("/usr/bin/auditd", file);
-        file_context("/usr/sbin/auditd", file);
+        file_context("/usr/bin/auditd", file, this);
+        file_context("/usr/sbin/auditd", file, this);
     }
 
     @alias(auditd_initrc_exec_t)
     extend initrc_exec  {
-        file_context("/etc/rc\.d/init\.d/auditd", file);
+        file_context("/etc/rc\.d/init\.d/auditd", file, this);
     }
 
     // TODO: This needs to drop logfile inheritance
@@ -85,15 +85,15 @@ domain auditd_t inherits daemon {
 
     @alias(auditd_runtime_t)
     extend runtime {
-        file_context("/run/audit_events", socket, system_u:object_r:auditd_runtime_t:mls_systemhigh);
-        file_context("/run/audispd_events", socket, system_u:object_r:audisp_runtime_t:mls_systemhigh);
+        file_context("/run/audit_events", sock_file, system_u:object_r:auditd_runtime_t:mls_systemhigh);
+        file_context("/run/audispd_events", sock_file, system_u:object_r:audisp_runtime_t:mls_systemhigh);
         file_context("/run/auditd\.pid", file, system_u:object_r:auditd_runtime_t:mls_systemhigh);
-        file_context("/run/auditd_sock", socket, system_u:object_r:auditd_runtime_t:mls_systemhigh);
+        file_context("/run/auditd_sock", sock_file, system_u:object_r:auditd_runtime_t:mls_systemhigh);
     }
 
     @alias(auditd_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/auditd.*", file);
+        file_context("/usr/lib/systemd/system/auditd.*", file, this);
     }
 
     //
@@ -174,8 +174,8 @@ domain audisp_t inherits system_app_domain {
     //
     @alias(audisp_exec_t)
     extend exec  {
-        file_context("/usr/bin/audispd", file);
-        file_context("/usr/sbin/audispd", file);
+        file_context("/usr/bin/audispd", file, this);
+        file_context("/usr/sbin/audispd", file, this);
     }
 
     @alias(audisp_runtime_t)
@@ -229,8 +229,8 @@ domain audisp_remote_t inherits common_domain {
     //
     @alias(audisp_remote_exec_t)
     extend exec  {
-        file_context("/usr/bin/audisp-remote", file);
-        file_context("/usr/sbin/audisp-remote", file);
+        file_context("/usr/bin/audisp-remote", file, this);
+        file_context("/usr/sbin/audisp-remote", file, this);
     }
 
     @alias(audisp_runtime_t)

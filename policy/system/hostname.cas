@@ -5,7 +5,7 @@ domain hostname_t inherits system_app_domain {
 
     @alias(hostname_exec_t)
     extend exec {
-        file_context("/usr/bin/hostname", file);
+        file_context("/usr/bin/hostname", file, this);
     }
 
     // sys_admin : for setting the hostname

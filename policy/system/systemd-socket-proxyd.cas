@@ -18,7 +18,7 @@ domain systemd_socket_proxyd_t inherits systemd_daemon {
     //
     @alias(systemd_socket_proxyd_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-socket-proxyd", file);
+        file_context("/usr/lib/systemd/systemd-socket-proxyd", file, this);
     }
 
     @alias(systemd_socket_proxyd_port_t)
@@ -30,7 +30,7 @@ domain systemd_socket_proxyd_t inherits systemd_daemon {
 
     @alias(systemd_socket_proxyd_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/systemd-socket-proxyd\.service", file);
+        file_context("/usr/lib/systemd/system/systemd-socket-proxyd\.service", file, this);
     }
 
     //

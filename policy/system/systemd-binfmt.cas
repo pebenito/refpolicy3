@@ -8,12 +8,12 @@ domain systemd_binfmt_t inherits systemd_app_domain {
     //
     @alias(systemd_binfmt_exec_t)
     extend exec {
-        file_context("/usr/lib/systemd/systemd-binfmt", file);
+        file_context("/usr/lib/systemd/systemd-binfmt", file, this);
     }
 
     @alias(systemd_binfmt_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/systemd-binfmt.*", file);
+        file_context("/usr/lib/systemd/system/systemd-binfmt.*", file, this);
     }
 
     //

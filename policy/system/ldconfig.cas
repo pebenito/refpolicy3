@@ -9,13 +9,13 @@ domain ldconfig_t inherits system_app_domain {
 
     @alias(ldconfig_exec_t)
     extend exec {
-        file_context("/usr/bin/ldconfig", file);
-        file_context("/usr/sbin/ldconfig", file);
+        file_context("/usr/bin/ldconfig", file, this);
+        file_context("/usr/sbin/ldconfig", file, this);
     }
 
     @alias(ldconfig_cache_t)
     resource cache inherits common_file {
-        file_context("/var/cache/ldconfig(/.*)?", any);
+        file_context("/var/cache/ldconfig(/.*)?", any, this);
     }
 
     @alias(ldconfig_tmp_t)

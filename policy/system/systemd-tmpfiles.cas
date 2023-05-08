@@ -22,7 +22,7 @@ virtual resource systemd_tmpfiles_managed {
 // Concrete types
 //
 resource systemd_factory_conf_t inherits common_file, common_dir, symlink, systemd_tmpfiles_configfile {
-    file_context("/usr/share/factory(/.*)?", any);
+    file_context("/usr/share/factory(/.*)?", any, this);
 }
 
 domain systemd_tmpfiles_t inherits systemd_daemon {
@@ -33,14 +33,14 @@ domain systemd_tmpfiles_t inherits systemd_daemon {
     //
     @alias(systemd_tmpfiles_conf_t)
     extend conf inherits systemd_tmpfiles_configfile {
-        file_context("/run/tmpfiles\.d", dir);
+        file_context("/run/tmpfiles\.d", dir, this);
         // TODO add back in when we figure out what to do with none
         // file_context("/run/tmpfiles\.d/.*", any, <<none>>);
     }
 
     @alias(systemd_tmpfiles_exec_t)
     extend exec  {
-        file_context("/usr/bin/systemd-tmpfiles", file);
+        file_context("/usr/bin/systemd-tmpfiles", file, this);
     }
 
     //

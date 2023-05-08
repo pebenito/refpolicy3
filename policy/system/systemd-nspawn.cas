@@ -11,12 +11,12 @@ domain systemd_nspawn_t inherits systemd_app_domain {
     //
     @alias(systemd_nspawn_exec_t)
     extend exec  {
-        file_context("/usr/bin/systemd-nspawn", file);
+        file_context("/usr/bin/systemd-nspawn", file, this);
     }
 
     @alias(systemd_nspawn_runtime_t)
     extend runtime {
-        file_context("/run/systemd/nspawn(/.*)?", any);
+        file_context("/run/systemd/nspawn(/.*)?", any, this);
     }
 
     @alias(systemd_nspawn_tmp_t)

@@ -8,17 +8,17 @@ domain systemd_backlight_t inherits systemd_app_domain {
     //
     @alias(systemd_backlight_exec_t)
     extend exec {
-        file_context("/usr/lib/systemd/systemd-backlight", file);
+        file_context("/usr/lib/systemd/systemd-backlight", file, this);
     }
 
     @alias(systemd_backlight_var_lib_t)
     resource state inherits common_file {
-        file_context("/var/lib/systemd/backlight(/.*)?", any);
+        file_context("/var/lib/systemd/backlight(/.*)?", any, this);
     }
 
     @alias(systemd_backlight_unit_t)
     extend unit {
-        file_context("/usr/lib/systemd/system/systemd-backlight.*", file);
+        file_context("/usr/lib/systemd/system/systemd-backlight.*", file, this);
     }
 
     //

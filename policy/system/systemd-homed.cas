@@ -8,12 +8,12 @@ domain systemd_homed_t inherits systemd_daemon {
     //
     @alias(systemd_homed_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-homed", file);
+        file_context("/usr/lib/systemd/systemd-homed", file, this);
     }
 
     @alias(systemd_homed_runtime_t)
     extend runtime {
-        file_context("/run/systemd/home(/.*)?", any);
+        file_context("/run/systemd/home(/.*)?", any, this);
     }
 
     @alias(systemd_homed_storage_t)
@@ -21,7 +21,7 @@ domain systemd_homed_t inherits systemd_daemon {
 
     @alias(systemd_homed_var_lib_t)
     resource state inherits common_file {
-        file_context("/var/lib/systemd/home(/.*)?", any);
+        file_context("/var/lib/systemd/home(/.*)?", any, this);
     }
 
     @alias(systemd_homed_tmpfs_t)
@@ -84,7 +84,7 @@ domain systemd_homework_t inherits common_domain {
     //
     @alias(systemd_homework_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-homework", file);
+        file_context("/usr/lib/systemd/systemd-homework", file, this);
     }
 
     //

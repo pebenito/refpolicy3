@@ -16,18 +16,18 @@ domain mount_t inherits system_app_domain {
     //
     @alias(mount_exec_t)
     extend exec {
-        file_context("/usr/bin/fusermount", file);
-        file_context("/usr/bin/fusermount3", file);
-        file_context("/usr/bin/mount(\.[^/]+)?", file);
-        file_context("/usr/bin/umount(\.[^/]+)?", file);
-        file_context("/usr/sbin/mount(\.[^/]+)?", file);
-        file_context("/usr/sbin/umount(\.[^/]+)?", file);
+        file_context("/usr/bin/fusermount", file, this);
+        file_context("/usr/bin/fusermount3", file, this);
+        file_context("/usr/bin/mount(\.[^/]+)?", file, this);
+        file_context("/usr/bin/umount(\.[^/]+)?", file, this);
+        file_context("/usr/sbin/mount(\.[^/]+)?", file, this);
+        file_context("/usr/sbin/umount(\.[^/]+)?", file, this);
     }
 
     @alias(mount_runtime_t)
     resource runtime inherits runtimefile {
         /// Runtime files in /run and /var/run.
-        file_context("/run/mount(/.*)?", any);
+        file_context("/run/mount(/.*)?", any, this);
     }
 
     @alias(mount_tmp_t)

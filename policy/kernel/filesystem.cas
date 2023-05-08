@@ -202,12 +202,12 @@ resource cgroup_t inherits noxattr_filesystem {
 
     syfs_t.associate(this);
 
-    file_context("/cgroup", dir);
+    file_context("/cgroup", dir, this);
     // file_context("/cgroup/.*", any, <<none>>);
 
-    file_context("/sys/fs/cgroup", dir);
+    file_context("/sys/fs/cgroup", dir, this);
     // file_context("/sys/fs/cgroup/.*", any, <<none>>);
-    file_context("/sys/fs/cgroup/[^/]+", symlink);
+    file_context("/sys/fs/cgroup/[^/]+", lnk_file, this);
 
     genfscon("cgroup", "/", any);
     genfscon("cgroup2", "/", any);
@@ -231,7 +231,7 @@ resource cpusetfs_t inherits pseudo_filesystem {
 
 resource debugfs inherits pseudo_filesystem {
     /// Kernel debug filesystem.
-    file_context("/sys/kernel/debug", dir);
+    file_context("/sys/kernel/debug", dir, this);
     // file_context("/sys/kernel/debug/.*", any, <<none>>);
 
     genfscon("debugfs", "/", any);
@@ -334,9 +334,9 @@ resource hugetlbfs_t inherits xattr_filesystem, mountpoint, common_file {
     /// HugeTLB pages filesystem.
     device_t.associate(this);
 
-    file_context("/dev/hugepages", dir);
+    file_context("/dev/hugepages", dir, this);
     // file_context("/dev/hugepages(/.*)?", any, <<none>>);
-    file_context("/usr/lib/udev/devices/hugepages", dir);
+    file_context("/usr/lib/udev/devices/hugepages", dir, this);
     // file_context("/usr/lib/udev/devices/hugepages/.*", any, <<none>>);
 
     fs_use_trans(hugetlbfs);
@@ -466,7 +466,7 @@ resource pstore_t inherits pseudo_filesystem, mountpoint {
 
     sysfs_t.associate(this);
 
-    file_context("/sys/fs/pstore", dir);
+    file_context("/sys/fs/pstore", dir, this);
     // file_context("/sys/fs/pstore/.*", any, <<none>>);
 
     genfscon("pstore", "/", any);
@@ -616,14 +616,14 @@ resource selinuxfs_t inherits pseudo_filesystem, mountpoint {
 resource sysfs_t inherits xattr_filesystem, pseudo_filesystem, sysfs_entry {
     /// sysfs filesystem.
 
-    file_context("/sys(/.*)?", any);
+    file_context("/sys(/.*)?", any, this);
 
     genfscon("sysfs", "/", any);
 
     @alias(cpu_online_t)
     resource cpu_online inherits sysfs_entry {
         /// /sys/devices/system/cpu/online.
-        file_context("/sys/devices/system/cpu/online", file);
+        file_context("/sys/devices/system/cpu/online", file, this);
 
         genfscon("sysfs", "/devices/system/cpu/online", file);
     }
@@ -666,14 +666,14 @@ resource tmpfs_t inherits xattr_filesystem, common_dir  {
     device_t.associate(this);
     noxattr_filesystem.associate(this);
 
-    file_context("/dev/shm", dir);
+    file_context("/dev/shm", dir, this);
     // file_context("/dev/shm/.*", any, <<none>>);
-    file_context("/usr/lib/udev/devices/shm", dir);
+    file_context("/usr/lib/udev/devices/shm", dir, this);
     // file_context("/usr/lib/udev/devices/shm/.*", any, <<none>>);
     // file_context("/dev/mqueue(/.*)?", any, <<none>>);
 
     if (distro_debian) {
-        file_context("/run/shm", dir);
+        file_context("/run/shm", dir, this);
         //file_context("/run/shm/.*", any, <<none>>);
     }
 

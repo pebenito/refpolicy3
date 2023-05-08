@@ -13,22 +13,22 @@ domain systemd_logind_t inherits systemd_daemon {
     //
     @alias(systemd_logind_exec_t)
     extend exec  {
-        file_context("/usr/lib/systemd/systemd-logind", file);
+        file_context("/usr/lib/systemd/systemd-logind", file, this);
     }
 
     @alias(systemd_logind_inhibit_runtime_t)
     resource inhibit inherits runtimefile, common_pipe, systemd_mountpoint {
-        file_context("/run/systemd/inhibit(/.*)?", any);
+        file_context("/run/systemd/inhibit(/.*)?", any, this);
     }
 
     @alias(systemd_logind_runtime_t)
     extend runtime inherits systemd_mountpoint {
-        file_context("/run/systemd/users(/.*)?", any);
+        file_context("/run/systemd/users(/.*)?", any, this);
     }
 
     @alias(systemd_logind_var_lib_t)
     resource state inherits common_file, systemd_mountpoint {
-        file_context("/var/lib/systemd/linger(/.*)?", any);
+        file_context("/var/lib/systemd/linger(/.*)?", any, this);
 
     }
 
