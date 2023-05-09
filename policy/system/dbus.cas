@@ -35,13 +35,13 @@ virtual domain session_dbus inherits common_domain {
     selinux.userspace_object_manager();
 
     session_dbusd_home_t.manage();
-    user_home_dir_t.filetrans(session_bus_type, session_dbusd_home_t, dir, ".dbus"); home_root_t.list();
+    user_home_dir_t.filetrans(this, session_dbusd_home_t, dir, ".dbus"); home_root_t.list();
 
     session_dbusd_runtime_t.manage();
-    user_runtime_t.filetrans(session_bus_type, session_dbusd_runtime_t, [ dir file sock_file ]); user_runtime_root_t.list();
+    user_runtime_t.filetrans(this, session_dbusd_runtime_t, [ dir file sock_file ]); user_runtime_root_t.list();
 
     session_dbusd_tmp_t.manage();
-    tmp_t.filetrans(session_bus_type, session_dbusd_tmp_t, [ dir file ]);
+    tmp_t.filetrans(this, session_dbusd_tmp_t, [ dir file ]);
 
     sysctl_t.kernel.read(); sysctl_t.list(); proc_t.list();
 

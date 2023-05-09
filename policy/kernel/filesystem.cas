@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0
 
 virtual resource filesystem {
-    allow(this, self, filesystem, associate);
+    allow(this<domain>, self, filesystem, associate);
 
-    fn associate(any_file_type object) {
+    fn associate(resource object) {
         /// Associate a file to this filesystem.
         /// This will allow files with the object label to exist on this filesystem.
         allow(object<domain>, this, filesystem, [associate]);
     }
 
-    fn dontaudit_associate(any_file_type object) {
+    fn dontaudit_associate(resource object) {
         /// Do not audit denials for associating a file to this filesystem.
         dontaudit(object<domain>, this, filesystem, [associate]);
     }

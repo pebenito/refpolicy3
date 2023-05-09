@@ -79,7 +79,9 @@ resource security_t {
 // Boolean to determine whether the system permits loading policy, and setting
 // enforcing mode.  Set this to true and you have to reboot to set it back.
 //
-boolean(secure_mode_policyload, false);
+@dynamic
+let secure_mode_policyload = false;
+
 resource secure_mode_policyload_t inherits booleans {
     fs_context("selinuxfs", genfscon, this, "/booleans/secure_mode_policyload", file);
 
@@ -102,7 +104,8 @@ resource secure_mode_policyload_t inherits booleans {
 
 
 // Boolean to determine whether the system permits setting Booelan values.
-boolean(secure_mode_setbool, false);
+@dynamic
+let secure_mode_setbool = false;
 
 // TODO:
 //type secure_mode_policyload_t;

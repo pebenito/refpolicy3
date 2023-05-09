@@ -58,8 +58,8 @@ domain unconfined_t inherits userdomain {
 
     sysadm_passwd_t.domtrans();
 
-    systemd_t.runtime.filetrans(this, systemd_passwd_runtime_t, dir, "ask-password-block");
-    systemd_t.runtime.filetrans(this, systemd_passwd_runtime_t, dir, "ask-password");
+    //systemd_t.runtime.filetrans(this, systemd_passwd_runtime_t, dir, "ask-password-block");
+    //systemd_t.runtime.filetrans(this, systemd_passwd_runtime_t, dir, "ask-password");
 
     tzdata_t.domtrans();
 

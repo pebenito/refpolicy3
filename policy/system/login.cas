@@ -76,7 +76,7 @@ virtual domain bin_login_domain inherits login_domain {
 
     // TODO: delete this.exec as it is unused
 
-    associate(login_exec_t);
+    login_exec_t.entrypoint();
 
     //fn domtrans(domain source, role src_role=source.roles) {
     fn domtrans(domain source) {

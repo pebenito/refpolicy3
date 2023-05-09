@@ -1128,7 +1128,7 @@ resource shell_exec_t inherits executable {
     file_context("/usr/sbin/smrsh", file, this);
 }
 
-resource src_t inherits mountpoint {
+resource src_t inherits common_file, mountpoint {
     /// System source files typically in /usr/src.
 
     file_context("/usr/local/src(/.*)?", any, this);
@@ -1194,7 +1194,7 @@ resource tmp_t inherits tmpfile, mountpoint, polyinstantiated {
 
     this.poly_parent(this);
 
-    root_t.poly_parent(this);
+    //root_t.poly_parent(this);
 
     systemd_tmpfiles_t.manager_of(this);
 }

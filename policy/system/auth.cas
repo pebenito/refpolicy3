@@ -135,7 +135,7 @@ domain pam_timestamp_t inherits common_domain {
     this.runtime.delete();
 
     this.tmp.manage();
-    tmp_t.filetrans(pam_t, pam_tmp_t, [ file dir ]);
+    tmp_t.filetrans(this, this.tmp, [ file dir ]);
 
     autofs_t.list();
 

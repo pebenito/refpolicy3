@@ -254,7 +254,7 @@ domain audisp_remote_t inherits common_domain {
     var_spool_t.filetrans(this, this.spool, [ dir file ]);
 
     // TODO: this should be handled by domtrans
-    audisp_t.rw_inherited_unix_stream_sockets();
+    audisp_t.rw_inherited_stream_sockets();
 
     audit.send_messages();
 

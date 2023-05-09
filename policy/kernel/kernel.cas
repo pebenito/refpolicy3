@@ -16,14 +16,14 @@ let secure_mode_insmod = false;
 domain kernel_t inherits network_peer {
     /// Kernel threads.
 
-    role_associate(system_r, roles);
+    //role_associate(system_r, roles);
 
     allow(this, self, capability, [chown dac_override dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice sys_resource sys_time sys_tty_config mknod lease audit_write audit_control setfcap ]);
     allow(this, self, process, [transition signal_perms getsched setsched getsession getpgid setpgid getcap setcap share getattr noatsecure siginh rlimitinh dyntransition setkeycreate setsockcreate getrlimit ]);
-    allow(this, self, shm, create_shm_perms);
-    allow(this, self, sem, create_sem_perms);
+    allow(this, self, shm, manage_shm_perms);
+    allow(this, self, sem, manage_sem_perms);
     allow(this, self, msg, [send receive]);
-    allow(this, self, msgq, create_msgq_perms);
+    allow(this, self, msgq, manage_msgq_perms);
     allow(this, self, unix_dgram_socket, [manage_socket_perms sendto]);
     allow(this, self, unix_stream_socket, [manage_stream_socket_perms connectto]);
     allow(this, self, fifo_file, rw_fifo_file_perms);
@@ -102,7 +102,7 @@ domain kernel_t inherits network_peer {
     network_node.sendrecv();
     network_packet.sendrecv();
 
-    netlabel_peer_t.recvfrom();
+    netlabel_peer_t.all_recvfrom();
 
     proc_t.mounton();
     proc_t.read();

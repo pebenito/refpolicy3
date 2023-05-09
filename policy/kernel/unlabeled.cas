@@ -19,7 +19,7 @@ resource unlabeled_t inherits mountpoint, network_peer {
     // get stuck if you do not allow unlabeled processes to signal init.
     // If you load an incompatible policy, you should probably reboot,
     // since you may have compromised system security.
-    init_t.sigchld(unlabeled_t);
+    init_t.sigchld(unlabeled_t<domain>);
 
     //
     // Labeling statements

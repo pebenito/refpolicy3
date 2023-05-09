@@ -2056,7 +2056,7 @@ virtual resource file_type inherits any_file_type {
     /// Virtual for all file-like objects, excluding device nodes.
     /// This is equvalent to refpolicy2 file_type
 
-    allow(this, this, filesystem, associate);
+    allow(this<domain>, this, filesystem, associate);
 
     fs_t.associate();
     noxattrfs.associate();

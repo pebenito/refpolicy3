@@ -101,7 +101,7 @@ domain local_login_t inherits bin_login_domain, local_login_domain {
 
     user_home_t.list(); user_home_dir_t.list(); home_root_t.list();
 
-    userdomain.shell_setexec_rolechg_domtrans(this, this.roles); bin_t.list();
+    userdomain.shell_setexec_rolechg_domtrans(this); bin_t.list();
     userdomain.send_general_signals();
 
     usr_t.read();

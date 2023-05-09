@@ -205,7 +205,7 @@ domain lvm_t inherits system_app_domain {
     // Map for vgchange on /etc/lvm/backup/ files
     this.metadata.mmap_manage();
     this.conf.filetrans(this, this.metadata, file);
-    etc_t.filetrans(this, this.metadata_t, file);
+    etc_t.filetrans(this, this.metadata, file);
 
     this.runtime.manage();
     var_run_t.filetrans(this, this.runtime, [ file sock_file ]);

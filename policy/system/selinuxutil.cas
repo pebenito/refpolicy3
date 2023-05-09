@@ -416,7 +416,7 @@ domain setfiles_t inherits system_app_domain {
     allow(this, self, capability, [ dac_override dac_read_search fowner ]);
     dontaudit(this, self, capability, sys_tty_config);
 
-    container_file_t<filesystem>.getattr();
+    container_file_t<filesystem>.getattr_superblock();
 
     debugfs_t.getattr_superblock();
 

@@ -41,7 +41,7 @@ domain sysadm_t inherits admin_userdomain, common_user {
     domain.send_stop_signals();
     domain.send_child_terminated_signals();
     // for lsof
-    allow(this, domain, socket_class_set, getattr);
+    allow(this, domain<resource>, socket_class_set, getattr);
 
     file_type<filesystem>.getattr_superblock();
     // Admin (manage+relabel) almost all files
@@ -52,7 +52,7 @@ domain sysadm_t inherits admin_userdomain, common_user {
     file_type<common_character_device>.relabelfrom(); drop authentication_file<common_character_device>.relabelfrom();
 
     filesystem.getattr_superblock();
-    filesystem.set_quota();
+    filesystem.set_quotas();
 
     init_t.admin();
 

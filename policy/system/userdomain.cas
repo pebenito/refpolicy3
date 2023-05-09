@@ -68,7 +68,7 @@ virtual domain userdomain inherits common_domain {
     allow(this, self, process, [ setsched share setpgid setcap ]);
     dontaudit(this, self, socket, create);
     // Transition to myself, to make get_ordered_context_list happy.
-    allow(source, self, process, transition);
+    allow(this, self, process, transition);
 
     base_files.read_public_files();
 
@@ -82,7 +82,7 @@ virtual domain userdomain inherits common_domain {
 
     // When the user domain runs ps, there will be a number of access
     // denials when ps tries to search /proc. Do not audit these denials.
-    domain.dontaudit_read_state();
+    domain.dontaudit_ps();
     domain.dontaudit_get_session_id();
 
     etc_t.read();
@@ -304,16 +304,16 @@ virtual domain restricted_user inherits userdomain {
 
     user_home_t.watch();
     user_home_t.watch_mount();
-    user_home_t.watch_sb();
-    user_home_t.watch_with_perm();
+    user_home_t.watch_superblock();
+    user_home_t.watch_with_perms();
     user_home_t.watch_reads();
 
     user_home_dir_t.watch();
     user_home_dir_t.watch_mount();
-    user_home_dir_t.watch_sb();
-    user_home_dir_t.watch_with_perm();
+    user_home_dir_t.watch_superblock();
+    user_home_dir_t.watch_with_perms();
     user_home_dir_t.watch_reads();
-    type_member(this, user_home_dir_t, dir, user_home_dir_t);
+    //type_member(this, user_home_dir_t, dir, user_home_dir_t);
 
     user_runtime_t.admin();
     user_runtime_root_t.filetrans(this, user_runtime_t, dir_notdevfile_class_set);
@@ -321,7 +321,7 @@ virtual domain restricted_user inherits userdomain {
     user_tmp_t.admin();
     user_tmp_t.exec();
     tmp_t.filetrans(this, user_tmp_t, dir_notdevfile_class_set);
-    type_member(this, tmp_t, user_tmp_t, dir);
+    //type_member(this, tmp_t, user_tmp_t, dir);
 
     user_tmpfs_t.admin();
     user_tmpfs_t.mmap_manage();
@@ -781,7 +781,7 @@ virtual resource user_home_content inherits common_file {
     /// Home directories may be in network shares, so this confers
     /// configurable access to NFS and CIFS/SMB network shares.
 
-    user_home_t.associate();
+    user_home_t<filesystem>.associate();
 
 //TODO:
 //files_poly_member($1)

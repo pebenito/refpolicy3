@@ -118,7 +118,7 @@ virtual resource systemd_path_unit_location {
     /// The type of files and directories that path units monitor.
 }
 
-virtual resource user_systemdunit inherits systemd_unit_api {
+virtual resource user_systemdunit inherits common_file, systemd_unit_api {
     /// Units only used by systemd --unit.
 //typeattribute systemd_user_runtime_unit_t ubac_constrained_type;
 }
@@ -187,7 +187,7 @@ virtual domain systemd_user inherits common_domain, systemd_common {
 
     // these should be handled by domtrans:
     init_t.rw_inherited_pipes();
-    init_t.rw_inherited_unix_stream_sockets();
+    init_t.rw_inherited_stream_sockets();
 
     // if systemd exists in the initrd, the journal socket stays labeled kernel_t
     // without this access, user services cannot log to the journal
@@ -418,12 +418,12 @@ domain systemd_t inherits init {
     runtime_t.filetrans(this, this.runtime, dir_notdevfile_class_set); var_t.list();
 
     // for /run/systemd/inaccessible/{chr,blk,fifo}
-    this.runtime<blk_file>.create();
-    this.runtime<chr_file>.create();
-    this.runtime<fifo_file>.create();
-    this.runtime<blk_file>.relabelto();
-    this.runtime<chr_file>.relabelto();
-    this.runtime<fifo_file>.relabelto();
+    this.runtime<block_device>.create();
+    this.runtime<character_device>.create();
+    this.runtime<pipe>.create();
+    this.runtime<block_device>.relabelto();
+    this.runtime<character_device>.relabelto();
+    this.runtime<pipe>.relabelto();
 
     this.tmpfs.manage();
     tmpfs_t.filetrans(this, this.tmpfs, file);
@@ -436,7 +436,7 @@ domain systemd_t inherits init {
 
     autofs_t.list();
     autofs_t.mount();
-    autofs_t.ummount();
+    autofs_t.unmount();
 
     autofs_device_t.rw();
 
@@ -858,7 +858,7 @@ extend daemon {
 
     // StandardInputText uses a memfd rw shm segment.
     // Cannot deny writes or it breaks.
-    allow(this, init_t.tmpfs, file, rw_inherited_file_perms);
+    allow(this, systemd_t.tmpfs, file, rw_inherited_file_perms);
 
     // systemd_stream_connect_socket_proxyd($1)
 
@@ -1067,9 +1067,6 @@ extend udev_t {
     init_t.unix_stream_connect(udev_t);
     init_t.dbus_send(udev_t);
     allow(udev_t, init_t, system, start);
-
-    // for hdparm init script run by udev
-    init_script_t.status();
 
     systemd_sessions_t.runtime<common_file>.read(udev_t);
 

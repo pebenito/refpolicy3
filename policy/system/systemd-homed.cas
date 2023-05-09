@@ -117,7 +117,7 @@ domain systemd_homework_t inherits common_domain {
 
     fsadm_t.exec.exec();
 
-    init_t.rw_inherited_unix_stream_sockets();
+    init_t.rw_inherited_stream_sockets();
     init_t.dontaudit_search_keys();
 
     kernel.request_module_load();

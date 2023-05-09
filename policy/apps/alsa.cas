@@ -71,9 +71,7 @@ domain alsa_t inherits system_app_domain {
 
     allow(this, self, capability, [ dac_override dac_read_search ipc_owner setgid setuid ]);
     allow(this, self, unix_stream_socket, [ accept listen ]);
-    allow(this, self, sem, create_sem_perms);
-    allow(this, self, shm, create_shm_perms);
-    allow(this, self, process, [ getsched setsched signal ]);
+    allow(this, self, process, setsched);
     // kill : kill pulseaudio
     dontaudit(this, self, capability, [ kill sys_admin ]);
 

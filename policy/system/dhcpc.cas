@@ -95,7 +95,7 @@ domain dhcpc_t inherits daemon {
     dhcpc_port_t.tcp_bind();
     dhcpc_port_t.udp_bind();
 
-    domain.dontaudit_read_state();
+    domain.dontaudit_ps();
 
     etc_runtime_t.read();
 
@@ -154,7 +154,7 @@ domain dhcpc_t inherits daemon {
 
     var_lib_t.list();
 
-    var_lock_t.read(); var_t.list();
+    var_lock_t.list(); var_t.list();
 
     vmware_log_t<common_file>.append();
 

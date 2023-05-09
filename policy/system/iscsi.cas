@@ -65,7 +65,7 @@ domain iscsid_t inherits daemon {
 
     this.var_lib.manage();
 
-    domain.dontaudit_read_state();
+    domain.dontaudit_ps();
 
     http_port_t.tcp_connect();
 

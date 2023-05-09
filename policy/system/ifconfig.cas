@@ -44,7 +44,7 @@ domain ifconfig_t inherits system_app_domain {
     //
 
     allow(this, self, capability, [ net_admin net_raw sys_admin sys_tty_config ]);
-    dontaudit(this, this, self, capability, sys_module);
+    dontaudit(this, self, capability, sys_module);
     allow(this, self, process, [ transition setsched setpgid setcap share noatsecure siginh rlimitinh dyntransition setkeycreate setsockcreate getrlimit ]);
     // Create UDP sockets, necessary when called from dhcpc
     allow(this, self, udp_socket, manage_socket_perms);
@@ -59,7 +59,7 @@ domain ifconfig_t inherits system_app_domain {
     allow(this, self, tcp_socket, manage_stream_socket_perms);
 
     this.runtime.manage();
-    runtime_t.filetrans(this, ifconfig_runtime_t, dir);
+    runtime_t.filetrans(this, this.runtime, dir);
     // Allow "ip netns" to remount /var/run/netns and to mount network namespace files on /var/run/netns/$NSNAME
     this.runtime.mounton();
 
@@ -107,7 +107,7 @@ domain ifconfig_t inherits system_app_domain {
 
     tun_tap_device_t.rw();
 
-    udev_t.dontaudit_rw_inherited_dgram_sockets();
+    udev_t.dontaudit_rw_inherited_datagram_sockets();
 
     // for IPSEC setup:
     urandom_device_t.read();

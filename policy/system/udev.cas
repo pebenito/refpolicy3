@@ -252,7 +252,7 @@ domain udev_t inherits daemon {
 
     usr_t.read();
 
-    var_lock_t.read();
+    var_lock_t<common_file>.read();
 
     vbetool_t.domtrans();
 

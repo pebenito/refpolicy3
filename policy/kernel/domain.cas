@@ -65,8 +65,8 @@ virtual domain common_domain inherits network_peer {
 
     // Every domain gets the kernel key ring, so we should default
     // to no one allowed to look at it.
-    kernel_t.dontaudit_search_key();
-    kernel_t.dontaudit_link_key();
+    kernel_t.dontaudit_search_keys();
+    kernel_t.dontaudit_link_keys();
 
     ld_so_t.mmap_exec();
 

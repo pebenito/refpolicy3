@@ -18,7 +18,7 @@ domain user_t inherits common_user, unpriv_userdomain {
     public_content_t.dontaudit_write();
 
     public_content_rw_t.manage();
-    public_content_rw_t<dir>.watch();
+    public_content_rw_t<common_dir>.watch();
 
     if (user_dmesg) {
         syslog.read_kernel_ring_buffer();
@@ -65,7 +65,7 @@ domain user_t inherits common_user, unpriv_userdomain {
 
     optional {
         // kwalletd5 inherits a socket from init
-        init_t.rw_inherited_unix_stream_sockets();
+        init_t.rw_inherited_stream_sockets();
         // for polkit-kde-auth
         init_t.ps();
 

@@ -97,7 +97,7 @@ virtual domain init inherits common_domain {
 
     domain.get_process_group();
     domain.send_kill_signals(); allow(this, self, capability, kill);
-    domain.getattr();
+    domain.ps();
     domain.send_general_signals();
     domain.check_existence();
     domain.send_stop_signals();

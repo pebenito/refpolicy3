@@ -117,7 +117,7 @@ domain iptables_t inherits system_app_domain {
     // to allow rules to be saved on reboot:
     init_script_t.rw_inherited_pipes();
     init_script_t.tmp.rw();
-    init_script_t.rw_inherited_unix_stream_sockets();
+    init_script_t.rw_inherited_stream_sockets();
 
     inotifyfs_t.list();
 

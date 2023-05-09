@@ -120,7 +120,7 @@ domain getty_t inherits getty_domain{
 
     console_device_t.setattr();
 
-    local_login_t.domtrans(this, this.roles);
+    local_login_t.domtrans(this);
 
     // needed for receiving faxes
     shell_exec_t.exec();
