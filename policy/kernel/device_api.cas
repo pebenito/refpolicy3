@@ -279,6 +279,68 @@ trait resource block_device_api {
         dontaudit(source, this, blk_file, audit_access);
     }
 
+    fn watch(domain source) {
+        /// Watch this block device using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        allow(source, this, blk_file, [getattr watch]);
+    }
+
+    fn dontaudit_watch(domain source) {
+        /// Do not audit denials for watching this block device using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        dontaudit(source, this, blk_file, [getattr watch]);
+    }
+
+    fn watch_mount(domain source) {
+        /// Watch this block device's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        allow(source, this, blk_file, [getattr watch_mount]);
+    }
+
+    fn dontaudit_watch_mount(domain source) {
+        /// Do not audit denials for watching this block device's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        dontaudit(source, this, blk_file, [getattr watch_mount]);
+    }
+
+    fn watch_superblock(domain source) {
+        /// Watch this block device's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        allow(source, this, blk_file, [getattr watch_sb]);
+    }
+
+    fn dontaudit_watch_superblock(domain source) {
+        /// Do not audit denials for watching this block device's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        dontaudit(source, this, blk_file, [getattr watch_sb]);
+    }
+
+    fn watch_with_perms(domain source) {
+        /// Watch this block device with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        allow(source, this, blk_file, [getattr watch_with_perm]);
+    }
+
+    fn dontaudit_watch_with_perms(domain source) {
+        /// Do not audit denials for watching this block device with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        dontaudit(source, this, blk_file, [getattr watch_with_perm]);
+    }
+
+    fn watch_reads(domain source) {
+        /// Watch this block device's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        allow(source, this, blk_file, [getattr watch_reads]);
+    }
+
+    fn dontaudit_watch_reads(domain source) {
+        /// Do not audit denials for watching this block device's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        dontaudit(source, this, blk_file, [getattr watch_reads]);
+    }
+
     fn unconfined(domain source) {
         /// Unconfined (full access) to this block device.
         allow(source, this, blk_file, unconfined_blk_file_perms);
@@ -294,7 +356,9 @@ let append_chr_file_perms = [ getattr open append lock ];
 let write_inherited_chr_file_perms = [ getattr write append lock ];
 let write_chr_file_perms = [ getattr open write append lock ];
 let rw_inherited_chr_file_perms = [ getattr read write append lock ];
+let mmap_rw_inherited_chr_file_perms = [ getattr map read write append lock ];
 let rw_chr_file_perms = [ getattr open read write append lock ];
+let mmap_rw_chr_file_perms = [ getattr open map read write append lock ];
 let create_chr_file_perms = [ getattr setattr create ];
 let rename_chr_file_perms = [ getattr rename ];
 let delete_chr_file_perms = [ getattr unlink ];
@@ -425,6 +489,18 @@ trait resource character_device_api {
         dontaudit(source, this, chr_file, rw_inherited_chr_file_perms);
     }
 
+    fn mmap_rw_inherited(domain source) {
+        /// Mmap read and write this character device only if it is inherited.
+        /// The device cannot be directly opened.
+        allow(source, this, chr_file, mmap_rw_inherited_chr_file_perms);
+    }
+
+    fn dontaudit_mmap_rw_inherited(domain source) {
+        /// Do not audit denials for mmap reading and for writing this character device.
+        /// Denials for opening the device will still be audited.
+        dontaudit(source, this, chr_file, mmap_rw_inherited_chr_file_perms);
+    }
+
     fn rw(domain source) {
         /// Read and write this character device.
         allow(source, this, chr_file, rw_chr_file_perms);
@@ -433,6 +509,18 @@ trait resource character_device_api {
     fn dontaudit_rw(domain source) {
         /// Do not audit denials for reading and for writing this character device.
         dontaudit(source, this, chr_file, rw_chr_file_perms);
+    }
+
+    fn mmap_rw(domain source) {
+        /// Mmap read and write this character device.
+        /// The device cannot be directly opened.
+        allow(source, this, chr_file, mmap_rw_chr_file_perms);
+    }
+
+    fn dontaudit_mmap_rw(domain source) {
+        /// Do not audit denials for reading and for writing this character device.
+        /// Denials for opening the device will still be audited.
+        dontaudit(source, this, chr_file, mmap_rw_chr_file_perms);
     }
 
     fn create(domain source) {
@@ -512,6 +600,68 @@ trait resource character_device_api {
     fn dontaudit_access(domain source) {
         /// Do not audit denials on access() use on this character device.
         dontaudit(source, this, chr_file, audit_access);
+    }
+
+    fn watch(domain source) {
+        /// Watch this character device using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        allow(source, this, chr_file, [getattr watch]);
+    }
+
+    fn dontaudit_watch(domain source) {
+        /// Do not audit denials for watching this character device using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        dontaudit(source, this, chr_file, [getattr watch]);
+    }
+
+    fn watch_mount(domain source) {
+        /// Watch this character device's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        allow(source, this, chr_file, [getattr watch_mount]);
+    }
+
+    fn dontaudit_watch_mount(domain source) {
+        /// Do not audit denials for watching this character device's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        dontaudit(source, this, chr_file, [getattr watch_mount]);
+    }
+
+    fn watch_superblock(domain source) {
+        /// Watch this character device's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        allow(source, this, chr_file, [getattr watch_sb]);
+    }
+
+    fn dontaudit_watch_superblock(domain source) {
+        /// Do not audit denials for watching this character device's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        dontaudit(source, this, chr_file, [getattr watch_sb]);
+    }
+
+    fn watch_with_perms(domain source) {
+        /// Watch this character device with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        allow(source, this, chr_file, [getattr watch_with_perm]);
+    }
+
+    fn dontaudit_watch_with_perms(domain source) {
+        /// Do not audit denials for watching this character device with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        dontaudit(source, this, chr_file, [getattr watch_with_perm]);
+    }
+
+    fn watch_reads(domain source) {
+        /// Watch this character device's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        allow(source, this, chr_file, [getattr watch_reads]);
+    }
+
+    fn dontaudit_watch_reads(domain source) {
+        /// Do not audit denials for watching this character device's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        dontaudit(source, this, chr_file, [getattr watch_reads]);
     }
 
     fn unconfined(domain source) {

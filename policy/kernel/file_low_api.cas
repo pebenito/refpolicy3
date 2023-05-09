@@ -40,6 +40,7 @@ let mmap_exec_file_perms = [ getattr open map read execute ioctl ];
 let textrel_mmap_exec_inherited_file_perms = [ getattr map read execute execmod ioctl ];
 let textrel_mmap_exec_file_perms = [ getattr open map read execute execmod ioctl ];
 let exec_file_perms = [ getattr open map read execute ioctl execute_no_trans ];
+let entrypoint_file_perms = [ getattr open map read execute ioctl entrypoint ];
 let append_inherited_file_perms = [ getattr append lock ioctl ];
 let append_file_perms = [ getattr open append lock ioctl ];
 let write_inherited_file_perms = [ getattr write append lock ioctl ];
@@ -327,6 +328,28 @@ trait resource file_api {
         /// This function is sensitive to the files_loose_watch tunable.
 
         dontaudit(source, this, file, exec_file_perms);
+
+        if (files_loose_watch) {
+            dontaudit(source, this, file, watch);
+        }
+    }
+
+    fn entrypoint(domain source) {
+        /// Use this file as an entrypoint to a domain.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        allow(source, this, file, entrypoint_file_perms);
+
+        if (files_loose_watch) {
+            allow(source, this, file, watch);
+        }
+    }
+
+    fn dontaudit_entrypoint(domain source) {
+        /// Do not audit denials for using this file as an entrypoint to a domain.
+        /// This function is sensitive to the files_loose_watch tunable.
+
+        dontaudit(source, this, file, entrypoint_file_perms);
 
         if (files_loose_watch) {
             dontaudit(source, this, file, watch);
@@ -1149,6 +1172,68 @@ trait resource dir_api {
         dontaudit(source, this, dir, audit_access);
     }
 
+    fn watch(domain source) {
+        /// Watch this dir using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        allow(source, this, dir, [getattr watch]);
+    }
+
+    fn dontaudit_watch(domain source) {
+        /// Do not audit denials for watching this dir using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        dontaudit(source, this, dir, [getattr watch]);
+    }
+
+    fn watch_mount(domain source) {
+        /// Watch this dir's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        allow(source, this, dir, [getattr watch_mount]);
+    }
+
+    fn dontaudit_watch_mount(domain source) {
+        /// Do not audit denials for watching this dir's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        dontaudit(source, this, dir, [getattr watch_mount]);
+    }
+
+    fn watch_superblock(domain source) {
+        /// Watch this dir's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        allow(source, this, dir, [getattr watch_sb]);
+    }
+
+    fn dontaudit_watch_superblock(domain source) {
+        /// Do not audit denials for watching this dir's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        dontaudit(source, this, dir, [getattr watch_sb]);
+    }
+
+    fn watch_with_perms(domain source) {
+        /// Watch this dir with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        allow(source, this, dir, [getattr watch_with_perm]);
+    }
+
+    fn dontaudit_watch_with_perms(domain source) {
+        /// Do not audit denials for watching this dir with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        dontaudit(source, this, dir, [getattr watch_with_perm]);
+    }
+
+    fn watch_reads(domain source) {
+        /// Watch this dir's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        allow(source, this, dir, [getattr watch_reads]);
+    }
+
+    fn dontaudit_watch_reads(domain source) {
+        /// Do not audit denials for watching this dir's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        dontaudit(source, this, dir, [getattr watch_reads]);
+    }
+
     fn add_entry_filetrans(domain source, resource default, [class]obj_classes, string name="") {
         /// Create a file-like object in this directory with a private type.
         /// This does not allow deletions from the directory.
@@ -1325,6 +1410,68 @@ trait resource symlink_api {
     fn dontaudit_access(domain source) {
         /// Do not audit denials on access() use on this symbolic link.
         dontaudit(source, this, lnk_file, audit_access);
+    }
+
+    fn watch(domain source) {
+        /// Watch this symlink using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        allow(source, this, lnk_file, [getattr watch]);
+    }
+
+    fn dontaudit_watch(domain source) {
+        /// Do not audit denials for watching this symlink using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        dontaudit(source, this, lnk_file, [getattr watch]);
+    }
+
+    fn watch_mount(domain source) {
+        /// Watch this symlink's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        allow(source, this, lnk_file, [getattr watch_mount]);
+    }
+
+    fn dontaudit_watch_mount(domain source) {
+        /// Do not audit denials for watching this symlink's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        dontaudit(source, this, lnk_file, [getattr watch_mount]);
+    }
+
+    fn watch_superblock(domain source) {
+        /// Watch this symlink's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        allow(source, this, lnk_file, [getattr watch_sb]);
+    }
+
+    fn dontaudit_watch_superblock(domain source) {
+        /// Do not audit denials for watching this symlink's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        dontaudit(source, this, lnk_file, [getattr watch_sb]);
+    }
+
+    fn watch_with_perms(domain source) {
+        /// Watch this symlink with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        allow(source, this, lnk_file, [getattr watch_with_perm]);
+    }
+
+    fn dontaudit_watch_with_perms(domain source) {
+        /// Do not audit denials for watching this symlink with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        dontaudit(source, this, lnk_file, [getattr watch_with_perm]);
+    }
+
+    fn watch_reads(domain source) {
+        /// Watch this symlink's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        allow(source, this, lnk_file, [getattr watch_reads]);
+    }
+
+    fn dontaudit_watch_reads(domain source) {
+        /// Do not audit denials for watching this symlink's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        dontaudit(source, this, lnk_file, [getattr watch_reads]);
     }
 
     fn unconfined(domain source) {
@@ -1527,6 +1674,68 @@ trait resource pipe_api {
         dontaudit(source, this, fifo_file, audit_access);
     }
 
+    fn watch(domain source) {
+        /// Watch this pipe using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        allow(source, this, fifo_file, [getattr watch]);
+    }
+
+    fn dontaudit_watch(domain source) {
+        /// Do not audit denials for watching this pipe using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        dontaudit(source, this, fifo_file, [getattr watch]);
+    }
+
+    fn watch_mount(domain source) {
+        /// Watch this pipe's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        allow(source, this, fifo_file, [getattr watch_mount]);
+    }
+
+    fn dontaudit_watch_mount(domain source) {
+        /// Do not audit denials for watching this pipe's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        dontaudit(source, this, fifo_file, [getattr watch_mount]);
+    }
+
+    fn watch_superblock(domain source) {
+        /// Watch this pipe's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        allow(source, this, fifo_file, [getattr watch_sb]);
+    }
+
+    fn dontaudit_watch_superblock(domain source) {
+        /// Do not audit denials for watching this pipe's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        dontaudit(source, this, fifo_file, [getattr watch_sb]);
+    }
+
+    fn watch_with_perms(domain source) {
+        /// Watch this pipe with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        allow(source, this, fifo_file, [getattr watch_with_perm]);
+    }
+
+    fn dontaudit_watch_with_perms(domain source) {
+        /// Do not audit denials for watching this pipe with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        dontaudit(source, this, fifo_file, [getattr watch_with_perm]);
+    }
+
+    fn watch_reads(domain source) {
+        /// Watch this pipe's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        allow(source, this, fifo_file, [getattr watch_reads]);
+    }
+
+    fn dontaudit_watch_reads(domain source) {
+        /// Do not audit denials for watching this pipe's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        dontaudit(source, this, fifo_file, [getattr watch_reads]);
+    }
+
     fn unconfined(domain source) {
         /// Unconfined access (all permissions) on this pipe.
         allow(source, this, fifo_file, unconfined_fifo_file_perms);
@@ -1689,6 +1898,68 @@ trait resource named_socket_api {
     fn dontaudit_access(domain source) {
         /// Do not audit denials for using access() on this named UNIX socket.
         dontaudit(source, this, sock_file, audit_access);
+    }
+
+    fn watch(domain source) {
+        /// Watch this named UNIX socket using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        allow(source, this, sock_file, [getattr watch]);
+    }
+
+    fn dontaudit_watch(domain source) {
+        /// Do not audit denials for watching this named UNIX socket using filesystem notifications.
+        /// Example filesystem notifications are inotify and fanotify.
+        dontaudit(source, this, sock_file, [getattr watch]);
+    }
+
+    fn watch_mount(domain source) {
+        /// Watch this named UNIX socket's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        allow(source, this, sock_file, [getattr watch_mount]);
+    }
+
+    fn dontaudit_watch_mount(domain source) {
+        /// Do not audit denials for watching this named UNIX socket's filesystem mount point using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_MOUNT flag.
+        dontaudit(source, this, sock_file, [getattr watch_mount]);
+    }
+
+    fn watch_superblock(domain source) {
+        /// Watch this named UNIX socket's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        allow(source, this, sock_file, [getattr watch_sb]);
+    }
+
+    fn dontaudit_watch_superblock(domain source) {
+        /// Do not audit denials for watching this named UNIX socket's filesystem superblock using filesystem notifications.
+        /// An example is using fanotify_mark() with the FAN_MARK_FILESYSTEM flag.
+        dontaudit(source, this, sock_file, [getattr watch_sb]);
+    }
+
+    fn watch_with_perms(domain source) {
+        /// Watch this named UNIX socket with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        allow(source, this, sock_file, [getattr watch_with_perm]);
+    }
+
+    fn dontaudit_watch_with_perms(domain source) {
+        /// Do not audit denials for watching this named UNIX socket with blocking on permissions.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM flag.
+        dontaudit(source, this, sock_file, [getattr watch_with_perm]);
+    }
+
+    fn watch_reads(domain source) {
+        /// Watch this named UNIX socket's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        allow(source, this, sock_file, [getattr watch_reads]);
+    }
+
+    fn dontaudit_watch_reads(domain source) {
+        /// Do not audit denials for watching this named UNIX socket's read-like events.
+        /// An example is using fanotify_mark() with the FAN_ACCESS_PERM,
+        /// FAN_ACCESS, or FAN_CLOSE_NOWRITE flags.
+        dontaudit(source, this, sock_file, [getattr watch_reads]);
     }
 
     fn unconfined(domain source) {
